@@ -9,6 +9,7 @@ commands:
     command: "ssh"
     arguments: []
     authorized: ["pablo", "pcarranza"]
+    action: prompt
     prompt: "which host?"
     values:
       host1: value1
@@ -18,6 +19,7 @@ commands:
     command: "ssh"
     arguments: ["{{ .value }}", "sudo chef-client"]
     authorized: ["pablo", "pcarranza"]
+    action: prompt
     prompt: "which host?"
     values:
       host1: ip1
