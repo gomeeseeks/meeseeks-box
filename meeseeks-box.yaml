@@ -9,19 +9,21 @@ commands:
     command: "ssh"
     arguments: []
     authorized: ["pablo", "pcarranza"]
-    action: prompt
-    prompt: "which host?"
-    values:
-      host1: value1
-      host2: value2
-      host3: value3
+    action: select
+    options:
+      message: "which host?"
+      values:
+        host1: value1
+        host2: value2
+        host3: value3
   - name: chef-client
     command: "ssh"
     arguments: ["{{ .value }}", "sudo chef-client"]
     authorized: ["pablo", "pcarranza"]
-    action: prompt
-    prompt: "which host?"
-    values:
-      host1: ip1
-      host2: ip2
-      host3: ip3
+    select: select
+    options:
+      message: "which host?"
+      values:
+        host1: ip1
+        host2: ip2
+        host3: ip3
