@@ -40,14 +40,23 @@ I propose that we start with the butterbot and start adding parts to the system 
 Picking the Butterbot, we add a configuration file that allows us to setup multiple jobs, thus the execution looks more like this model:
 
 > user: @mrmeeseeks
+>
 > mrmeeseeks: I'm Mr Meeseeks! look at me! \n <list of tasks it can do loaded from [commands list] in the configuration file>
+>
 > user _picks the action to perform_
+>
 > mrmeeseeks _updates the message with further prompting on details or arguments_
+>
 > user _picks the argument_
+>
 > mrmeeseeks _promtps the user if he's sure_
+>
 > user _clicks on the yes button_
+>
 > mrmeeseeks: Uuuuh, yeah! can do!
+>
 > ... (execution happens)
+>
 > mrmeeseeks: @user All done! \n ```results of the command, if any```
 
 #### Enter Remote Meeseeks
