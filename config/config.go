@@ -8,6 +8,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+const (
+	ActionSelect = "select"
+)
+
 // New parses the configuration from a reader into an object and returns it
 func New(r io.Reader) (Config, error) {
 	c := Config{}
