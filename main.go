@@ -10,6 +10,7 @@ import (
 
 func main() {
 	configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
+	flag.Parse()
 
 	f, err := os.Open(*configFile)
 	if err != nil {
