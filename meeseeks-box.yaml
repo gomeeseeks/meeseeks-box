@@ -5,7 +5,7 @@ messages:
   unauthorized: ["Uuuh! no! can't do!"]
   # scuse me, I'm a bit of a stickler Meseeks, what about your short game?
 commands:
-  - name: restart-gitaly
+  restart-gitaly:
     command: "ssh"
     arguments: []
     authorized: ["pablo", "pcarranza"]
@@ -16,7 +16,7 @@ commands:
         host1: value1
         host2: value2
         host3: value3
-  - name: chef-client
+  chef-client:
     command: "ssh"
     arguments: ["{{ .value }}", "sudo chef-client"]
     authorized: ["pablo", "pcarranza"]
