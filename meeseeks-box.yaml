@@ -5,9 +5,14 @@ messages:
   unauthorized: ["Uuuh! no! can't do!"]
   # scuse me, I'm a bit of a stickler Meseeks, what about your short game?
 commands:
+  echo:
+    command: "echo"
+    arguments: ["{{ .message }}"]
+    authorized: ["pablo", "pcarranza"]
+    action: execute
   restart-gitaly:
     command: "ssh"
-    arguments: []
+    arguments: ["{{ .value }}"]
     authorized: ["pablo", "pcarranza"]
     action: select
     options:

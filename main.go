@@ -2,24 +2,45 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
+	"gitlab.com/mr-meeseeks/meeseeks-box/slack"
 )
 
 func main() {
-	configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
+	// configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
+	debug := flag.Bool("debug", false, "enabled debug mode")
 	flag.Parse()
 
-	f, err := os.Open(*configFile)
-	if err != nil {
-		fmt.Printf("could not open configuration file %s: %s\n", *configFile, err)
+	// f, err := os.Open(*configFile)
+	// if err != nil {
+	// 	log.Fatalf("could not open configuration file %s: %s\n", *configFile, err)
+	// }
+
+	// _, err = config.New(f)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
+	token := os.Getenv("SLACK_TOKEN")
+	if token == "" {
+		log.Fatalf("SLACK_TOKEN env var is empty")
 	}
 
-	_, err = config.New(f)
+	client, err := slack.New(slack.ClientConfig{
+		Token: token,
+		Debug: *debug,
+	})
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
+	log.Println("Connected to slack")
 
+	ch := make(chan slack.Message)
+	go client.ListenMessages(ch)
+	for m := range ch {
+		meeseeks.ProcessMessage(m, client)
+	}
 }
