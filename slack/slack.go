@@ -63,6 +63,8 @@ func (c *Client) ListenMessages(ch chan Message) {
 					From:    ev.User,
 				}
 			}
+		default:
+			log.Printf("Received Slack Event %#v\n", ev)
 		}
 	}
 }
