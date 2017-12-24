@@ -3,9 +3,9 @@ executable        = meeseeks-box
 namespace         = pcarranza
 version           = 0.0.1
 
-.PHONY: all package build package release
+.PHONY: all package build package release clean
 
-all: test build package release deploy
+all: test build package release clean
 
 test:
 	go vet -v
@@ -55,3 +55,6 @@ release-arm: package-arm
 	docker push $(namespace)/$(executable)-armv6:$(version)
 
 release: package release-linux release-arm
+
+clean:
+	rm -rf ./build
