@@ -17,6 +17,8 @@ before_script:
   - cd $WORKDIR && dep ensure
 
 test:
+  variables:
+    CI_DEBUG_TRACE: true
   stage: test
   script:
     - make test
