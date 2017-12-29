@@ -6,15 +6,15 @@ stages:
   - release
 
 before_script:
-	- GOPATH=$(mktemp -d))
-	- PROJECT=$(basename $$CI_PROJECT_DIR))
-	- GROUP=$(basename $(dirname $CI_PROJECT_DIR)))
-	- WORKDIR=$GOPATH/src/gitlab.com/$GROUP/$PROJECT)
-	- PATH=$GOPATH/bin:$PATH)
-	- mkdir -p $WORKDIR
-	- cp -R * $WORKDIR
-	- go get -u github.com/golang/dep/cmd/dep
-	- cd $(WORKDIR) && dep ensure
+  - GOPATH=$(mktemp -d))
+  - PROJECT=$(basename $$CI_PROJECT_DIR))
+  - GROUP=$(basename $(dirname $CI_PROJECT_DIR)))
+  - WORKDIR=$GOPATH/src/gitlab.com/$GROUP/$PROJECT)
+  - PATH=$GOPATH/bin:$PATH)
+  - mkdir -p $WORKDIR
+  - cp -R * $WORKDIR
+  - go get -u github.com/golang/dep/cmd/dep
+  - cd $(WORKDIR) && dep ensure
 
 test:
   stage: test
