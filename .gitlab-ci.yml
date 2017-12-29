@@ -8,7 +8,7 @@ stages:
 before_script:
   - GOPATH=$(mktemp -d)
   - PATH=$GOPATH/bin:$PATH
-  - PROJECT=$(basename $$CI_PROJECT_DIR)
+  - PROJECT=$(basename $CI_PROJECT_DIR)
   - GROUP=$(basename $(dirname $CI_PROJECT_DIR))
   - WORKDIR=$GOPATH/src/gitlab.com/$GROUP/$PROJECT
   - mkdir -p $WORKDIR
