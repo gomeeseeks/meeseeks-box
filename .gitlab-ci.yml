@@ -1,0 +1,37 @@
+image: golang:1.9
+
+stages:
+  - test
+  - build
+  - release
+
+test:
+  stage: test
+  script:
+    - make test
+
+build:
+  stage: build
+  script:
+    - make build
+  artifacts:
+    paths:
+      - build/linux/meeseeks-box
+      - build/arm/meeseeks-box
+      - build/darwin/meeseeks-box
+    expire_in: 1 week
+
+release:
+  stage: release
+  image: docker:latest
+  variables:
+    DOCKER_DRIVER: overlay2
+  services:
+    - docker:dind
+  script:
+    - echo ${CI_JOB_TOKEN} | docker login -u gitlab-ci-token --password-stdin ${CI_REGISTRY}
+    - apk add --no-cache make
+    - make release
+  only:
+    - tags
+    - master
