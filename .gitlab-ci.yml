@@ -7,14 +7,16 @@ stages:
 
 before_script:
   - GOPATH=$(mktemp -d)
+  - PATH=$GOPATH/bin:$PATH
   - PROJECT=$(basename $$CI_PROJECT_DIR)
   - GROUP=$(basename $(dirname $CI_PROJECT_DIR))
   - WORKDIR=$GOPATH/src/gitlab.com/$GROUP/$PROJECT
-  - PATH=$GOPATH/bin:$PATH
   - mkdir -p $WORKDIR
-  - cp -R * $WORKDIR
+  - cp -a * $WORKDIR
   - go get -u github.com/golang/dep/cmd/dep
-  - cd $WORKDIR && dep ensure
+  - cd $WORKDIR 
+  - ls -la
+  - dep ensure
 
 test:
   variables:
