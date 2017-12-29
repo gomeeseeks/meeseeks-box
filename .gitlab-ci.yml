@@ -18,7 +18,7 @@ before_script:
 
 test:
   variables:
-    CI_DEBUG_TRACE: true
+    CI_DEBUG_TRACE: "true"
   stage: test
   script:
     - make test
