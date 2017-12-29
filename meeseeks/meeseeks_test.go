@@ -62,7 +62,6 @@ func NewClientStub() ClientStub {
 }
 
 func (c *ClientStub) Reply(text, channel string) {
-	fmt.Println("Appending message ", text)
 	c.messages = append(c.messages, SentMessage{text: text, channel: channel})
 }
 

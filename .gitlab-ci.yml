@@ -15,14 +15,9 @@ before_script:
   - cp -a * $WORKDIR
   - go get -u github.com/golang/dep/cmd/dep
   - cd $WORKDIR 
-  - pwd
-  - echo $GOPATH
-  - ls -la
   - dep ensure -v
 
 test:
-  variables:
-    CI_DEBUG_TRACE: "true"
   stage: test
   script:
     - make test
