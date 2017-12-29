@@ -7,7 +7,6 @@ type Message interface {
 	GetText() string
 	GetChannel() string
 	GetUserFrom() string
-	GetUserFromID() string
 }
 
 // Client interface that provides a way of replying to messages on a channel
