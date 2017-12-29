@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
 	"gitlab.com/mr-meeseeks/meeseeks-box/slack"
 )
@@ -13,6 +13,10 @@ func main() {
 	// configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
 	debug := flag.Bool("debug", false, "enabled debug mode")
 	flag.Parse()
+
+	if *debug {
+		log.SetLevel(log.DebugLevel)
+	}
 
 	// f, err := os.Open(*configFile)
 	// if err != nil {

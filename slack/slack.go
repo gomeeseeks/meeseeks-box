@@ -3,9 +3,10 @@ package slack
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/nlopes/slack"
 )
@@ -51,8 +52,10 @@ func New(conf ClientConfig) (*Client, error) {
 
 // ListenMessages listens to messages and sends the matching ones through the channel
 func (c *Client) ListenMessages(ch chan Message) {
-	log.Println("Listening messages")
+	log.Infof("Listening messages")
+
 	for msg := range c.rtm.IncomingEvents {
+
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
 			if c.messageMatch(ev.Text) {
@@ -64,8 +67,9 @@ func (c *Client) ListenMessages(ch chan Message) {
 				}
 			}
 		default:
-			log.Printf("Received Slack Event %#v\n", ev)
+			log.Debugf("Received Slack Event %#v\n", ev)
 		}
+
 	}
 }
 
