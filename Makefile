@@ -1,7 +1,7 @@
 src = $(wildcard *.go)
 executable        = meeseeks-box
 namespace         = pcarranza
-version           = 0.0.1
+version           = 0.0.2
 
 .PHONY: all package build package release clean
 
