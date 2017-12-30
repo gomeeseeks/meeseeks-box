@@ -16,12 +16,11 @@ func Test_BasicReplying(t *testing.T) {
 		expected string
 	}{
 		{
-			name:    "basic case",
-			user:    "myuser",
-			message: "echo hello!",
-			channel: "general",
-			// expected: "channel: general text: <@myuser> Done! \nOutput:```hello!``` im: false",
-			expected: "channel: general text: <@myuser> echo: echo hello! im: false",
+			name:     "basic case",
+			user:     "myuser",
+			message:  "echo hello!",
+			channel:  "general",
+			expected: "channel: general text: <@myuser> Done!\n\nOutput:\n```\nhello!\n``` im: false",
 		},
 	}
 
