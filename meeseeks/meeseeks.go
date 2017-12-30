@@ -1,6 +1,10 @@
 package meeseeks
 
-import "fmt"
+import (
+	"fmt"
+
+	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+)
 
 // Message interface to interact with an abstract message
 type Message interface {
@@ -15,7 +19,21 @@ type Client interface {
 	ReplyIM(text, user string) error
 }
 
-// ProcessMessage processes a received message
-func ProcessMessage(m Message, c Client) {
-	c.Reply(fmt.Sprintf("%s echo: %s", m.GetUserFrom(), m.GetText()), m.GetChannel())
+// Meeseeks is the command execution engine
+type Meeseeks struct {
+	client Client
+	config config.Config
+}
+
+// New creates a new Meeseeks service
+func New(client Client, config config.Config) Meeseeks {
+	return Meeseeks{
+		client: client,
+		config: config,
+	}
+}
+
+// Process processes a received message
+func (m Meeseeks) Process(message Message) {
+	m.client.Reply(fmt.Sprintf("%s echo: %s", message.GetUserFrom(), message.GetText()), message.GetChannel())
 }

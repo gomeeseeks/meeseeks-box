@@ -16,24 +16,30 @@ func Test_BasicReplying(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "basic case",
-			user:     "myuser",
-			message:  "hello!",
-			channel:  "general",
-			expected: "channel: general text: <@myuser> echo: hello! im: false",
+			name:    "basic case",
+			user:    "myuser",
+			message: "echo hello!",
+			channel: "general",
+			// expected: "channel: general text: <@myuser> Done! \nOutput:```hello!``` im: false",
+			expected: "channel: general text: <@myuser> echo: echo hello! im: false",
 		},
 	}
-	client := stubs.NewClientStub()
+
+	client, cnf := stubs.NewHarness().Build()
+	m := meeseeks.New(client, cnf)
+
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			m := stubs.MessageStub{
+			go m.Process(stubs.MessageStub{
 				Text:    tc.message,
 				Channel: tc.channel,
 				User:    tc.user,
-			}
-			meeseeks.ProcessMessage(m, &client)
-			if !client.Contains(tc.expected) {
-				t.Fatalf("can't find message %s; got %s", tc.expected, client)
+			})
+
+			actual := <-client.Messages
+
+			if tc.expected != actual.String() {
+				t.Fatalf("can't find message %s; got %s", tc.expected, actual)
 			}
 		})
 	}

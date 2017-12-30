@@ -59,7 +59,7 @@ func (c *Client) ListenMessages(ch chan Message) {
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
 			if c.messageMatch(ev.Text) {
-				log.Println("Received matching message", ev.Text)
+				log.Infof("Received matching message", ev.Text)
 				ch <- Message{
 					Text:    ev.Text,
 					Channel: ev.Channel,
