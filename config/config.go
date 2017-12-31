@@ -45,9 +45,17 @@ type Config struct {
 
 // Command is the struct that handles a command configuration
 type Command struct {
-	Cmd          string   `yaml:"command"`
-	Args         []string `yaml:"arguments"`
-	Authorized   []string `yaml:"authorized"`
-	AuthStrategy string   `yaml:"auth_strategy"`
-	Timeout      int      `yaml:"timeout"`
+	Cmd          string          `yaml:"command"`
+	Args         []string        `yaml:"arguments"`
+	Authorized   []string        `yaml:"authorized"`
+	AuthStrategy string          `yaml:"auth_strategy"`
+	Timeout      int             `yaml:"timeout"`
+	Templates    CommandTemplate `yaml:"templates"`
+}
+
+// CommandTemplate is the struct in which the templates used to render a command are kept
+type CommandTemplate struct {
+	Handshake string `yaml:"on_handshake"`
+	Success   string `yaml:"on_success"`
+	Failure   string `yaml:"on_failure"`
 }
