@@ -1,4 +1,4 @@
-package meeseeks
+package commandparser
 
 import (
 	"errors"

@@ -1,10 +1,10 @@
-package meeseeks_test
+package commandparser_test
 
 import (
 	"reflect"
 	"testing"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
+	parser "gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
 )
 
 func Test_ParsingCommandsCorrectly(t *testing.T) {
@@ -24,6 +24,11 @@ func Test_ParsingCommandsCorrectly(t *testing.T) {
 			expected: []string{"echo", "this is a message"},
 		},
 		{
+			name:     "escaping escape chars",
+			command:  "echo 'this is a \\ message'",
+			expected: []string{"echo", "this is a \\ message"},
+		},
+		{
 			name:     "multiarg echo",
 			command:  "echo this is a message",
 			expected: []string{"echo", "this", "is", "a", "message"},
@@ -36,7 +41,7 @@ func Test_ParsingCommandsCorrectly(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			args, err := meeseeks.ParseCommand(tc.command)
+			args, err := parser.ParseCommand(tc.command)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -48,8 +53,8 @@ func Test_ParsingCommandsCorrectly(t *testing.T) {
 }
 
 func Test_InvalidCommand(t *testing.T) {
-	_, err := meeseeks.ParseCommand("echo 'invalid arg because unclosed quote")
-	if err != meeseeks.ErrUnclosedQuoteInCommand {
-		t.Fatalf("Got an invalid error, expected %s; got %s", meeseeks.ErrUnclosedQuoteInCommand, err)
+	_, err := parser.ParseCommand("echo 'invalid arg because unclosed quote")
+	if err != parser.ErrUnclosedQuoteInCommand {
+		t.Fatalf("Got an invalid error, expected %s; got %s", parser.ErrUnclosedQuoteInCommand, err)
 	}
 }

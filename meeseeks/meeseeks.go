@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	parser "gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
 )
 
 var (
@@ -54,7 +55,7 @@ func New(client Client, config config.Config) Meeseeks {
 
 // Process processes a received message
 func (m Meeseeks) Process(message Message) {
-	args, err := ParseCommand(message.GetText())
+	args, err := parser.ParseCommand(message.GetText())
 	if err != nil {
 		m.replyWithError(message, err)
 	}
