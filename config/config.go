@@ -45,17 +45,9 @@ type Config struct {
 
 // Command is the struct that handles a command configuration
 type Command struct {
-	Cmd          string         `yaml:"command"`
-	Args         []string       `yaml:"arguments"`
-	Authorized   []string       `yaml:"authorized"`
-	AuthStrategy string         `yaml:"auth_strategy"`
-	Action       string         `yaml:"action"`
-	Timeout      int            `yaml:"timeout"`
-	Options      CommandOptions `yaml:"options,omitempty"`
-}
-
-// CommandOptions is used to handle interactions
-type CommandOptions struct {
-	Message string            `yaml:"message"`
-	Values  map[string]string `yaml:"values"`
+	Cmd          string   `yaml:"command"`
+	Args         []string `yaml:"arguments"`
+	Authorized   []string `yaml:"authorized"`
+	AuthStrategy string   `yaml:"auth_strategy"`
+	Timeout      int      `yaml:"timeout"`
 }

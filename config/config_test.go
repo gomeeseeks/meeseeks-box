@@ -42,12 +42,6 @@ func Test_ConfigurationReading(t *testing.T) {
 				    command: "ssh"
 				    authorized: ["someone"]
 				    arguments: ["none"]
-				    action: select
-				    options:
-				      message: pick
-				      values: 
-				        first: "one"
-				        second: "two"
 				`),
 			config.Config{
 				Commands: map[string]config.Command{
@@ -55,14 +49,6 @@ func Test_ConfigurationReading(t *testing.T) {
 						Cmd:        "ssh",
 						Authorized: []string{"someone"},
 						Args:       []string{"none"},
-						Action:     config.ActionSelect,
-						Options: config.CommandOptions{
-							Message: "pick",
-							Values: map[string]string{
-								"first":  "one",
-								"second": "two",
-							},
-						},
 					},
 				},
 			},

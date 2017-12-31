@@ -8,27 +8,9 @@ commands:
   echo:
     command: "echo"
     arguments: ["{{ .message }}"]
-    authorized: ["pablo", "pcarranza"]
-    action: execute
+    auth_strategy: any
   restart-gitaly:
     command: "ssh"
     arguments: ["{{ .value }}"]
+    auth_strategy: userlist
     authorized: ["pablo", "pcarranza"]
-    action: select
-    options:
-      message: "which host?"
-      values:
-        host1: value1
-        host2: value2
-        host3: value3
-  chef-client:
-    command: "ssh"
-    arguments: ["{{ .value }}", "sudo chef-client"]
-    authorized: ["pablo", "pcarranza"]
-    select: select
-    options:
-      message: "which host?"
-      values:
-        host1: ip1
-        host2: ip2
-        host3: ip3
