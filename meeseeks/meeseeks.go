@@ -18,7 +18,7 @@ var (
 var builtinCommands = map[string]config.Command{
 	"echo": config.Command{
 		Cmd:          "echo",
-		Timeout:      1,
+		Timeout:      5,
 		AuthStrategy: config.AuthStrategyAny,
 	},
 }
@@ -61,16 +61,19 @@ func (m Meeseeks) Process(message Message) {
 
 	if len(args) == 0 {
 		m.replyWithError(message, errNoCommandToRun)
+		return
 	}
 
 	cmd, err := m.findCommand(args[0])
 	if err != nil {
 		m.replyWithError(message, err)
+		return
 	}
 
 	out, err := executeCommand(cmd, args[1:]...)
 	if err != nil {
 		m.replyWithError(message, err)
+		return
 	}
 
 	m.replyWithSuccess(message, out)
@@ -87,7 +90,7 @@ func (m Meeseeks) replyWithSuccess(message Message, content string) {
 func (m Meeseeks) findCommand(command string) (config.Command, error) {
 	cmd, ok := m.commands[command]
 	if !ok {
-		return config.Command{}, errCommandNotFound
+		return config.Command{}, fmt.Errorf("%s '%s'", errCommandNotFound, command)
 	}
 	return cmd, nil
 }
