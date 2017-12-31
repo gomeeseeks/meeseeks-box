@@ -4,4 +4,4 @@ RUN apk --no-cache add ca-certificates
 
 COPY meeseeks-box /
  
-CMD [ "/meeseeks-box" ]
+ENTRYPOINT [ "/meeseeks-box" ]
