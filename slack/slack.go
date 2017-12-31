@@ -15,7 +15,7 @@ import (
 type Client struct {
 	apiClient    *slack.Client
 	rtm          *slack.RTM
-	messageMatch func(string) bool
+	messageMatch func(string) (bool, int)
 }
 
 // ClientConfig client configuration used to setup the Slack client
@@ -43,9 +43,9 @@ func New(conf ClientConfig) (*Client, error) {
 	return &Client{
 		apiClient: slackAPI,
 		rtm:       rtm,
-		messageMatch: func(message string) bool {
+		messageMatch: func(message string) (bool, int) {
 			botUser := fmt.Sprintf("<@%s>", rtm.GetInfo().User.ID)
-			return strings.HasPrefix(message, botUser)
+			return strings.HasPrefix(message, botUser), len(botUser)
 		},
 	}, nil
 }
@@ -58,10 +58,10 @@ func (c *Client) ListenMessages(ch chan Message) {
 
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
-			if c.messageMatch(ev.Text) {
+			if match, length := c.messageMatch(ev.Text); match {
 				log.Infof("Received matching message", ev.Text)
 				ch <- Message{
-					Text:    ev.Text,
+					Text:    strings.TrimSpace(ev.Text[length:]),
 					Channel: ev.Channel,
 					From:    ev.User,
 				}
