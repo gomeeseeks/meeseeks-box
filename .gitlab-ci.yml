@@ -1,0 +1,50 @@
+image: golang:1.9
+
+stages:
+  - test
+  - build
+  - release
+
+before_script:
+  - GOPATH=$(mktemp -d)
+  - PATH=$GOPATH/bin:$PATH
+  - PROJECT=$(basename $CI_PROJECT_DIR)
+  - GROUP=$(basename $(dirname $CI_PROJECT_DIR))
+  - WORKDIR=$GOPATH/src/gitlab.com/$GROUP/$PROJECT
+  - mkdir -p $WORKDIR
+  - cp -a * $WORKDIR
+  - go get -u github.com/golang/dep/cmd/dep
+  - cd $WORKDIR 
+  - dep ensure -v
+
+test:
+  stage: test
+  script:
+    - make test
+
+build:
+  stage: build
+  script:
+    - make build
+    - cp -r build $CI_PROJECT_DIR
+  artifacts:
+    paths:
+      - build/linux/meeseeks-box
+      - build/arm/meeseeks-box
+      - build/darwin/meeseeks-box
+    expire_in: 1 week
+
+release:
+  stage: release
+  image: docker:latest
+  variables:
+    DOCKER_DRIVER: overlay2
+  services:
+    - docker:dind
+  script:
+    - echo ${CI_JOB_TOKEN} | docker login -u gitlab-ci-token --password-stdin ${CI_REGISTRY}
+    - apk add --no-cache make
+    - make release
+  only:
+    - tags
+    - master

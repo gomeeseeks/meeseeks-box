@@ -2,10 +2,40 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/nlopes/slack"
+  packages = ["."]
+  revision = "ccf0351050c69b08f9c48f3e876f4cd5564463e8"
+
+[[projects]]
   name = "github.com/renstrom/dedent"
   packages = ["."]
   revision = "a1eba44eaecc89804e4b05ce2d17168eb353d524"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "95a4943f35d008beabde8c11e5075a1b714e6419"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = ["websocket"]
+  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix","windows"]
+  revision = "83801418e1b59fb1880e363299581ee543af32ca"
 
 [[projects]]
   branch = "v2"
@@ -16,6 +46,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4433fb8921263b2d7dbefa81b6411854135d01841bceae6f645f759205a19331"
+  inputs-digest = "c28c47ec49ffd1391f14dc5b6fea23cf0478abfc5f6fd1366fd66689cbeaa0d0"
   solver-name = "gps-cdcl"
   solver-version = 1

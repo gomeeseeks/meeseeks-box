@@ -8,8 +8,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// Authorization Strategies determine who has access to what
 const (
-	ActionSelect = "select"
+	AuthStrategyAny      = "any"
+	AuthStrategyUserList = "userlist"
 )
 
 // New parses the configuration from a reader into an object and returns it
@@ -26,6 +28,12 @@ func New(r io.Reader) (Config, error) {
 		return c, fmt.Errorf("could not parse configuration: %s", err)
 	}
 
+	for _, command := range c.Commands {
+		if command.AuthStrategy == "" {
+			command.AuthStrategy = AuthStrategyAny
+		}
+	}
+
 	return c, nil
 }
 
@@ -37,15 +45,9 @@ type Config struct {
 
 // Command is the struct that handles a command configuration
 type Command struct {
-	Cmd        string         `yaml:"command"`
-	Args       []string       `yaml:"arguments"`
-	Authorized []string       `yaml:"authorized"`
-	Action     string         `yaml:"action"`
-	Options    CommandOptions `yaml:"options,omitempty"`
-}
-
-// CommandOptions
-type CommandOptions struct {
-	Message string            `yaml:"message"`
-	Values  map[string]string `yaml:"values"`
+	Cmd          string   `yaml:"command"`
+	Args         []string `yaml:"arguments"`
+	Authorized   []string `yaml:"authorized"`
+	AuthStrategy string   `yaml:"auth_strategy"`
+	Timeout      int      `yaml:"timeout"`
 }
