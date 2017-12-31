@@ -7,8 +7,11 @@ import (
 	"os/exec"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	parser "gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 )
 
 var (
@@ -57,35 +60,60 @@ func New(client Client, config config.Config) Meeseeks {
 func (m Meeseeks) Process(message Message) {
 	args, err := parser.ParseCommand(message.GetText())
 	if err != nil {
-		m.replyWithError(message, err)
+		m.replyWithError(message, err, "")
 	}
 
 	if len(args) == 0 {
-		m.replyWithError(message, errNoCommandToRun)
+		m.replyWithError(message, errNoCommandToRun, "")
 		return
 	}
 
 	cmd, err := m.findCommand(args[0])
 	if err != nil {
-		m.replyWithError(message, err)
+		m.replyWithError(message, err, "")
 		return
 	}
 
 	out, err := executeCommand(cmd, args[1:]...)
 	if err != nil {
-		m.replyWithError(message, err)
+		m.replyWithError(message, err, out)
 		return
 	}
 
 	m.replyWithSuccess(message, out)
 }
 
-func (m Meeseeks) replyWithError(message Message, err error) {
-	m.client.Reply(fmt.Sprintf("%s error: %s", message.GetUserFrom(), err), message.GetChannel())
+func (m Meeseeks) replyWithError(message Message, err error, out string) {
+	p := m.newReplyPayload()
+	p["user"] = message.GetUserFrom()
+	p["error"] = err.Error()
+	p["output"] = out
+
+	msg, err := template.DefaultTemplates().Failure.Render(p)
+	if err != nil {
+		log.Fatalf("could not render failure template %s; payload: %+v", err, p)
+	}
+	m.client.Reply(msg, message.GetChannel())
 }
 
-func (m Meeseeks) replyWithSuccess(message Message, content string) {
-	m.client.Reply(fmt.Sprintf("%s Done!\n\nOutput:\n```\n%s```", message.GetUserFrom(), content), message.GetChannel())
+func (m Meeseeks) replyWithSuccess(message Message, out string) {
+	p := m.newReplyPayload()
+	p["user"] = message.GetUserFrom()
+	p["output"] = out
+
+	msg, err := template.DefaultTemplates().Success.Render(p)
+	if err != nil {
+		log.Fatalf("could not render success template %s; payload: %+v", err, p)
+	}
+	m.client.Reply(msg, message.GetChannel())
+}
+
+func (m Meeseeks) newReplyPayload() template.Payload {
+	p := template.Payload{}
+	for k, v := range m.config.Messages {
+		p[k] = v
+	}
+	return p
 }
 
 func (m Meeseeks) findCommand(command string) (config.Command, error) {

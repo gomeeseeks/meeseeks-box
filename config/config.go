@@ -14,9 +14,23 @@ const (
 	AuthStrategyUserList = "userlist"
 )
 
+var (
+	defaultHandshake    = []string{"I'm Mr Meeseeks! look at me!", "Mr Meeseeks!", "Uuuuh, yeah! can do!", "Can doo...", "Uuuuh, ok!"}
+	defaultSuccess      = []string{"All done!", "Mr Meeseeks", "Uuuuh, nice!"}
+	defaultFailed       = []string{"Uuuh!, no, it failed"}
+	defaultUnauthorized = []string{"Uuuh! no! no soup for you"}
+)
+
 // New parses the configuration from a reader into an object and returns it
 func New(r io.Reader) (Config, error) {
-	c := Config{}
+	c := Config{
+		Messages: map[string][]string{
+			"handshake":    defaultHandshake,
+			"success":      defaultSuccess,
+			"failed":       defaultFailed,
+			"unauthorized": defaultUnauthorized,
+		},
+	}
 
 	b, err := ioutil.ReadAll(r)
 	if err != nil {

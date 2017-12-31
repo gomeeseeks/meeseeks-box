@@ -11,9 +11,11 @@ import (
 
 // Default command templates
 const (
-	defaultHandshakeTemplate = "{{ .AnyMessage \"Handshake\" }}"
-	defaultSuccessTemplate   = "{{ .User }} {{ .AnyMessage \"Success\" }}{{ with .Output }}\n\nOutput:\n```\n{{ .Output }}```{{ end }}"
-	defaultFailureTemplate   = "{{ .User }} {{ .AnyMessage \"Failed\" }} :disappointed:: {{ .Error }}{{ with .Output }}\n\nOutput:\n```\n{{ .Output }}```{{ end }}"
+	defaultHandshakeTemplate = "{{ AnyValue \"handshake\" . }}"
+	defaultSuccessTemplate   = "{{ .user }} {{ AnyValue \"success\" . }}" +
+		"{{ with $out := .output }}\n\nOutput:\n```\n{{ $out }}```{{ end }}"
+	defaultFailureTemplate = "{{ .user }} {{ AnyValue \"failed\" . }} :disappointed:: {{ .error }}" +
+		"{{ with $out := .output }}\n\nOutput:\n```\n{{ $out }}```{{ end }}"
 )
 
 // DefaultTemplates builds a set of default template renderers
@@ -42,46 +44,51 @@ func DefaultTemplates() Templates {
 
 // Templates is a set of templates for the basic operations
 type Templates struct {
-	Handshake ReplyTemplate
-	Success   ReplyTemplate
-	Failure   ReplyTemplate
+	Handshake Renderer
+	Success   Renderer
+	Failure   Renderer
 }
 
-// TemplateData is a helper type that provides a AnyMessage(key) method
-type TemplateData map[string]interface{}
+// Payload is a helper type that provides a AnyMessage(key) method
+type Payload map[string]interface{}
 
-// AnyMessage picks a random string from the list of strings contained in `key`
-func (p TemplateData) AnyMessage(key string) string {
-	messages, ok := p[key].([]string)
+func anyValue(key string, payload map[string]interface{}) (string, error) {
+	values, ok := payload[key]
 	if !ok {
-		return fmt.Sprintf("ERROR: %s is not a string slice", key)
+		return "", fmt.Errorf("ERROR: %s is not loaded in the payload", key)
 	}
-	return messages[rand.Intn(len(messages))]
+	slice, ok := values.([]string)
+	if !ok {
+		return "", fmt.Errorf("ERROR: %s is not a string slice", key)
+	}
+	return slice[rand.Intn(len(slice))], nil
 }
 
-// ReplyTemplate is a pre rendered template used to reply
-type ReplyTemplate struct {
+// Renderer is a pre rendered template used to reply
+type Renderer struct {
 	template *tmpl.Template
 }
 
 // New creates a new ReplyTemplate pre-parsing the template
-func New(name, template string) (ReplyTemplate, error) {
-	t, err := tmpl.New(name).Parse(template)
+func New(name, template string) (Renderer, error) {
+	t, err := tmpl.New(name).Funcs(tmpl.FuncMap{
+		"AnyValue": anyValue,
+	}).Parse(template)
 	if err != nil {
-		return ReplyTemplate{}, fmt.Errorf("could not parse template %s: %s", name, err)
+		return Renderer{}, fmt.Errorf("could not parse template %s: %s", name, err)
 	}
-	return ReplyTemplate{
+	return Renderer{
 		template: t,
 	}, nil
 }
 
 // Render renders the template with the passed in data
-func (r ReplyTemplate) Render(data interface{}) (string, error) {
+func (r Renderer) Render(data Payload) (string, error) {
 	b := bytes.NewBuffer([]byte{})
 	err := r.template.Execute(b, data)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to execute template %s: %s", r.template.Name, err)
+		return "", fmt.Errorf("failed to execute template %s: %s", r.template.Name(), err)
 	}
 
 	return string(b.Bytes()), nil
