@@ -1,9 +1,5 @@
-messages:
-  handshake: ["I'm Mr Meeseeks! look at me!", "Mr Meeseeks!","Uuuuh, yeah! can do!", "Can doo...", "Uuuuh, ok!" ]
-  success: ["All done!", "Mr Meeseeks", "Uuuuh, nice!"][]
-  failed: ["Uuuh!, no, it failed"]
-  unauthorized: ["Uuuh! no! no soup for you"]
-  # scuse me, I'm a bit of a stickler Meseeks, what about your short game?
+---
+# scuse me, I'm a bit of a stickler Meseeks, what about your short game?
 commands:
   restart-gitaly:
     command: "ssh"

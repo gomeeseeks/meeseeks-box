@@ -9,7 +9,7 @@ all: test build package release clean
 
 test:
 	go vet -v
-	go test -v ./... -cover
+	go test ./... -cover
 
 build-linux: test
 	mkdir -p build/linux

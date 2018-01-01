@@ -96,9 +96,14 @@ func (m MessageStub) GetChannel() string {
 	return m.Channel
 }
 
-// GetUserFrom implements the slack.Message.GetUserFrom interface
-func (m MessageStub) GetUserFrom() string {
+// GetReplyTo implements the slack.Message.GetUserFrom interface
+func (m MessageStub) GetReplyTo() string {
 	return fmt.Sprintf("<@%s>", m.User)
+}
+
+// GetUsername implements the slack.Message.GetUsername interface
+func (m MessageStub) GetUsername() string {
+	return m.User
 }
 
 // AssertEquals Helper function for asserting that a value is what we expect
