@@ -16,6 +16,7 @@ const (
 		"{{ with $out := .output }}\n\nOutput:\n```\n{{ $out }}```{{ end }}"
 	defaultFailureTemplate = "{{ .user }} {{ AnyValue \"failed\" . }} :disappointed:: {{ .error }}" +
 		"{{ with $out := .output }}\n\nOutput:\n```\n{{ $out }}```{{ end }}"
+	defaultUnknownCommand = "{{ .user }} {{ AnyValue \"unknowncommand\" . }} {{ .command }}"
 )
 
 // DefaultTemplates builds a set of default template renderers
@@ -35,18 +36,25 @@ func DefaultTemplates() Templates {
 		log.Fatalf("could not parse default failure template: %s", err)
 	}
 
+	unknownCommand, err := New("unknowncommand", defaultUnknownCommand)
+	if err != nil {
+		log.Fatalf("could not parse default failure template: %s", err)
+	}
+
 	return Templates{
-		Handshake: handshake,
-		Success:   success,
-		Failure:   failure,
+		Handshake:      handshake,
+		Success:        success,
+		Failure:        failure,
+		UnknownCommand: unknownCommand,
 	}
 }
 
 // Templates is a set of templates for the basic operations
 type Templates struct {
-	Handshake Renderer
-	Success   Renderer
-	Failure   Renderer
+	Handshake      Renderer
+	Success        Renderer
+	Failure        Renderer
+	UnknownCommand Renderer
 }
 
 // Payload is a helper type that provides a AnyMessage(key) method

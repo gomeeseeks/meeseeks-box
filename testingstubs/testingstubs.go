@@ -3,7 +3,9 @@ package testingstubs
 import (
 	"fmt"
 	"io/ioutil"
+	"reflect"
 	"strings"
+	"testing"
 
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
@@ -11,13 +13,9 @@ import (
 
 // SentMessage is a message that has been sent through a client
 type SentMessage struct {
-	text    string
-	channel string
-	im      bool
-}
-
-func (s SentMessage) String() string {
-	return fmt.Sprintf("channel: %s text: %s im: %t", s.channel, s.text, s.im)
+	Text    string
+	Channel string
+	Im      bool
 }
 
 // Harness is a builder that helps out testing meeseeks
@@ -72,12 +70,12 @@ func newClientStub() ClientStub {
 
 // Reply implements the meeseeks.Client.Reply interface
 func (c ClientStub) Reply(text, channel string) {
-	c.Messages <- SentMessage{text: text, channel: channel}
+	c.Messages <- SentMessage{Text: text, Channel: channel}
 }
 
 // ReplyIM implements the meeseeks.Client.ReplyIM interface
 func (c ClientStub) ReplyIM(text, user string) error {
-	c.Messages <- SentMessage{text: text, channel: user, im: true}
+	c.Messages <- SentMessage{Text: text, Channel: user, Im: true}
 	return nil
 }
 
@@ -101,4 +99,20 @@ func (m MessageStub) GetChannel() string {
 // GetUserFrom implements the slack.Message.GetUserFrom interface
 func (m MessageStub) GetUserFrom() string {
 	return fmt.Sprintf("<@%s>", m.User)
+}
+
+// AssertEquals Helper function for asserting that a value is what we expect
+func AssertEquals(t *testing.T, expected, actual interface{}) {
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("Value is not as expected,\nexpected %+v;\ngot %+v", expected, actual)
+	}
+}
+
+// Must is a helper function that allows to fail the test with a message if there's an error
+func Must(t *testing.T, message string, err error, additionalDetails ...string) {
+	if err != nil {
+		m := []string{fmt.Sprintf("%s %s", message, err)}
+		m = append(m, additionalDetails...)
+		t.Fatal(m)
+	}
 }

@@ -183,6 +183,16 @@ func Test_DefaultTemplates(t *testing.T) {
 			renderer: templates.Failure,
 			expected: "<@myself> bummer :disappointed:: it failed\n\nOutput:\n```\nsome output\n```",
 		},
+		{
+			name: "Unknown command",
+			payload: template.Payload{
+				"unknowncommand": []string{"I don't know how to"},
+				"command":        "mycommand",
+				"user":           "<@myself>",
+			},
+			renderer: templates.UnknownCommand,
+			expected: "<@myself> I don't know how to mycommand",
+		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {

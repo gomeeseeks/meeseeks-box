@@ -3,24 +3,39 @@ package meeseeks_test
 import (
 	"testing"
 
+	"regexp"
+
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 )
 
 func Test_BasicReplying(t *testing.T) {
 	tt := []struct {
-		name     string
-		user     string
-		message  string
-		channel  string
-		expected string
+		name              string
+		user              string
+		message           string
+		channel           string
+		expectedTextMatch string
+		expectedChannel   string
+		expectedIM        bool
 	}{
 		{
-			name:     "basic case",
-			user:     "myuser",
-			message:  "echo hello!",
-			channel:  "general",
-			expected: "channel: general text: <@myuser> Done!\n\nOutput:\n```\nhello!\n``` im: false",
+			name:              "basic case",
+			user:              "myuser",
+			message:           "echo hello!",
+			channel:           "general",
+			expectedTextMatch: "^<@myuser> .*\n\nOutput:\n```\nhello!\n```$",
+			expectedChannel:   "general",
+			expectedIM:        false,
+		},
+		{
+			name:              "unknown command case",
+			user:              "myuser",
+			message:           "unknown-command hello!",
+			channel:           "general",
+			expectedTextMatch: "^<@myuser> Uuuh! no, I don't know how to do unknown-command$",
+			expectedChannel:   "general",
+			expectedIM:        false,
 		},
 	}
 
@@ -37,9 +52,14 @@ func Test_BasicReplying(t *testing.T) {
 
 			actual := <-client.Messages
 
-			if tc.expected != actual.String() {
-				t.Fatalf("can't find message %s; got %s", tc.expected, actual)
+			r, err := regexp.Compile(tc.expectedTextMatch)
+			stubs.Must(t, "could not compile regex", err, tc.expectedTextMatch)
+
+			if !r.MatchString(actual.Text) {
+				t.Fatalf("Bad message, expected %s; got %s", tc.expectedTextMatch, actual.Text)
 			}
+			stubs.AssertEquals(t, tc.expectedChannel, actual.Channel)
+			stubs.AssertEquals(t, tc.expectedIM, actual.Im)
 		})
 	}
 

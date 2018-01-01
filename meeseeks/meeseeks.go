@@ -60,7 +60,7 @@ func New(client Client, config config.Config) Meeseeks {
 func (m Meeseeks) Process(message Message) {
 	args, err := parser.ParseCommand(message.GetText())
 	if err != nil {
-		m.replyWithError(message, err, "")
+		m.replyWithError(message, err, "can't parse command")
 	}
 
 	if len(args) == 0 {
@@ -70,7 +70,7 @@ func (m Meeseeks) Process(message Message) {
 
 	cmd, err := m.findCommand(args[0])
 	if err != nil {
-		m.replyWithError(message, err, "")
+		m.replyUnknownCommand(message, args[0])
 		return
 	}
 
@@ -81,6 +81,18 @@ func (m Meeseeks) Process(message Message) {
 	}
 
 	m.replyWithSuccess(message, out)
+}
+
+func (m Meeseeks) replyUnknownCommand(message Message, cmd string) {
+	p := m.newReplyPayload()
+	p["user"] = message.GetUserFrom()
+	p["command"] = cmd
+
+	msg, err := template.DefaultTemplates().UnknownCommand.Render(p)
+	if err != nil {
+		log.Fatalf("could not render unknown command template %s; payload: %+v", err, p)
+	}
+	m.client.Reply(msg, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithError(message Message, err error, out string) {
