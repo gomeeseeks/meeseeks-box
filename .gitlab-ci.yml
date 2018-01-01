@@ -20,6 +20,7 @@ test:
     - dep ensure -v
     - make test
   except:
+    - tags
     - master
 
 build:
@@ -44,6 +45,7 @@ build:
       - build/darwin/meeseeks-box
     expire_in: 1 week
   only:
+    - tags
     - master
 
 release:
