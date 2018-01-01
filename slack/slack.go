@@ -106,7 +106,7 @@ func (m Message) GetText() string {
 
 // GetReplyTo returns the user id formatted for using in a slack message
 func (m Message) GetReplyTo() string {
-	return formatSlackUser(m.ReplyTo)
+	return fmt.Sprintf("<@%s>", m.ReplyTo)
 }
 
 // GetUsername returns the user friendly username
@@ -117,8 +117,4 @@ func (m Message) GetUsername() string {
 // GetChannel returns the channel from which the message was sent
 func (m Message) GetChannel() string {
 	return m.Channel
-}
-
-func formatSlackUser(userID string) string {
-	return fmt.Sprintf("<@%s>", userID)
 }
