@@ -24,12 +24,12 @@ build-darwin: test
 
 build: test build-linux build-arm build-darwin
 
-package-linux: build-linux
+package-linux: 
 	cp Dockerfile build/linux && \
 		cd build/linux && \
 		docker build . -t $(namespace)/$(executable):latest
 
-package-arm: build-arm
+package-arm: 
 	cp Dockerfile build/arm && \
 		cd build/arm && \
 		sed -i '' -e 's/alpine/arm32v6\/alpine/g' Dockerfile && \
