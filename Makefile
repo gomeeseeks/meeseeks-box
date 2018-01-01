@@ -52,7 +52,7 @@ release-arm: package-arm
 		docker push $(namespace)/$(executable)-armv6:$(version) ; \
 	fi
 
-release: package release-linux release-arm
+release: release-linux release-arm
 
 clean:
 	rm -rf ./build
