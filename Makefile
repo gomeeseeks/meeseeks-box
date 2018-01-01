@@ -1,15 +1,14 @@
 src = $(wildcard *.go)
 executable        = meeseeks-box
 namespace         = pcarranza
-version           = 0.0.5
+version           = ${CI_COMMIT_TAG}
 
 .PHONY: all package build package release clean
 
 all: test build package release clean
 
 test:
-	go vet -v
-	go test ./... -cover
+	go test -cover ./...
 
 build-linux: test
 	mkdir -p build/linux
@@ -26,33 +25,32 @@ build-darwin: test
 build: test build-linux build-arm build-darwin
 
 package-linux: build-linux
-	cp Dockerfile build/linux
-	cd build/linux && \
-		docker build . -t $(namespace)/$(executable):latest && \
-		docker tag $(namespace)/$(executable):latest $(namespace)/$(executable):$(version)
+	cp Dockerfile build/linux && \
+		cd build/linux && \
+		docker build . -t $(namespace)/$(executable):latest
 
 package-arm: build-arm
 	cp Dockerfile build/arm && \
 		cd build/arm && \
 		sed -i '' -e 's/alpine/arm32v6\/alpine/g' Dockerfile && \
-		docker build . -t $(namespace)/$(executable)-armv6:latest && \
-		docker tag $(namespace)/$(executable)-armv6:latest $(namespace)/$(executable)-armv6:$(version)
+		docker build . -t $(namespace)/$(executable)-armv6:latest
 
-package-darwin: build-darwin
-	cp Dockerfile build/darwin && \
-		cd build/darwin	&& \
-		docker build . -t $(namespace)/$(executable)-darwin:latest && \
-		docker tag $(namespace)/$(executable)-darwin:latest $(namespace)/$(executable)-darwin:$(version)
-
-package: build package-linux
+package: build package-linux package-arm
 
 release-linux: package-linux
 	docker push $(namespace)/$(executable):latest
-	docker push $(namespace)/$(executable):$(version)
+	if [ ! -z "$(version)" ]; then \
+		docker tag $(namespace)/$(executable):latest $(namespace)/$(executable):$(version) ; \
+		docker push $(namespace)/$(executable):$(version) ; \
+	fi
 
 release-arm: package-arm
 	docker push $(namespace)/$(executable)-armv6:latest
-	docker push $(namespace)/$(executable)-armv6:$(version)
+	if [ ! -z "$(version)" ]; then \
+		echo "Has version on release arm $(version)" ; \
+		docker tag $(namespace)/$(executable)-armv6:latest $(namespace)/$(executable)-armv6:$(version) ; \
+		docker push $(namespace)/$(executable)-armv6:$(version) ; \
+	fi
 
 release: package release-linux release-arm
 

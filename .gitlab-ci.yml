@@ -21,18 +21,22 @@ test:
   stage: test
   script:
     - make test
+  except:
+    - master
 
 build:
   stage: build
   script:
     - make build
-    - cp -r build $CI_PROJECT_DIR
+    - cp -r build ${CI_PROJECT_DIR}
   artifacts:
     paths:
       - build/linux/meeseeks-box
       - build/arm/meeseeks-box
       - build/darwin/meeseeks-box
     expire_in: 1 week
+  only:
+    - master
 
 release:
   stage: release
@@ -42,7 +46,7 @@ release:
   services:
     - docker:dind
   script:
-    - echo ${CI_JOB_TOKEN} | docker login -u gitlab-ci-token --password-stdin ${CI_REGISTRY}
+    - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
     - apk add --no-cache make
     - make release
   only:
