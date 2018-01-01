@@ -5,21 +5,19 @@ stages:
   - build
   - release
 
-before_script:
-  - GOPATH=$(mktemp -d)
-  - PATH=$GOPATH/bin:$PATH
-  - PROJECT=$(basename $CI_PROJECT_DIR)
-  - GROUP=$(basename $(dirname $CI_PROJECT_DIR))
-  - WORKDIR=$GOPATH/src/gitlab.com/$GROUP/$PROJECT
-  - mkdir -p $WORKDIR
-  - cp -a * $WORKDIR
-  - go get -u github.com/golang/dep/cmd/dep
-  - cd $WORKDIR 
-  - dep ensure -v
-
 test:
   stage: test
   script:
+    - GOPATH=$(mktemp -d)
+    - PATH=$GOPATH/bin:$PATH
+    - PROJECT=$(basename $CI_PROJECT_DIR)
+    - GROUP=$(basename $(dirname $CI_PROJECT_DIR))
+    - WORKDIR=$GOPATH/src/gitlab.com/$GROUP/$PROJECT
+    - mkdir -p $WORKDIR
+    - cp -a * $WORKDIR
+    - go get -u github.com/golang/dep/cmd/dep
+    - cd $WORKDIR 
+    - dep ensure -v
     - make test
   except:
     - master
@@ -27,6 +25,16 @@ test:
 build:
   stage: build
   script:
+    - GOPATH=$(mktemp -d)
+    - PATH=$GOPATH/bin:$PATH
+    - PROJECT=$(basename $CI_PROJECT_DIR)
+    - GROUP=$(basename $(dirname $CI_PROJECT_DIR))
+    - WORKDIR=$GOPATH/src/gitlab.com/$GROUP/$PROJECT
+    - mkdir -p $WORKDIR
+    - cp -a * $WORKDIR
+    - go get -u github.com/golang/dep/cmd/dep
+    - cd $WORKDIR 
+    - dep ensure -v
     - make build
     - cp -r build ${CI_PROJECT_DIR}
   artifacts:
