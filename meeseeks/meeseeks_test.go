@@ -1,30 +1,108 @@
 package meeseeks_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/renstrom/dedent"
+
+	"regexp"
+
+	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 )
 
+type expectedMessage struct {
+	TextMatcher string
+	Channel     string
+	IsIM        bool
+}
+
 func Test_BasicReplying(t *testing.T) {
+	handshakeMatcher := fmt.Sprintf("^(%s)$", strings.Join(config.DefaultHandshake, "|"))
+
 	tt := []struct {
 		name     string
 		user     string
 		message  string
 		channel  string
-		expected string
+		expected []expectedMessage
 	}{
 		{
-			name:     "basic case",
-			user:     "myuser",
-			message:  "echo hello!",
-			channel:  "general",
-			expected: "channel: general text: <@myuser> Done!\n\nOutput:\n```\nhello!\n``` im: false",
+			name:    "basic case",
+			user:    "myuser",
+			message: "echo hello!",
+			channel: "general",
+			expected: []expectedMessage{
+				expectedMessage{
+					TextMatcher: handshakeMatcher,
+					Channel:     "general",
+					IsIM:        false,
+				},
+				expectedMessage{
+					TextMatcher: "^<@myuser> .*\n\nOutput:\n```\nhello!\n```$",
+					Channel:     "general",
+					IsIM:        false,
+				},
+			},
+		},
+		{
+			name:    "unknown command case",
+			user:    "myuser",
+			message: "unknown-command hello!",
+			channel: "general",
+			expected: []expectedMessage{
+				expectedMessage{
+					TextMatcher: "^<@myuser> Uuuh! no, I don't know how to do unknown-command$",
+					Channel:     "general",
+					IsIM:        false,
+				},
+			},
+		},
+		{
+			name:    "no command to run",
+			user:    "myuser",
+			message: "",
+			channel: "general",
+			expected: []expectedMessage{
+				expectedMessage{
+					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed:: No command to run$",
+					Channel:     "general",
+					IsIM:        false,
+				},
+			},
+		},
+		{
+			name:    "fail command",
+			user:    "myuser",
+			message: "fail",
+			channel: "general",
+			expected: []expectedMessage{
+				expectedMessage{
+					TextMatcher: handshakeMatcher,
+					Channel:     "general",
+					IsIM:        false,
+				},
+				expectedMessage{
+					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed:: exit status 1$",
+					Channel:     "general",
+					IsIM:        false,
+				},
+			},
 		},
 	}
 
-	client, cnf := stubs.NewHarness().Build()
+	client, cnf := stubs.NewHarness().
+		WithConfig(dedent.Dedent(`
+			---
+			commands:
+			  fail:
+			    command: false
+			    timeout: 10
+			`)).Build()
+
 	m := meeseeks.New(client, cnf)
 
 	for _, tc := range tt {
@@ -35,10 +113,17 @@ func Test_BasicReplying(t *testing.T) {
 				User:    tc.user,
 			})
 
-			actual := <-client.Messages
+			for _, expected := range tc.expected {
+				actual := <-client.Messages
 
-			if tc.expected != actual.String() {
-				t.Fatalf("can't find message %s; got %s", tc.expected, actual)
+				r, err := regexp.Compile(expected.TextMatcher)
+				stubs.Must(t, "could not compile regex", err, expected.TextMatcher)
+
+				if !r.MatchString(actual.Text) {
+					t.Fatalf("Bad message, expected %s; got %s", expected.TextMatcher, actual.Text)
+				}
+				stubs.AssertEquals(t, expected.Channel, actual.Channel)
+				stubs.AssertEquals(t, expected.IsIM, actual.Im)
 			}
 		})
 	}

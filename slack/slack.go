@@ -61,9 +61,10 @@ func (c *Client) ListenMessages(ch chan Message) {
 			if match, length := c.messageMatch(ev.Text); match {
 				log.Infof("Received matching message", ev.Text)
 				ch <- Message{
-					Text:    strings.TrimSpace(ev.Text[length:]),
-					Channel: ev.Channel,
-					From:    ev.User,
+					Text:     strings.TrimSpace(ev.Text[length:]),
+					Channel:  ev.Channel,
+					ReplyTo:  ev.User,
+					Username: ev.Username,
 				}
 			}
 		default:
@@ -92,9 +93,10 @@ func (c *Client) ReplyIM(text, user string) error {
 
 // Message a chat message
 type Message struct {
-	Text    string
-	Channel string
-	From    string
+	Text     string
+	Channel  string
+	ReplyTo  string
+	Username string
 }
 
 // GetText returns the message text
@@ -102,21 +104,17 @@ func (m Message) GetText() string {
 	return m.Text
 }
 
-// GetUserFrom returns the user id formatted for using in a slack message
-func (m Message) GetUserFrom() string {
-	return formatSlackUser(m.From)
+// GetReplyTo returns the user id formatted for using in a slack message
+func (m Message) GetReplyTo() string {
+	return fmt.Sprintf("<@%s>", m.ReplyTo)
+}
+
+// GetUsername returns the user friendly username
+func (m Message) GetUsername() string {
+	return m.Username
 }
 
 // GetChannel returns the channel from which the message was sent
 func (m Message) GetChannel() string {
 	return m.Channel
-}
-
-// GetUserFromID returns the raw user ID
-func (m Message) GetUserFromID() string {
-	return m.From
-}
-
-func formatSlackUser(userID string) string {
-	return fmt.Sprintf("<@%s>", userID)
 }

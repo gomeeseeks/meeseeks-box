@@ -1,14 +1,6 @@
-messages:
-  handshake: ["I'm Mr Meeseeks! look at me!", "Mr Meeseeks!"]
-  agree: ["Uuuuh, yeah! can do!", "Can doo...", "Uuuuh, ok!"]
-  done: ["All done!", "Mr Meeseeks", "Uuuuh, nice!"]
-  unauthorized: ["Uuuh! no! can't do!"]
-  # scuse me, I'm a bit of a stickler Meseeks, what about your short game?
+---
+# scuse me, I'm a bit of a stickler Meseeks, what about your short game?
 commands:
-  echo:
-    command: "echo"
-    arguments: ["{{ .message }}"]
-    auth_strategy: any
   restart-gitaly:
     command: "ssh"
     arguments: ["{{ .value }}"]

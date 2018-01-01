@@ -1,7 +1,8 @@
-package meeseeks
+package commandparser
 
 import (
 	"errors"
+	"strings"
 )
 
 const (
@@ -20,6 +21,8 @@ func ParseCommand(command string) ([]string, error) {
 	current := ""
 	quote := "\""
 	escapeNext := true
+
+	command = strings.TrimSpace(command)
 
 	for i := 0; i < len(command); i++ {
 		c := command[i]

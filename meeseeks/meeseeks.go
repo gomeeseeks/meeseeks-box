@@ -7,7 +7,11 @@ import (
 	"os/exec"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 )
 
 var (
@@ -15,19 +19,12 @@ var (
 	errNoCommandToRun  = errors.New("No command to run")
 )
 
-var builtinCommands = map[string]config.Command{
-	"echo": config.Command{
-		Cmd:          "echo",
-		Timeout:      5,
-		AuthStrategy: config.AuthStrategyAny,
-	},
-}
-
 // Message interface to interact with an abstract message
 type Message interface {
 	GetText() string
 	GetChannel() string
-	GetUserFrom() string
+	GetReplyTo() string
+	GetUsername() string
 }
 
 // Client interface that provides a way of replying to messages on a channel
@@ -38,53 +35,96 @@ type Client interface {
 
 // Meeseeks is the command execution engine
 type Meeseeks struct {
-	client   Client
-	config   config.Config
-	commands map[string]config.Command
+	client    Client
+	config    config.Config
+	commands  map[string]config.Command
+	templates template.Templates
 }
 
 // New creates a new Meeseeks service
-func New(client Client, config config.Config) Meeseeks {
+func New(client Client, conf config.Config) Meeseeks {
 	return Meeseeks{
-		client:   client,
-		config:   config,
-		commands: union(builtinCommands, config.Commands),
+		client:    client,
+		config:    conf,
+		commands:  conf.GetCommands(),
+		templates: template.DefaultTemplates(conf.Messages),
 	}
 }
 
 // Process processes a received message
 func (m Meeseeks) Process(message Message) {
-	args, err := ParseCommand(message.GetText())
+	args, err := commandparser.ParseCommand(message.GetText())
 	if err != nil {
-		m.replyWithError(message, err)
+		log.Debugf("Failed to parse message '%s' as a command: %s", message.GetText(), err)
+		m.replyWithError(message, err, "can't parse command")
 	}
 
 	if len(args) == 0 {
-		m.replyWithError(message, errNoCommandToRun)
+		log.Debugf("Could not find any command in message '%s'", message.GetText())
+		m.replyWithError(message, errNoCommandToRun, "")
 		return
 	}
 
-	cmd, err := m.findCommand(args[0])
+	cmd := args[0]
+	command, err := m.findCommand(cmd)
 	if err != nil {
-		m.replyWithError(message, err)
+		m.replyWithUnknownCommand(message, cmd)
 		return
 	}
 
-	out, err := executeCommand(cmd, args[1:]...)
+	m.replyWithHandshake(message)
+	log.Infof("Accepted command '%s' from user %s with args: %s", cmd, message.GetUsername(), args[1:])
+
+	out, err := executeCommand(command, args[1:]...)
 	if err != nil {
-		m.replyWithError(message, err)
+		log.Errorf("Command '%s' from user %s failed execution with error: %s",
+			cmd, message.GetUsername(), err)
+		m.replyWithError(message, err, out)
 		return
 	}
 
 	m.replyWithSuccess(message, out)
+	log.Infof("Command '%s' from user %s succeeded execution", cmd, message.GetUsername())
 }
 
-func (m Meeseeks) replyWithError(message Message, err error) {
-	m.client.Reply(fmt.Sprintf("%s error: %s", message.GetUserFrom(), err), message.GetChannel())
+func (m Meeseeks) replyWithHandshake(message Message) {
+	msg, err := m.templates.RenderHandshake(message.GetReplyTo())
+	if err != nil {
+		log.Fatalf("could not render unknown command template %s", err)
+	}
+
+	m.client.Reply(msg, message.GetChannel())
 }
 
-func (m Meeseeks) replyWithSuccess(message Message, content string) {
-	m.client.Reply(fmt.Sprintf("%s Done!\n\nOutput:\n```\n%s```", message.GetUserFrom(), content), message.GetChannel())
+func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
+	log.Debugf("Could not find command '%s' in the registered commands", cmd)
+
+	msg, err := m.templates.RenderUnknownCommand(message.GetReplyTo(), cmd)
+	if err != nil {
+		log.Fatalf("could not render unknown command template %s", err)
+	}
+
+	m.client.Reply(msg, message.GetChannel())
+}
+
+func (m Meeseeks) replyWithError(message Message, err error, out string) {
+
+	msg, err := m.templates.RenderFailure(message.GetReplyTo(), err.Error(), out)
+	if err != nil {
+		log.Fatalf("could not render failure template %s", err)
+	}
+
+	m.client.Reply(msg, message.GetChannel())
+}
+
+func (m Meeseeks) replyWithSuccess(message Message, out string) {
+	msg, err := m.templates.RenderSuccess(message.GetReplyTo(), out)
+
+	if err != nil {
+		log.Fatalf("could not render success template %s", err)
+	}
+
+	m.client.Reply(msg, message.GetChannel())
 }
 
 func (m Meeseeks) findCommand(command string) (config.Command, error) {
@@ -93,16 +133,6 @@ func (m Meeseeks) findCommand(command string) (config.Command, error) {
 		return config.Command{}, fmt.Errorf("%s '%s'", errCommandNotFound, command)
 	}
 	return cmd, nil
-}
-
-func union(maps ...map[string]config.Command) map[string]config.Command {
-	newMap := make(map[string]config.Command)
-	for _, m := range maps {
-		for k, v := range m {
-			newMap[k] = v
-		}
-	}
-	return newMap
 }
 
 func executeCommand(cmd config.Command, args ...string) (string, error) {

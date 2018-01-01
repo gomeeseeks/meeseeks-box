@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/renstrom/dedent"
+
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 )
 
@@ -18,9 +19,17 @@ func Test_ConfigurationReading(t *testing.T) {
 		Expected config.Config
 	}{
 		{
-			"Basic",
+			"Default configuration",
 			"",
-			config.Config{},
+			config.Config{
+				Messages: map[string][]string{
+					"handshake":      config.DefaultHandshake,
+					"success":        config.DefaultSuccess,
+					"failed":         config.DefaultFailed,
+					"unauthorized":   config.DefaultUnauthorized,
+					"unknowncommand": config.DefaultUnknownCommand,
+				},
+			},
 		},
 		{
 			"With messages",
@@ -30,7 +39,11 @@ func Test_ConfigurationReading(t *testing.T) {
 				`),
 			config.Config{
 				Messages: map[string][]string{
-					"handshake": []string{"hallo"},
+					"handshake":      []string{"hallo"},
+					"success":        config.DefaultSuccess,
+					"failed":         config.DefaultFailed,
+					"unauthorized":   config.DefaultUnauthorized,
+					"unknowncommand": config.DefaultUnknownCommand,
 				},
 			},
 		},
@@ -44,6 +57,13 @@ func Test_ConfigurationReading(t *testing.T) {
 				    arguments: ["none"]
 				`),
 			config.Config{
+				Messages: map[string][]string{
+					"handshake":      config.DefaultHandshake,
+					"success":        config.DefaultSuccess,
+					"failed":         config.DefaultFailed,
+					"unauthorized":   config.DefaultUnauthorized,
+					"unknowncommand": config.DefaultUnknownCommand,
+				},
 				Commands: map[string]config.Command{
 					"something": config.Command{
 						Cmd:        "ssh",
