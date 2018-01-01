@@ -30,9 +30,8 @@ package-linux:
 		docker build . -t $(namespace)/$(executable):latest
 
 package-arm: 
-	cp Dockerfile build/arm && \
+	cp Dockerfile-arm build/arm/Dockerfile && \
 		cd build/arm && \
-		sed -i '' -e 's/alpine/arm32v6\/alpine/g' Dockerfile && \
 		docker build . -t $(namespace)/$(executable)-armv6:latest
 
 package: build package-linux package-arm

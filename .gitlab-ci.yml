@@ -55,7 +55,7 @@ release:
     - docker:dind
   script:
     - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-    - apk add --no-cache make sed
+    - apk add --no-cache make
     - make release
   only:
     - tags
