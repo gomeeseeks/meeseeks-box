@@ -28,15 +28,15 @@ func Test_BasicReplying(t *testing.T) {
 			expectedChannel:   "general",
 			expectedIM:        false,
 		},
-		{
-			name:              "unknown command case",
-			user:              "myuser",
-			message:           "unknown-command hello!",
-			channel:           "general",
-			expectedTextMatch: "^<@myuser> Uuuh! no, I don't know how to do unknown-command$",
-			expectedChannel:   "general",
-			expectedIM:        false,
-		},
+		// {
+		// 	name:              "unknown command case",
+		// 	user:              "myuser",
+		// 	message:           "unknown-command hello!",
+		// 	channel:           "general",
+		// 	expectedTextMatch: "^<@myuser> Uuuh! no, I don't know how to do unknown-command$",
+		// 	expectedChannel:   "general",
+		// 	expectedIM:        false,
+		// },
 	}
 
 	client, cnf := stubs.NewHarness().Build()
@@ -50,6 +50,7 @@ func Test_BasicReplying(t *testing.T) {
 				User:    tc.user,
 			})
 
+			<-client.Messages //handshake
 			actual := <-client.Messages
 
 			r, err := regexp.Compile(tc.expectedTextMatch)

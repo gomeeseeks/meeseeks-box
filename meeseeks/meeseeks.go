@@ -72,9 +72,11 @@ func (m Meeseeks) Process(message Message) {
 
 	cmd, err := m.findCommand(args[0])
 	if err != nil {
-		m.replyUnknownCommand(message, args[0])
+		m.replyWithUnknownCommand(message, args[0])
 		return
 	}
+
+	m.replyWithHandshake(message)
 
 	out, err := executeCommand(cmd, args[1:]...)
 	if err != nil {
@@ -85,7 +87,16 @@ func (m Meeseeks) Process(message Message) {
 	m.replyWithSuccess(message, out)
 }
 
-func (m Meeseeks) replyUnknownCommand(message Message, cmd string) {
+func (m Meeseeks) replyWithHandshake(message Message) {
+	msg, err := m.templates.RenderHandshake(message.GetUserFrom())
+	if err != nil {
+		log.Fatalf("could not render unknown command template %s", err)
+	}
+
+	m.client.Reply(msg, message.GetChannel())
+}
+
+func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
 
 	msg, err := m.templates.RenderUnknownCommand(message.GetUserFrom(), cmd)
 	if err != nil {
