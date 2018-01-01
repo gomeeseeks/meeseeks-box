@@ -29,8 +29,9 @@ package-linux:
 		cd build/linux && \
 		docker build . -t $(namespace)/$(executable):latest
 
-package-arm: 
-	cp Dockerfile-arm build/arm/Dockerfile && \
+package-arm:  build-arm
+	cp Dockerfile build/arm && \
+		sed -i '' -e 's/alpine/arm32v6\/alpine/g' Dockerfile && \
 		cd build/arm && \
 		docker build . -t $(namespace)/$(executable)-armv6:latest
 
@@ -51,7 +52,7 @@ release-arm: package-arm
 		docker push $(namespace)/$(executable)-armv6:$(version) ; \
 	fi
 
-release: release-linux release-arm
+release: release-linux
 
 clean:
 	rm -rf ./build
