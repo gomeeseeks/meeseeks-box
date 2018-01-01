@@ -42,17 +42,19 @@ type Client interface {
 
 // Meeseeks is the command execution engine
 type Meeseeks struct {
-	client   Client
-	config   config.Config
-	commands map[string]config.Command
+	client    Client
+	config    config.Config
+	commands  map[string]config.Command
+	templates template.Templates
 }
 
 // New creates a new Meeseeks service
-func New(client Client, config config.Config) Meeseeks {
+func New(client Client, conf config.Config) Meeseeks {
 	return Meeseeks{
-		client:   client,
-		config:   config,
-		commands: union(builtinCommands, config.Commands),
+		client:    client,
+		config:    conf,
+		commands:  union(builtinCommands, conf.Commands),
+		templates: template.DefaultTemplates(conf.Messages),
 	}
 }
 
@@ -84,48 +86,33 @@ func (m Meeseeks) Process(message Message) {
 }
 
 func (m Meeseeks) replyUnknownCommand(message Message, cmd string) {
-	p := m.newReplyPayload()
-	p["user"] = message.GetUserFrom()
-	p["command"] = cmd
 
-	msg, err := template.DefaultTemplates().UnknownCommand.Render(p)
+	msg, err := m.templates.RenderUnknownCommand(message.GetUserFrom(), cmd)
 	if err != nil {
-		log.Fatalf("could not render unknown command template %s; payload: %+v", err, p)
+		log.Fatalf("could not render unknown command template %s", err)
 	}
+
 	m.client.Reply(msg, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithError(message Message, err error, out string) {
-	p := m.newReplyPayload()
-	p["user"] = message.GetUserFrom()
-	p["error"] = err.Error()
-	p["output"] = out
 
-	msg, err := template.DefaultTemplates().Failure.Render(p)
+	msg, err := m.templates.RenderFailure(message.GetUserFrom(), err.Error(), out)
 	if err != nil {
-		log.Fatalf("could not render failure template %s; payload: %+v", err, p)
+		log.Fatalf("could not render failure template %s", err)
 	}
+
 	m.client.Reply(msg, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithSuccess(message Message, out string) {
-	p := m.newReplyPayload()
-	p["user"] = message.GetUserFrom()
-	p["output"] = out
+	msg, err := m.templates.RenderSuccess(message.GetUserFrom(), out)
 
-	msg, err := template.DefaultTemplates().Success.Render(p)
 	if err != nil {
-		log.Fatalf("could not render success template %s; payload: %+v", err, p)
+		log.Fatalf("could not render success template %s", err)
 	}
-	m.client.Reply(msg, message.GetChannel())
-}
 
-func (m Meeseeks) newReplyPayload() template.Payload {
-	p := template.Payload{}
-	for k, v := range m.config.Messages {
-		p[k] = v
-	}
-	return p
+	m.client.Reply(msg, message.GetChannel())
 }
 
 func (m Meeseeks) findCommand(command string) (config.Command, error) {

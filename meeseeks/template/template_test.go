@@ -128,7 +128,7 @@ func Test_InvalidData(t *testing.T) {
 }
 
 func Test_DefaultTemplates(t *testing.T) {
-	templates := template.DefaultTemplates()
+	templates := template.DefaultTemplates(map[string][]string{})
 	tt := []struct {
 		name     string
 		payload  template.Payload
