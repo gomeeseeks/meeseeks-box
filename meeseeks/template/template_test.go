@@ -193,6 +193,16 @@ func Test_DefaultTemplates(t *testing.T) {
 			renderer: templates.UnknownCommand,
 			expected: "<@myself> I don't know how to mycommand",
 		},
+		{
+			name: "Unauthorized command",
+			payload: template.Payload{
+				"unauthorized": []string{"You are not allowed to do"},
+				"command":      "mycommand",
+				"user":         "<@myself>",
+			},
+			renderer: templates.Unauthorized,
+			expected: "<@myself> You are not allowed to do mycommand",
+		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
