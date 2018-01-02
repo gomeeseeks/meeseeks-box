@@ -20,6 +20,12 @@ var (
 	errNoCommandToRun  = errors.New("No command to run")
 )
 
+const (
+	defaultInfoColorMessage    = ""
+	defaultErrColorMessage     = "#cc3300"
+	defaultSuccessColorMessage = "#009900"
+)
+
 // Message interface to interact with an abstract message
 type Message interface {
 	GetText() string
@@ -30,8 +36,8 @@ type Message interface {
 
 // Client interface that provides a way of replying to messages on a channel
 type Client interface {
-	Reply(text, channel string)
-	ReplyIM(text, user string) error
+	Reply(text, color, channel string) error
+	ReplyIM(text, color, user string) error
 }
 
 // Meeseeks is the command execution engine
@@ -98,7 +104,7 @@ func (m Meeseeks) replyWithHandshake(message Message) {
 		log.Fatalf("could not render unknown command template %s", err)
 	}
 
-	m.client.Reply(msg, message.GetChannel())
+	m.client.Reply(msg, defaultInfoColorMessage, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
@@ -109,7 +115,7 @@ func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
 		log.Fatalf("could not render unknown command template %s", err)
 	}
 
-	m.client.Reply(msg, message.GetChannel())
+	m.client.Reply(msg, defaultErrColorMessage, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithUnauthorizedCommand(message Message, cmd string) {
@@ -120,7 +126,7 @@ func (m Meeseeks) replyWithUnauthorizedCommand(message Message, cmd string) {
 		log.Fatalf("could not render unathorized command template %s", err)
 	}
 
-	m.client.Reply(msg, message.GetChannel())
+	m.client.Reply(msg, defaultErrColorMessage, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithError(message Message, err error, out string) {
@@ -130,7 +136,7 @@ func (m Meeseeks) replyWithError(message Message, err error, out string) {
 		log.Fatalf("could not render failure template %s", err)
 	}
 
-	m.client.Reply(msg, message.GetChannel())
+	m.client.Reply(msg, defaultErrColorMessage, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithSuccess(message Message, out string) {
@@ -140,7 +146,7 @@ func (m Meeseeks) replyWithSuccess(message Message, out string) {
 		log.Fatalf("could not render success template %s", err)
 	}
 
-	m.client.Reply(msg, message.GetChannel())
+	m.client.Reply(msg, defaultSuccessColorMessage, message.GetChannel())
 }
 
 func (m Meeseeks) findCommand(command string) (config.Command, error) {

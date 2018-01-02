@@ -42,7 +42,7 @@ func Test_BasicReplying(t *testing.T) {
 					IsIM:        false,
 				},
 				expectedMessage{
-					TextMatcher: "^<@myuser> .*\n\nOutput:\n```\nhello!\n```$",
+					TextMatcher: "^<@myuser> .*\n```\nhello!\n```$",
 					Channel:     "general",
 					IsIM:        false,
 				},
@@ -68,7 +68,7 @@ func Test_BasicReplying(t *testing.T) {
 			channel: "general",
 			expected: []expectedMessage{
 				expectedMessage{
-					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed:: No command to run$",
+					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: No command to run$",
 					Channel:     "general",
 					IsIM:        false,
 				},
@@ -99,7 +99,7 @@ func Test_BasicReplying(t *testing.T) {
 					IsIM:        false,
 				},
 				expectedMessage{
-					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed:: exit status 1$",
+					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: exit status 1$",
 					Channel:     "general",
 					IsIM:        false,
 				},

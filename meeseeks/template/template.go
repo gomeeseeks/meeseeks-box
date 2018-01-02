@@ -13,9 +13,9 @@ import (
 const (
 	defaultHandshakeTemplate = "{{ AnyValue \"handshake\" . }}"
 	defaultSuccessTemplate   = "{{ .user }} {{ AnyValue \"success\" . }}" +
-		"{{ with $out := .output }}\n\nOutput:\n```\n{{ $out }}```{{ end }}"
-	defaultFailureTemplate = "{{ .user }} {{ AnyValue \"failed\" . }} :disappointed:: {{ .error }}" +
-		"{{ with $out := .output }}\n\nOutput:\n```\n{{ $out }}```{{ end }}"
+		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}"
+	defaultFailureTemplate = "{{ .user }} {{ AnyValue \"failed\" . }} :disappointed: {{ .error }}" +
+		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}"
 	defaultUnknownCommand       = "{{ .user }} {{ AnyValue \"unknowncommand\" . }} {{ .command }}"
 	defaultUnauthorizedTemplate = "{{ .user }} {{ AnyValue \"unauthorized\" . }} {{ .command }}"
 )

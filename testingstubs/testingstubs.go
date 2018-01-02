@@ -15,6 +15,7 @@ import (
 type SentMessage struct {
 	Text    string
 	Channel string
+	Color   string
 	Im      bool
 }
 
@@ -69,13 +70,14 @@ func newClientStub() ClientStub {
 }
 
 // Reply implements the meeseeks.Client.Reply interface
-func (c ClientStub) Reply(text, channel string) {
-	c.Messages <- SentMessage{Text: text, Channel: channel}
+func (c ClientStub) Reply(text, color, channel string) error {
+	c.Messages <- SentMessage{Text: text, Color: color, Channel: channel}
+	return nil
 }
 
 // ReplyIM implements the meeseeks.Client.ReplyIM interface
-func (c ClientStub) ReplyIM(text, user string) error {
-	c.Messages <- SentMessage{Text: text, Channel: user, Im: true}
+func (c ClientStub) ReplyIM(text, color, user string) error {
+	c.Messages <- SentMessage{Text: text, Color: color, Channel: user, Im: true}
 	return nil
 }
 
