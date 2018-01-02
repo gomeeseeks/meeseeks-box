@@ -14,6 +14,7 @@ import (
 const (
 	AuthStrategyAny      = "any"
 	AuthStrategyUserList = "userlist"
+	AuthStrategyNone     = "none"
 )
 
 // Default messages to use

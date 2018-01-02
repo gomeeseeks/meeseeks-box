@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 )
@@ -71,6 +72,10 @@ func (m Meeseeks) Process(message Message) {
 		m.replyWithUnknownCommand(message, cmd)
 		return
 	}
+	if !auth.IsAllowed(message.GetUsername(), command) {
+		m.replyWithUnauthorizedCommand(message, command.Cmd)
+		return
+	}
 
 	m.replyWithHandshake(message)
 	log.Infof("Accepted command '%s' from user %s with args: %s", cmd, message.GetUsername(), args[1:])
@@ -102,6 +107,17 @@ func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
 	msg, err := m.templates.RenderUnknownCommand(message.GetReplyTo(), cmd)
 	if err != nil {
 		log.Fatalf("could not render unknown command template %s", err)
+	}
+
+	m.client.Reply(msg, message.GetChannel())
+}
+
+func (m Meeseeks) replyWithUnauthorizedCommand(message Message, cmd string) {
+	log.Debugf("User %s is not allowed to run command '%s'", message.GetUsername(), cmd)
+
+	msg, err := m.templates.RenderUnauthorizedCommand(message.GetReplyTo(), cmd)
+	if err != nil {
+		log.Fatalf("could not render unathorized command template %s", err)
 	}
 
 	m.client.Reply(msg, message.GetChannel())
