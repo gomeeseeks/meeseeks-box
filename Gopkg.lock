@@ -2,9 +2,10 @@
 
 
 [[projects]]
+  branch = "master"
   name = "github.com/nlopes/slack"
   packages = ["."]
-  revision = "107290b5bbaf3e634833346bb4ff389b1c782bc7"
+  revision = "ccf0351050c69b08f9c48f3e876f4cd5564463e8"
 
 [[projects]]
   name = "github.com/renstrom/dedent"
