@@ -91,7 +91,6 @@ func (c *Client) ListenMessages(ch chan Message) {
 func (c *Client) Reply(content, color, channel string) error {
 	params := slack.PostMessageParameters{
 		AsUser: true,
-		User:   c.rtm.GetInfo().User.ID,
 		Attachments: []slack.Attachment{
 			slack.Attachment{
 				Text:       content,
