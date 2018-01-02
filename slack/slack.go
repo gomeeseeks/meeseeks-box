@@ -15,7 +15,7 @@ import (
 type Client struct {
 	apiClient    *slack.Client
 	rtm          *slack.RTM
-	messageMatch func(string) (bool, int)
+	messageMatch func(*slack.MessageEvent) (bool, int)
 }
 
 // ClientConfig client configuration used to setup the Slack client
@@ -43,9 +43,18 @@ func New(conf ClientConfig) (*Client, error) {
 	return &Client{
 		apiClient: slackAPI,
 		rtm:       rtm,
-		messageMatch: func(message string) (bool, int) {
-			botUser := fmt.Sprintf("<@%s>", rtm.GetInfo().User.ID)
-			return strings.HasPrefix(message, botUser), len(botUser)
+		messageMatch: func(message *slack.MessageEvent) (bool, int) {
+			botID := rtm.GetInfo().User.ID
+			if message.User == botID {
+				return false, 0 // It's myself talking
+			}
+			if strings.HasPrefix(message.Channel, "D") {
+				// if the first letter of the channel is a D, it's an IM channel
+				return true, 0
+			}
+
+			botUser := fmt.Sprintf("<@%s>", botID)
+			return strings.HasPrefix(message.Text, botUser), len(botUser)
 		},
 	}, nil
 }
@@ -58,13 +67,17 @@ func (c *Client) ListenMessages(ch chan Message) {
 
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
-			if match, length := c.messageMatch(ev.Text); match {
+			if match, length := c.messageMatch(ev); match {
 				log.Infof("Received matching message", ev.Text)
+				u, err := c.rtm.GetUserInfo(ev.User)
+				if err != nil {
+					log.Errorf("could not find user with id %s because %s, weeeird", ev.User, err)
+				}
 				ch <- Message{
 					Text:     strings.TrimSpace(ev.Text[length:]),
 					Channel:  ev.Channel,
 					ReplyTo:  ev.User,
-					Username: ev.Username,
+					Username: u.Name,
 				}
 			}
 		default:
@@ -74,21 +87,30 @@ func (c *Client) ListenMessages(ch chan Message) {
 	}
 }
 
-// Reply sends a message to a channel
-func (c *Client) Reply(text, channel string) {
-	msg := c.rtm.NewOutgoingMessage(text, channel)
-	c.rtm.SendMessage(msg)
+// Reply replies to the user building a message with attachment
+func (c *Client) Reply(content, color, channel string) error {
+	params := slack.PostMessageParameters{
+		AsUser: true,
+		User:   c.rtm.GetInfo().User.ID,
+		Attachments: []slack.Attachment{
+			slack.Attachment{
+				Text:       content,
+				Color:      color,
+				MarkdownIn: []string{"text"},
+			},
+		},
+	}
+	_, _, err := c.apiClient.PostMessage(channel, "", params)
+	return err
 }
 
 // ReplyIM sends a message to a user over an IM channel
-func (c *Client) ReplyIM(text, user string) error {
+func (c *Client) ReplyIM(content, color, user string) error {
 	_, _, channel, err := c.apiClient.OpenIMChannel(user)
 	if err != nil {
 		return fmt.Errorf("could not open IM with %s: %s", user, err)
 	}
-	msg := c.rtm.NewOutgoingMessage(text, channel)
-	c.rtm.SendMessage(msg)
-	return nil
+	return c.Reply(content, color, channel)
 }
 
 // Message a chat message

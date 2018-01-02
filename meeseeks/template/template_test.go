@@ -160,7 +160,7 @@ func Test_DefaultTemplates(t *testing.T) {
 				"output":  "something happened\n",
 			},
 			renderer: templates.Success,
-			expected: "<@myself> wooot!\n\nOutput:\n```\nsomething happened\n```",
+			expected: "<@myself> wooot!\n```\nsomething happened\n```",
 		},
 		{
 			name: "Simple Failure",
@@ -170,7 +170,7 @@ func Test_DefaultTemplates(t *testing.T) {
 				"error":  "it failed",
 			},
 			renderer: templates.Failure,
-			expected: "<@myself> bummer :disappointed:: it failed",
+			expected: "<@myself> bummer :disappointed: it failed",
 		},
 		{
 			name: "Failure with output",
@@ -181,7 +181,7 @@ func Test_DefaultTemplates(t *testing.T) {
 				"output": "some output\n",
 			},
 			renderer: templates.Failure,
-			expected: "<@myself> bummer :disappointed:: it failed\n\nOutput:\n```\nsome output\n```",
+			expected: "<@myself> bummer :disappointed: it failed\n```\nsome output\n```",
 		},
 		{
 			name: "Unknown command",
