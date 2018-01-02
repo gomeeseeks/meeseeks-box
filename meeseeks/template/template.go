@@ -87,6 +87,14 @@ func (t Templates) RenderUnknownCommand(user, cmd string) (string, error) {
 	return t.UnknownCommand.Render(p)
 }
 
+// RenderUnauthorizedCommand renders an unauthorized command message
+func (t Templates) RenderUnauthorizedCommand(user, cmd string) (string, error) {
+	p := t.newPayload()
+	p["user"] = user
+	p["command"] = cmd
+	return t.Unauthorized.Render(p)
+}
+
 // RenderSuccess renders a success message
 func (t Templates) RenderSuccess(user, output string) (string, error) {
 	p := t.newPayload()
