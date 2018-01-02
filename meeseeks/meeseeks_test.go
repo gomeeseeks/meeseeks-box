@@ -75,6 +75,19 @@ func Test_BasicReplying(t *testing.T) {
 			},
 		},
 		{
+			name:    "disallowed command",
+			user:    "myuser",
+			message: "disallowed",
+			channel: "general",
+			expected: []expectedMessage{
+				expectedMessage{
+					TextMatcher: "<@myuser> Uuuuh, yeah! you are not allowed to do false",
+					Channel:     "general",
+					IsIM:        false,
+				},
+			},
+		},
+		{
 			name:    "fail command",
 			user:    "myuser",
 			message: "fail",
@@ -101,6 +114,11 @@ func Test_BasicReplying(t *testing.T) {
 			  fail:
 			    command: false
 			    timeout: 10
+			    auth_strategy: any
+			  disallowed:
+			    command: false
+			    timeout: 10
+			    auth_strategy: none
 			`)).Build()
 
 	m := meeseeks.New(client, cnf)
