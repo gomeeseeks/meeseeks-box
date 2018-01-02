@@ -16,7 +16,8 @@ const (
 		"{{ with $out := .output }}\n\nOutput:\n```\n{{ $out }}```{{ end }}"
 	defaultFailureTemplate = "{{ .user }} {{ AnyValue \"failed\" . }} :disappointed:: {{ .error }}" +
 		"{{ with $out := .output }}\n\nOutput:\n```\n{{ $out }}```{{ end }}"
-	defaultUnknownCommand = "{{ .user }} {{ AnyValue \"unknowncommand\" . }} {{ .command }}"
+	defaultUnknownCommand       = "{{ .user }} {{ AnyValue \"unknowncommand\" . }} {{ .command }}"
+	defaultUnauthorizedTemplate = "{{ .user }} {{ AnyValue \"unauthorized\" . }} {{ .command }}"
 )
 
 // Templates is a set of templates for the basic operations
@@ -25,6 +26,7 @@ type Templates struct {
 	Success        Renderer
 	Failure        Renderer
 	UnknownCommand Renderer
+	Unauthorized   Renderer
 	defaultPayload Payload
 }
 
@@ -47,7 +49,12 @@ func DefaultTemplates(messages map[string][]string) Templates {
 
 	unknownCommand, err := New("unknowncommand", defaultUnknownCommand)
 	if err != nil {
-		log.Fatalf("could not parse default failure template: %s", err)
+		log.Fatalf("could not parse default unknown command template: %s", err)
+	}
+
+	unauthorized, err := New("unauthorized", defaultUnauthorizedTemplate)
+	if err != nil {
+		log.Fatalf("could not parse default unauthorized template: %s", err)
 	}
 
 	defaultPayload := Payload{}
@@ -60,6 +67,7 @@ func DefaultTemplates(messages map[string][]string) Templates {
 		Success:        success,
 		Failure:        failure,
 		UnknownCommand: unknownCommand,
+		Unauthorized:   unauthorized,
 		defaultPayload: defaultPayload,
 	}
 }
@@ -77,6 +85,14 @@ func (t Templates) RenderUnknownCommand(user, cmd string) (string, error) {
 	p["user"] = user
 	p["command"] = cmd
 	return t.UnknownCommand.Render(p)
+}
+
+// RenderUnauthorizedCommand renders an unauthorized command message
+func (t Templates) RenderUnauthorizedCommand(user, cmd string) (string, error) {
+	p := t.newPayload()
+	p["user"] = user
+	p["command"] = cmd
+	return t.Unauthorized.Render(p)
 }
 
 // RenderSuccess renders a success message

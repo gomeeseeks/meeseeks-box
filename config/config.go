@@ -14,6 +14,7 @@ import (
 const (
 	AuthStrategyAny      = "any"
 	AuthStrategyUserList = "userlist"
+	AuthStrategyNone     = "none"
 )
 
 // Default messages to use
@@ -21,7 +22,7 @@ var (
 	DefaultHandshake      = []string{"I'm Mr Meeseeks! look at me!", "Mr Meeseeks!", "Uuuuh, yeah! can do!", "Can doo...", "Uuuuh, ok!"}
 	DefaultSuccess        = []string{"All done!", "Mr Meeseeks", "Uuuuh, nice!"}
 	DefaultFailed         = []string{"Uuuh!, no, it failed"}
-	DefaultUnauthorized   = []string{"Uuuh! no! no soup for you"}
+	DefaultUnauthorized   = []string{"Uuuuh, yeah! you are not allowed to do"}
 	DefaultUnknownCommand = []string{"Uuuh! no, I don't know how to do"}
 )
 
