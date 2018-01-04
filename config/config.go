@@ -38,12 +38,20 @@ const (
 	DefaultSuccessColorMessage = "#009900"
 )
 
+// Command types
+const (
+	BuiltinCommandType = iota
+	ShellCommandType
+	RemoteCommandType
+)
+
 // Builtin Commands
 var builtinCommands = map[string]Command{
 	"echo": Command{
 		Cmd:          "echo",
 		Timeout:      5 * time.Second,
 		AuthStrategy: AuthStrategyAny,
+		Type:         ShellCommandType,
 	},
 }
 
@@ -76,13 +84,16 @@ func New(r io.Reader) (Config, error) {
 
 	for name, command := range c.Commands {
 		if command.AuthStrategy == "" {
-			log.Debugf("Applying default AuthStrategy %s to command %s", AuthStrategyAny, name)
-			command.AuthStrategy = AuthStrategyAny
+			log.Debugf("Applying default AuthStrategy %s to command %s", AuthStrategyNone, name)
+			command.AuthStrategy = AuthStrategyNone
 		}
 		if command.Timeout == 0 {
 			log.Debugf("Applying default Timeout %d to command %s", DefaultCommandTimeout, name)
 			command.Timeout = DefaultCommandTimeout
 		}
+		// All configured commands are shell type
+		command.Type = ShellCommandType
+		c.Commands[name] = command // Re-set the command
 	}
 
 	return c, nil
@@ -103,6 +114,7 @@ type Command struct {
 	AuthStrategy string          `yaml:"auth_strategy"`
 	Timeout      time.Duration   `yaml:"timeout"`
 	Templates    CommandTemplate `yaml:"templates"`
+	Type         int
 }
 
 // CommandTemplate is the struct in which the templates used to render a command are kept

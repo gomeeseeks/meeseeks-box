@@ -1,17 +1,15 @@
 package meeseeks
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"os/exec"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 )
 
@@ -81,7 +79,12 @@ func (m Meeseeks) Process(message Message) {
 	m.replyWithHandshake(message)
 	log.Infof("Accepted command '%s' from user %s with args: %s", cmd, message.GetUsername(), args[1:])
 
-	out, err := executeCommand(command, args[1:]...)
+	cm, err := commands.New(command)
+	if err != nil {
+		m.replyWithError(message, err, "")
+		return
+	}
+	out, err := cm.Execute(args[1:]...)
 	if err != nil {
 		log.Errorf("Command '%s' from user %s failed execution with error: %s",
 			cmd, message.GetUsername(), err)
@@ -150,17 +153,4 @@ func (m Meeseeks) findCommand(command string) (config.Command, error) {
 		return config.Command{}, fmt.Errorf("%s '%s'", errCommandNotFound, command)
 	}
 	return cmd, nil
-}
-
-func executeCommand(cmd config.Command, args ...string) (string, error) {
-	timeout := time.Duration(cmd.Timeout) * time.Second
-	args = append(cmd.Args, args...)
-
-	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
-	defer cancelFunc()
-
-	c := exec.CommandContext(ctx, cmd.Cmd, args...)
-	out, err := c.CombinedOutput()
-
-	return string(out), err
 }
