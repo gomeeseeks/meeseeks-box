@@ -32,6 +32,7 @@ type Message interface {
 	GetChannel() string
 	GetReplyTo() string
 	GetUsername() string
+	IsIM() bool
 }
 
 // Client interface that provides a way of replying to messages on a channel
