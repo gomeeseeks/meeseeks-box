@@ -5,22 +5,19 @@ import (
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 )
 
-var builtinCommands = map[string]Command{
-	config.BuiltinCommandVersion: versionCommand{},
-}
-
-func newBuiltinCommand(cmd config.Command) (Command, error) {
-	if command, ok := builtinCommands[cmd.Cmd]; ok {
-		return command, nil
-	}
-	return nil, ErrCommandNotFound
-}
-
 type builtinCommand struct {
+}
+
+var allowAllConfiguredCommand = config.Command{
+	AuthStrategy: config.AuthStrategyAny,
 }
 
 func (b builtinCommand) HasHandshake() bool {
 	return false
+}
+
+func (b builtinCommand) ConfiguredCommand() config.Command {
+	return allowAllConfiguredCommand
 }
 
 type versionCommand struct {
@@ -29,4 +26,13 @@ type versionCommand struct {
 
 func (v versionCommand) Execute(args ...string) (string, error) {
 	return version.AppVersion, nil
+}
+
+type helpCommand struct {
+	builtinCommand
+	commands *map[string]Command
+}
+
+func (h helpCommand) Execute(args ...string) (string, error) {
+	return "invalid", nil
 }

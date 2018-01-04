@@ -47,23 +47,9 @@ const (
 
 // Builtin Commands Names
 const (
-	BuiltinCommandVersion = "version"
+	BuiltinVersionCommand = "version"
+	BuiltinHelpCommand    = "help"
 )
-
-// Builtin Commands
-var BuiltinCommands = map[string]Command{
-	BuiltinCommandVersion: Command{
-		Cmd:          BuiltinCommandVersion,
-		AuthStrategy: AuthStrategyAny,
-		Type:         BuiltinCommandType,
-	},
-	"echo": Command{
-		Cmd:          "echo",
-		Timeout:      5 * time.Second,
-		AuthStrategy: AuthStrategyAny,
-		Type:         ShellCommandType,
-	},
-}
 
 // New parses the configuration from a reader into an object and returns it
 func New(r io.Reader) (Config, error) {
@@ -100,9 +86,14 @@ func New(r io.Reader) (Config, error) {
 		if command.Timeout == 0 {
 			log.Debugf("Applying default Timeout %d to command %s", DefaultCommandTimeout, name)
 			command.Timeout = DefaultCommandTimeout
+		} else {
+			command.Timeout *= time.Second
+			log.Infof("Command timeout for %s is %d", name, command.Timeout)
 		}
+
 		// All configured commands are shell type
 		command.Type = ShellCommandType
+
 		c.Commands[name] = command // Re-set the command
 	}
 
@@ -139,19 +130,4 @@ type MessageColors struct {
 	Info    string `yaml:"info"`
 	Success string `yaml:"success"`
 	Error   string `yaml:"error"`
-}
-
-// GetCommands builds the definitive command list
-func (c Config) GetCommands() map[string]Command {
-	commands := make(map[string]Command)
-	for name, command := range BuiltinCommands {
-		commands[name] = command
-	}
-	for name, command := range c.Commands {
-		if _, ok := commands[name]; ok {
-			log.Infof("Shadowing builtin command %s on configuration", name)
-		}
-		commands[name] = command
-	}
-	return commands
 }

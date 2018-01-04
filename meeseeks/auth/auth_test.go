@@ -12,7 +12,7 @@ func Test_Auth(t *testing.T) {
 		name     string
 		username string
 		cmd      config.Command
-		expected bool
+		expected error
 	}{
 		{
 			name:     "any",
@@ -22,7 +22,7 @@ func Test_Auth(t *testing.T) {
 				Authorized:   []string{},
 				AuthStrategy: config.AuthStrategyAny,
 			},
-			expected: true,
+			expected: nil,
 		},
 		{
 			name:     "none",
@@ -32,7 +32,7 @@ func Test_Auth(t *testing.T) {
 				Authorized:   []string{"myself"},
 				AuthStrategy: config.AuthStrategyNone,
 			},
-			expected: false,
+			expected: auth.ErrUserNotAllowed,
 		},
 		{
 			name:     "authorized list including user",
@@ -42,23 +42,23 @@ func Test_Auth(t *testing.T) {
 				Authorized:   []string{"myself"},
 				AuthStrategy: config.AuthStrategyUserList,
 			},
-			expected: true,
+			expected: nil,
 		},
 		{
-			name:     "authorized list without user",
+			name:     "authorized list excluding user",
 			username: "someoneelse",
 			cmd: config.Command{
 				Cmd:          "echo",
 				Authorized:   []string{"myself"},
 				AuthStrategy: config.AuthStrategyUserList,
 			},
-			expected: false,
+			expected: auth.ErrUserNotAllowed,
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			if auth.IsAllowed(tc.username, tc.cmd) != tc.expected {
-				t.Fatalf("IsAllowed is not as expected %t", tc.expected)
+			if actual := auth.Check(tc.username, tc.cmd); actual != tc.expected {
+				t.Fatalf("Check failed with %s", actual)
 			}
 		})
 	}

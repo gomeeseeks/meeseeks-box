@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"time"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 )
@@ -18,52 +17,73 @@ var (
 type Command interface {
 	Execute(args ...string) (string, error)
 	HasHandshake() bool
+	ConfiguredCommand() config.Command
 }
 
-// New builds a new command from a configured one
-func New(cmd config.Command) (Command, error) {
+// Commands holds the final set of configured commands
+type Commands struct {
+	commands map[string]Command
+}
+
+// New builds a new commands based on a configuration
+func New(cnf config.Config) (Commands, error) {
+	// Add builtin commands
+	commands := make(map[string]Command)
+	commands[config.BuiltinHelpCommand] = helpCommand{commands: &commands}
+	commands[config.BuiltinVersionCommand] = versionCommand{}
+
+	for name, configCommand := range cnf.Commands {
+		command, err := buildCommand(configCommand)
+		if err != nil {
+			return Commands{}, err
+		}
+		commands[name] = command
+	}
+
+	return Commands{
+		commands: commands,
+	}, nil
+}
+
+// Find looks up a command by name and returns it or an error
+func (c Commands) Find(name string) (Command, error) {
+	cmd, ok := c.commands[name]
+	if !ok {
+		return nil, ErrCommandNotFound
+	}
+	return cmd, nil
+}
+
+// buildCommand creates a command instance based on the configuration
+func buildCommand(cmd config.Command) (Command, error) {
 	switch cmd.Type {
 	case config.ShellCommandType:
 		return newShellCommand(cmd)
-
-	case config.BuiltinCommandType:
-		return newBuiltinCommand(cmd)
-
-	default:
-		return nil, ErrCommandNotFound
-
 	}
+	return nil, ErrCommandNotFound
 }
 
 // ShellCommand is a command that will be executed locally through an exec.CommandContext
 type shellCommand struct {
-	timeout time.Duration
-	cmd     string
-	args    []string
+	config.Command
 }
 
 // NewShellCommand returns a new command that is executed inside a shell
 func newShellCommand(cmd config.Command) (Command, error) {
-	timeout := time.Duration(cmd.Timeout) * time.Second
-	if cmd.Timeout == 0 {
-		timeout = config.DefaultCommandTimeout
-	}
-
 	return shellCommand{
-		timeout: timeout,
-		cmd:     cmd.Cmd,
-		args:    cmd.Args,
+		Command: cmd,
 	}, nil
 }
 
 // Execute implements Command.Execute for the ShellCommand
 func (c shellCommand) Execute(args ...string) (string, error) {
-	cmdArgs := append(c.args, args...)
+	cnfCommand := c.ConfiguredCommand()
+	cmdArgs := append(cnfCommand.Args, args...)
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), c.timeout)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), cnfCommand.Timeout)
 	defer cancelFunc()
 
-	shellCommand := exec.CommandContext(ctx, c.cmd, cmdArgs...)
+	shellCommand := exec.CommandContext(ctx, cnfCommand.Cmd, cmdArgs...)
 	out, err := shellCommand.CombinedOutput()
 
 	return string(out), err
@@ -71,4 +91,8 @@ func (c shellCommand) Execute(args ...string) (string, error) {
 
 func (c shellCommand) HasHandshake() bool {
 	return true
+}
+
+func (c shellCommand) ConfiguredCommand() config.Command {
+	return c.Command
 }

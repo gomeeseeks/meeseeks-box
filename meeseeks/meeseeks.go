@@ -2,7 +2,6 @@ package meeseeks
 
 import (
 	"errors"
-	"fmt"
 
 	log "github.com/sirupsen/logrus"
 
@@ -37,16 +36,17 @@ type Client interface {
 type Meeseeks struct {
 	client    Client
 	config    config.Config
-	commands  map[string]config.Command
+	commands  commands.Commands
 	templates template.Templates
 }
 
 // New creates a new Meeseeks service
 func New(client Client, conf config.Config) Meeseeks {
+	cmds, _ := commands.New(conf) // TODO handle the error
 	return Meeseeks{
 		client:    client,
 		config:    conf,
-		commands:  conf.GetCommands(),
+		commands:  cmds,
 		templates: template.DefaultTemplates(conf.Messages),
 	}
 }
@@ -66,28 +66,22 @@ func (m Meeseeks) Process(message Message) {
 	}
 
 	cmd := args[0]
-	command, err := m.findCommand(cmd)
-	if err != nil {
-		m.replyWithUnknownCommand(message, cmd)
+	command, err := m.commands.Find(cmd)
+	if err == commands.ErrCommandNotFound {
+		m.replyWithUnknownCommand(message, args[0])
 		return
 	}
-	if !auth.IsAllowed(message.GetUsername(), command) {
-		m.replyWithUnauthorizedCommand(message, command.Cmd)
-		return
-	}
-
-	cm, err := commands.New(command)
-	if err != nil {
-		m.replyWithError(message, err, "")
+	if err = auth.Check(message.GetUsername(), command.ConfiguredCommand()); err != nil {
+		m.replyWithUnauthorizedCommand(message, args[0])
 		return
 	}
 
 	log.Infof("Accepted command '%s' from user %s with args: %s", cmd, message.GetUsername(), args[1:])
-	if cm.HasHandshake() {
+	if command.HasHandshake() {
 		m.replyWithHandshake(message)
 	}
 
-	out, err := cm.Execute(args[1:]...)
+	out, err := command.Execute(args[1:]...)
 	if err != nil {
 		log.Errorf("Command '%s' from user %s failed execution with error: %s",
 			cmd, message.GetUsername(), err)
@@ -148,12 +142,4 @@ func (m Meeseeks) replyWithSuccess(message Message, out string) {
 	}
 
 	m.client.Reply(msg, m.config.Colors.Success, message.GetChannel())
-}
-
-func (m Meeseeks) findCommand(command string) (config.Command, error) {
-	cmd, ok := m.commands[command]
-	if !ok {
-		return config.Command{}, fmt.Errorf("%s '%s'", errCommandNotFound, command)
-	}
-	return cmd, nil
 }

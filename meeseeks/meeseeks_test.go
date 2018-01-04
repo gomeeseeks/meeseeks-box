@@ -81,7 +81,7 @@ func Test_BasicReplying(t *testing.T) {
 			channel: "general",
 			expected: []expectedMessage{
 				expectedMessage{
-					TextMatcher: "<@myuser> Uuuuh, yeah! you are not allowed to do false",
+					TextMatcher: "<@myuser> Uuuuh, yeah! you are not allowed to do disallowed",
 					Channel:     "general",
 					IsIM:        false,
 				},
@@ -111,6 +111,10 @@ func Test_BasicReplying(t *testing.T) {
 		WithConfig(dedent.Dedent(`
 			---
 			commands:
+			  echo:
+			    command: echo
+			    auth_strategy: any
+			    timeout: 5
 			  fail:
 			    command: false
 			    auth_strategy: any
