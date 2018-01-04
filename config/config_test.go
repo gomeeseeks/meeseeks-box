@@ -72,7 +72,7 @@ func Test_ConfigurationReading(t *testing.T) {
 			},
 		},
 		{
-			"With messages",
+			"With commands",
 			dedent.Dedent(`
 				commands:
 				  something:
@@ -84,9 +84,12 @@ func Test_ConfigurationReading(t *testing.T) {
 				Messages: defaultMessages,
 				Commands: map[string]config.Command{
 					"something": config.Command{
-						Cmd:        "ssh",
-						Authorized: []string{"someone"},
-						Args:       []string{"none"},
+						Cmd:          "ssh",
+						Authorized:   []string{"someone"},
+						Args:         []string{"none"},
+						Timeout:      config.DefaultCommandTimeout,
+						Type:         config.ShellCommandType,
+						AuthStrategy: config.AuthStrategyNone,
 					},
 				},
 				Colors: defaultColors,

@@ -113,11 +113,9 @@ func Test_BasicReplying(t *testing.T) {
 			commands:
 			  fail:
 			    command: false
-			    timeout: 10
 			    auth_strategy: any
 			  disallowed:
 			    command: false
-			    timeout: 10
 			    auth_strategy: none
 			`)).Build()
 
