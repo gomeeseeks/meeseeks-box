@@ -9,14 +9,21 @@ import (
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
 	"gitlab.com/mr-meeseeks/meeseeks-box/slack"
+	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 )
 
 func main() {
 	configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
-	debug := flag.Bool("debug", false, "enabled debug mode")
+	debugMode := flag.Bool("debug", false, "enabled debug mode")
+	showVersion := flag.Bool("version", false, "print the version and exit")
+
 	flag.Parse()
 
-	if *debug {
+	if *showVersion {
+		log.Println(version.AppVersion)
+		os.Exit(0)
+	}
+	if *debugMode {
 		log.SetLevel(log.DebugLevel)
 	}
 
