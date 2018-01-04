@@ -27,8 +27,15 @@ var (
 )
 
 // Defaults for commands
-var (
+const (
 	DefaultCommandTimeout = 60 * time.Second
+)
+
+// Default colors
+const (
+	DefaultInfoColorMessage    = ""
+	DefaultErrColorMessage     = "#cc3300"
+	DefaultSuccessColorMessage = "#009900"
 )
 
 // Builtin Commands
@@ -49,6 +56,11 @@ func New(r io.Reader) (Config, error) {
 			"failed":         DefaultFailed,
 			"unauthorized":   DefaultUnauthorized,
 			"unknowncommand": DefaultUnknownCommand,
+		},
+		Colors: MessageColors{
+			Info:    DefaultInfoColorMessage,
+			Success: DefaultSuccessColorMessage,
+			Error:   DefaultErrColorMessage,
 		},
 	}
 
@@ -80,6 +92,7 @@ func New(r io.Reader) (Config, error) {
 type Config struct {
 	Messages map[string][]string `yaml:"messages"`
 	Commands map[string]Command  `yaml:"commands"`
+	Colors   MessageColors       `yaml:"colors"`
 }
 
 // Command is the struct that handles a command configuration
@@ -97,6 +110,13 @@ type CommandTemplate struct {
 	Handshake string `yaml:"on_handshake"`
 	Success   string `yaml:"on_success"`
 	Failure   string `yaml:"on_failure"`
+}
+
+// MessageColors contains the configured reply message colora
+type MessageColors struct {
+	Info    string `yaml:"info"`
+	Success string `yaml:"success"`
+	Error   string `yaml:"error"`
 }
 
 // GetCommands builds the definitive command list
