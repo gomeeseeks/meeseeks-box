@@ -16,7 +16,7 @@ type SentMessage struct {
 	Text    string
 	Channel string
 	Color   string
-	Im      bool
+	IsIM    bool
 }
 
 // Harness is a builder that helps out testing meeseeks
@@ -77,7 +77,7 @@ func (c ClientStub) Reply(text, color, channel string) error {
 
 // ReplyIM implements the meeseeks.Client.ReplyIM interface
 func (c ClientStub) ReplyIM(text, color, user string) error {
-	c.Messages <- SentMessage{Text: text, Color: color, Channel: user, Im: true}
+	c.Messages <- SentMessage{Text: text, Color: color, Channel: user, IsIM: true}
 	return nil
 }
 
@@ -86,6 +86,7 @@ type MessageStub struct {
 	Text    string
 	Channel string
 	User    string
+	IM      bool
 }
 
 // GetText implements the slack.Message.GetText interface
@@ -106,6 +107,11 @@ func (m MessageStub) GetReplyTo() string {
 // GetUsername implements the slack.Message.GetUsername interface
 func (m MessageStub) GetUsername() string {
 	return m.User
+}
+
+// IsIM implements the slack.Message.IsIM
+func (m MessageStub) IsIM() bool {
+	return m.IM
 }
 
 // AssertEquals Helper function for asserting that a value is what we expect

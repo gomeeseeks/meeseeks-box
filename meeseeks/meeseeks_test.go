@@ -141,7 +141,7 @@ func Test_BasicReplying(t *testing.T) {
 					t.Fatalf("Bad message, expected %s; got %s", expected.TextMatcher, actual.Text)
 				}
 				stubs.AssertEquals(t, expected.Channel, actual.Channel)
-				stubs.AssertEquals(t, expected.IsIM, actual.Im)
+				stubs.AssertEquals(t, expected.IsIM, actual.IsIM)
 			}
 		})
 	}
