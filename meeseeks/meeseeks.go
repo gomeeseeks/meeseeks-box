@@ -20,12 +20,6 @@ var (
 	errNoCommandToRun  = errors.New("No command to run")
 )
 
-const (
-	defaultInfoColorMessage    = ""
-	defaultErrColorMessage     = "#cc3300"
-	defaultSuccessColorMessage = "#009900"
-)
-
 // Message interface to interact with an abstract message
 type Message interface {
 	GetText() string
@@ -105,7 +99,7 @@ func (m Meeseeks) replyWithHandshake(message Message) {
 		log.Fatalf("could not render unknown command template %s", err)
 	}
 
-	m.client.Reply(msg, defaultInfoColorMessage, message.GetChannel())
+	m.client.Reply(msg, m.config.Colors.Info, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
@@ -116,7 +110,7 @@ func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
 		log.Fatalf("could not render unknown command template %s", err)
 	}
 
-	m.client.Reply(msg, defaultErrColorMessage, message.GetChannel())
+	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithUnauthorizedCommand(message Message, cmd string) {
@@ -127,7 +121,7 @@ func (m Meeseeks) replyWithUnauthorizedCommand(message Message, cmd string) {
 		log.Fatalf("could not render unathorized command template %s", err)
 	}
 
-	m.client.Reply(msg, defaultErrColorMessage, message.GetChannel())
+	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithError(message Message, err error, out string) {
@@ -137,7 +131,7 @@ func (m Meeseeks) replyWithError(message Message, err error, out string) {
 		log.Fatalf("could not render failure template %s", err)
 	}
 
-	m.client.Reply(msg, defaultErrColorMessage, message.GetChannel())
+	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithSuccess(message Message, out string) {
@@ -147,7 +141,7 @@ func (m Meeseeks) replyWithSuccess(message Message, out string) {
 		log.Fatalf("could not render success template %s", err)
 	}
 
-	m.client.Reply(msg, defaultSuccessColorMessage, message.GetChannel())
+	m.client.Reply(msg, m.config.Colors.Success, message.GetChannel())
 }
 
 func (m Meeseeks) findCommand(command string) (config.Command, error) {

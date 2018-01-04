@@ -8,11 +8,22 @@ import (
 	"testing"
 
 	"github.com/renstrom/dedent"
-
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 )
 
 func Test_ConfigurationReading(t *testing.T) {
+	defaultColors := config.MessageColors{
+		Info:    config.DefaultInfoColorMessage,
+		Error:   config.DefaultErrColorMessage,
+		Success: config.DefaultSuccessColorMessage,
+	}
+	defaultMessages := map[string][]string{
+		"handshake":      config.DefaultHandshake,
+		"success":        config.DefaultSuccess,
+		"failed":         config.DefaultFailed,
+		"unauthorized":   config.DefaultUnauthorized,
+		"unknowncommand": config.DefaultUnknownCommand,
+	}
 	tt := []struct {
 		Name     string
 		Content  string
@@ -22,13 +33,8 @@ func Test_ConfigurationReading(t *testing.T) {
 			"Default configuration",
 			"",
 			config.Config{
-				Messages: map[string][]string{
-					"handshake":      config.DefaultHandshake,
-					"success":        config.DefaultSuccess,
-					"failed":         config.DefaultFailed,
-					"unauthorized":   config.DefaultUnauthorized,
-					"unknowncommand": config.DefaultUnknownCommand,
-				},
+				Messages: defaultMessages,
+				Colors:   defaultColors,
 			},
 		},
 		{
@@ -45,6 +51,24 @@ func Test_ConfigurationReading(t *testing.T) {
 					"unauthorized":   config.DefaultUnauthorized,
 					"unknowncommand": config.DefaultUnknownCommand,
 				},
+				Colors: defaultColors,
+			},
+		},
+		{
+			"With colors",
+			dedent.Dedent(`
+				colors:
+				  info: "#FFFFFF"
+				  success: "#CCCCCC"
+				  error: "#000000"
+				`),
+			config.Config{
+				Messages: defaultMessages,
+				Colors: config.MessageColors{
+					Info:    "#FFFFFF",
+					Success: "#CCCCCC",
+					Error:   "#000000",
+				},
 			},
 		},
 		{
@@ -57,13 +81,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				    arguments: ["none"]
 				`),
 			config.Config{
-				Messages: map[string][]string{
-					"handshake":      config.DefaultHandshake,
-					"success":        config.DefaultSuccess,
-					"failed":         config.DefaultFailed,
-					"unauthorized":   config.DefaultUnauthorized,
-					"unknowncommand": config.DefaultUnknownCommand,
-				},
+				Messages: defaultMessages,
 				Commands: map[string]config.Command{
 					"something": config.Command{
 						Cmd:        "ssh",
@@ -71,6 +89,7 @@ func Test_ConfigurationReading(t *testing.T) {
 						Args:       []string{"none"},
 					},
 				},
+				Colors: defaultColors,
 			},
 		},
 	}
@@ -81,7 +100,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				t.Fatalf("failed to parse configuration: %s", err)
 			}
 			if !reflect.DeepEqual(tc.Expected, c) {
-				t.Fatalf("configuration is not as expected; got %+v instead of %+v", c, tc.Expected)
+				t.Fatalf("configuration is not as expected; got %#v instead of %#v", c, tc.Expected)
 			}
 
 		})
