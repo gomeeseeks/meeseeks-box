@@ -76,14 +76,17 @@ func (m Meeseeks) Process(message Message) {
 		return
 	}
 
-	m.replyWithHandshake(message)
-	log.Infof("Accepted command '%s' from user %s with args: %s", cmd, message.GetUsername(), args[1:])
-
 	cm, err := commands.New(command)
 	if err != nil {
 		m.replyWithError(message, err, "")
 		return
 	}
+
+	log.Infof("Accepted command '%s' from user %s with args: %s", cmd, message.GetUsername(), args[1:])
+	if cm.HasHandshake() {
+		m.replyWithHandshake(message)
+	}
+
 	out, err := cm.Execute(args[1:]...)
 	if err != nil {
 		log.Errorf("Command '%s' from user %s failed execution with error: %s",

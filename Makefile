@@ -3,22 +3,27 @@ executable        = meeseeks-box
 namespace         = pcarranza
 version           = ${CI_COMMIT_TAG}
 
-.PHONY: all package build package release clean
+.PHONY: all package build package release clean version
 
 all: test build package release clean
+
+version:
+	if [ ! -z "$(version)" ]; then \
+		sed -i "" -e 's/"unset"/"$(version)"/g' version/version.go ; \
+	fi
 
 test:
 	go test -cover ./...
 
-build-linux: test
+build-linux: test version
 	mkdir -p build/linux
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-w' -o build/linux/$(executable)
 
-build-arm: test
+build-arm: test version
 	mkdir -p build/arm
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=6 go build -a -ldflags '-w' -o build/arm/$(executable)
 
-build-darwin: test
+build-darwin: test version
 	mkdir -p build/darwin
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -ldflags '-w' -o build/darwin/$(executable)
 
@@ -56,3 +61,4 @@ release: release-linux
 
 clean:
 	rm -rf ./build
+	git reset --hard

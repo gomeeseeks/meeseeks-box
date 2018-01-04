@@ -45,8 +45,18 @@ const (
 	RemoteCommandType
 )
 
+// Builtin Commands Names
+const (
+	BuiltinCommandVersion = "version"
+)
+
 // Builtin Commands
-var builtinCommands = map[string]Command{
+var BuiltinCommands = map[string]Command{
+	BuiltinCommandVersion: Command{
+		Cmd:          BuiltinCommandVersion,
+		AuthStrategy: AuthStrategyAny,
+		Type:         BuiltinCommandType,
+	},
 	"echo": Command{
 		Cmd:          "echo",
 		Timeout:      5 * time.Second,
@@ -134,7 +144,7 @@ type MessageColors struct {
 // GetCommands builds the definitive command list
 func (c Config) GetCommands() map[string]Command {
 	commands := make(map[string]Command)
-	for name, command := range builtinCommands {
+	for name, command := range BuiltinCommands {
 		commands[name] = command
 	}
 	for name, command := range c.Commands {

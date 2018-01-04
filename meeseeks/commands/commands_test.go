@@ -1,12 +1,12 @@
 package commands_test
 
 import (
-	"strings"
 	"testing"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
+	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 )
 
 func Test_ShellCommand(t *testing.T) {
@@ -27,7 +27,17 @@ func Test_InvalidCommand(t *testing.T) {
 		Cmd:  "fail",
 		Type: 0,
 	})
-	if err == nil || !strings.HasPrefix(err.Error(), "could not build command from") {
+	if err != commands.ErrCommandNotFound {
 		t.Fatalf("command build should have failed with an error, got %s instead", err)
 	}
+}
+
+func Test_VersionCommand(t *testing.T) {
+	cmd, err := commands.New(config.BuiltinCommands[config.BuiltinCommandVersion])
+	stubs.Must(t, "failed to get version command", err)
+
+	out, err := cmd.Execute()
+	stubs.Must(t, "failed to execute version command", err)
+
+	stubs.AssertEquals(t, version.AppVersion, out)
 }
