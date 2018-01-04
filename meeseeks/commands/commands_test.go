@@ -71,9 +71,7 @@ func Test_HelpCommand(t *testing.T) {
 
 	stubs.AssertEquals(t, dedent.Dedent(`
 		- echo: command that prints back the arguments passed
-		
 		- help: prints all the kwnown commands and its associated help
-		
 		- version: prints the running meeseeks version
 		`), out)
 }
