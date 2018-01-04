@@ -115,6 +115,7 @@ type Command struct {
 	AuthStrategy string          `yaml:"auth_strategy"`
 	Timeout      time.Duration   `yaml:"timeout"`
 	Templates    CommandTemplate `yaml:"templates"`
+	Help         string          `yaml:"help"`
 	Type         int
 }
 

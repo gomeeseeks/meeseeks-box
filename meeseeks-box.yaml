@@ -4,3 +4,4 @@ commands:
     command: "echo"
     auth_strategy: any
     timeout: 5
+    help: command that prints back the arguments passed

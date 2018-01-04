@@ -29,8 +29,13 @@ type Commands struct {
 func New(cnf config.Config) (Commands, error) {
 	// Add builtin commands
 	commands := make(map[string]Command)
-	commands[config.BuiltinHelpCommand] = helpCommand{commands: &commands}
-	commands[config.BuiltinVersionCommand] = versionCommand{}
+	commands[config.BuiltinHelpCommand] = helpCommand{
+		commands: &commands,
+		Help:     "prints all the kwnown commands and its associated help",
+	}
+	commands[config.BuiltinVersionCommand] = versionCommand{
+		Help: "prints the running meeseeks version",
+	}
 
 	for name, configCommand := range cnf.Commands {
 		command, err := buildCommand(configCommand)
@@ -95,4 +100,9 @@ func (c shellCommand) HasHandshake() bool {
 
 func (c shellCommand) ConfiguredCommand() config.Command {
 	return c.Command
+}
+
+// Help returns the help from the configured command
+func (c shellCommand) Help() string {
+	return c.Command.Help
 }

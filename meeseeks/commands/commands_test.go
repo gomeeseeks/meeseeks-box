@@ -3,24 +3,27 @@ package commands_test
 import (
 	"testing"
 
+	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 )
 
+var configWithEcho = config.Config{
+	Commands: map[string]config.Command{
+		"echo": config.Command{
+			Cmd:     "echo",
+			Args:    []string{},
+			Timeout: config.DefaultCommandTimeout,
+			Type:    config.ShellCommandType,
+			Help:    "command that prints back the arguments passed",
+		},
+	},
+}
+
 func Test_ShellCommand(t *testing.T) {
-	cmds, err := commands.New(
-		config.Config{
-			Commands: map[string]config.Command{
-				"echo": config.Command{
-					Cmd:     "echo",
-					Args:    []string{},
-					Timeout: config.DefaultCommandTimeout,
-					Type:    config.ShellCommandType,
-				},
-			},
-		})
+	cmds, err := commands.New(configWithEcho)
 	stubs.Must(t, "shell command failed to build", err)
 
 	cmd, err := cmds.Find("echo")
@@ -57,7 +60,7 @@ func Test_VersionCommand(t *testing.T) {
 }
 
 func Test_HelpCommand(t *testing.T) {
-	cmds, err := commands.New(config.Config{})
+	cmds, err := commands.New(configWithEcho)
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("help")
@@ -66,5 +69,11 @@ func Test_HelpCommand(t *testing.T) {
 	out, err := cmd.Execute()
 	stubs.Must(t, "failed to execute help command", err)
 
-	stubs.AssertEquals(t, "invalid", out)
+	stubs.AssertEquals(t, dedent.Dedent(`
+		- echo: command that prints back the arguments passed
+		
+		- help: prints all the kwnown commands and its associated help
+		
+		- version: prints the running meeseeks version
+		`), out)
 }
