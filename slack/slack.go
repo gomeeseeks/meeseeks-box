@@ -51,18 +51,20 @@ func New(conf ClientConfig) (*Client, error) {
 type messageMatcher struct {
 	botID         string
 	prefixMatches []string
+	rtm           *slack.RTM
 }
 
 func newMessageMatcher(rtm *slack.RTM) messageMatcher {
-	botID := rtm.GetInfo().User.ID
-	prefixMatch := []string{fmt.Sprintf("<@%s>", botID)}
 	return messageMatcher{
-		botID:         botID,
-		prefixMatches: prefixMatch,
+		rtm: rtm,
 	}
 }
 
 func (m messageMatcher) Matches(message *slack.MessageEvent) *Message {
+	if m.botID == "" {
+		m.botID = m.rtm.GetInfo().User.ID
+		m.prefixMatches = []string{fmt.Sprintf("<@%s>", m.botID)}
+	}
 	if text, ok := m.messageToMe(message); ok {
 		return &Message{
 			text:    text,
