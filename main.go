@@ -44,7 +44,7 @@ func main() {
 
 	client, err := slack.New(slack.ClientConfig{
 		Token: token,
-		Debug: *debug,
+		Debug: *debugMode,
 	})
 	if err != nil {
 		log.Fatal(err)

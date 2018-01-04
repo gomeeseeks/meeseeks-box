@@ -9,9 +9,15 @@ import (
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 )
 
+// Command Errors
+var (
+	ErrCommandNotFound = fmt.Errorf("Can't find command")
+)
+
 // Command is the base interface for any command
 type Command interface {
 	Execute(args ...string) (string, error)
+	HasHandshake() bool
 }
 
 // New builds a new command from a configured one
@@ -20,8 +26,11 @@ func New(cmd config.Command) (Command, error) {
 	case config.ShellCommandType:
 		return newShellCommand(cmd)
 
+	case config.BuiltinCommandType:
+		return newBuiltinCommand(cmd)
+
 	default:
-		return nil, fmt.Errorf("could not build command from %#v", cmd)
+		return nil, ErrCommandNotFound
 
 	}
 }
@@ -58,4 +67,8 @@ func (c shellCommand) Execute(args ...string) (string, error) {
 	out, err := shellCommand.CombinedOutput()
 
 	return string(out), err
+}
+
+func (c shellCommand) HasHandshake() bool {
+	return true
 }
