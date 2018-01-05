@@ -88,6 +88,11 @@ func (b *TemplatesBuilder) WithTemplates(templates map[string]string) *Templates
 	return b
 }
 
+// Clone returns a copy of this template builder
+func (b *TemplatesBuilder) Clone() *TemplatesBuilder {
+	return NewBuilder().WithMessages(b.messages).WithTemplates(b.templates)
+}
+
 // Build creates a Templates object will all the necessary renderes initialized
 func (b *TemplatesBuilder) Build() Templates {
 	renderers := make(map[string]Renderer)

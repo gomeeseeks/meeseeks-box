@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
@@ -10,8 +12,13 @@ import (
 type builtinCommand struct {
 }
 
+var builtinTemplates = map[string]string{
+	template.SuccessKey: fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}{{ with $out := .output }}\n{{ $out }}{{ end }}", template.SuccessKey),
+}
+
 var allowAllConfiguredCommand = config.Command{
 	AuthStrategy: config.AuthStrategyAny,
+	Templates:    builtinTemplates,
 }
 
 func (b builtinCommand) HasHandshake() bool {
