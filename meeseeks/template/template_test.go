@@ -1,9 +1,13 @@
 package template_test
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
+	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 )
 
 func Test_Templating(t *testing.T) {
@@ -128,90 +132,93 @@ func Test_InvalidData(t *testing.T) {
 }
 
 func Test_DefaultTemplates(t *testing.T) {
-	templates := template.DefaultTemplates(map[string][]string{})
+	templates := template.NewBuilder().Build()
+
+	handshakeMatcher, err := regexp.Compile(fmt.Sprintf("^(%s)$", strings.Join(template.DefaultHandshakeMessages, "|")))
+	stubs.Must(t, "can't compile default hanshake matcher", err)
+
+	successMatcher, err := regexp.Compile(fmt.Sprintf("^<@myself> (%s)$", strings.Join(template.DefaultSuccessMessages, "|")))
+	stubs.Must(t, "can't compile default success matcher", err)
+
+	successWithOutputMatcher, err := regexp.Compile(fmt.Sprintf("(?m)<@myself> (%s)[\\n `]*something happened", strings.Join(template.DefaultSuccessMessages, "|")))
+	stubs.Must(t, "can't compile default success with output matcher", err)
+
+	failureMatcher, err := regexp.Compile(fmt.Sprintf("^<@myself> (%s) :disappointed: it failed$", strings.Join(template.DefaultFailedMessages, "|")))
+	stubs.Must(t, "can't compile default failure matcher", err)
+
+	failureWithOutputMatcher, err := regexp.Compile(fmt.Sprintf("(?m)<@myself> (%s) :disappointed: it failed[\\n `]*some output", strings.Join(template.DefaultFailedMessages, "|")))
+	stubs.Must(t, "can't compile default failure with output matcher", err)
+
+	unknownCommandMatcher, err := regexp.Compile(fmt.Sprintf("<@myself> (%s) mycommand", strings.Join(template.DefaultUnknownCommandMessages, "|")))
+	stubs.Must(t, "can't compile default unknown command matcher", err)
+
+	unauthorizedCommandMatcher, err := regexp.Compile(fmt.Sprintf("<@myself> (%s) mycommand", strings.Join(template.DefaultUnauthorizedMessages, "|")))
+	stubs.Must(t, "can't compile default unauthorized command matcher", err)
+
 	tt := []struct {
 		name     string
-		payload  template.Payload
-		renderer template.Renderer
+		renderer func() (string, error)
 		expected string
+		matcher  *regexp.Regexp
 	}{
 		{
 			name: "Handshake",
-			payload: template.Payload{
-				"handshake": []string{"hello!"},
+			renderer: func() (string, error) {
+				return templates.RenderHandshake("my user")
 			},
-			renderer: templates.Handshake,
-			expected: "hello!",
+			matcher: handshakeMatcher,
 		},
 		{
 			name: "Simple success",
-			payload: template.Payload{
-				"success": []string{"wooot!"},
-				"user":    "<@myself>",
+			renderer: func() (string, error) {
+				return templates.RenderSuccess("<@myself>", "")
 			},
-			renderer: templates.Success,
-			expected: "<@myself> wooot!",
+			matcher: successMatcher,
 		},
 		{
 			name: "Success with output",
-			payload: template.Payload{
-				"success": []string{"wooot!"},
-				"user":    "<@myself>",
-				"output":  "something happened\n",
+			renderer: func() (string, error) {
+				return templates.RenderSuccess("<@myself>", "something happened")
 			},
-			renderer: templates.Success,
-			expected: "<@myself> wooot!\n```\nsomething happened\n```",
+			matcher: successWithOutputMatcher,
 		},
 		{
 			name: "Simple Failure",
-			payload: template.Payload{
-				"failed": []string{"bummer"},
-				"user":   "<@myself>",
-				"error":  "it failed",
+			renderer: func() (string, error) {
+				return templates.RenderFailure("<@myself>", "it failed", "")
 			},
-			renderer: templates.Failure,
-			expected: "<@myself> bummer :disappointed: it failed",
+			matcher: failureMatcher,
 		},
 		{
 			name: "Failure with output",
-			payload: template.Payload{
-				"failed": []string{"bummer"},
-				"user":   "<@myself>",
-				"error":  "it failed",
-				"output": "some output\n",
+			renderer: func() (string, error) {
+				return templates.RenderFailure("<@myself>", "it failed", "some output")
 			},
-			renderer: templates.Failure,
-			expected: "<@myself> bummer :disappointed: it failed\n```\nsome output\n```",
+			matcher: failureWithOutputMatcher,
 		},
 		{
 			name: "Unknown command",
-			payload: template.Payload{
-				"unknowncommand": []string{"I don't know how to"},
-				"command":        "mycommand",
-				"user":           "<@myself>",
+			renderer: func() (string, error) {
+				return templates.RenderUnknownCommand("<@myself>", "mycommand")
 			},
-			renderer: templates.UnknownCommand,
-			expected: "<@myself> I don't know how to mycommand",
+			matcher: unknownCommandMatcher,
 		},
 		{
 			name: "Unauthorized command",
-			payload: template.Payload{
-				"unauthorized": []string{"You are not allowed to do"},
-				"command":      "mycommand",
-				"user":         "<@myself>",
+			renderer: func() (string, error) {
+				return templates.RenderUnauthorizedCommand("<@myself>", "mycommand")
 			},
-			renderer: templates.Unauthorized,
-			expected: "<@myself> You are not allowed to do mycommand",
+			matcher: unauthorizedCommandMatcher,
 		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := tc.renderer.Render(tc.payload)
+			out, err := tc.renderer()
 			if err != nil {
 				t.Fatalf("Render failed with error: %s", err)
 			}
-			if out != tc.expected {
-				t.Fatalf("Wrong render. Expected %s; Got %s", tc.expected, out)
+			if !tc.matcher.MatchString(out) {
+				t.Fatalf("Bad message, expected %s; got %s", tc.matcher, out)
 			}
 		})
 	}

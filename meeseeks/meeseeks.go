@@ -43,11 +43,12 @@ type Meeseeks struct {
 // New creates a new Meeseeks service
 func New(client Client, conf config.Config) Meeseeks {
 	cmds, _ := commands.New(conf) // TODO handle the error
+	templates := template.NewBuilder().WithMessages(conf.Messages).Build()
 	return Meeseeks{
 		client:    client,
 		config:    conf,
 		commands:  cmds,
-		templates: template.DefaultTemplates(conf.Messages),
+		templates: templates,
 	}
 }
 
