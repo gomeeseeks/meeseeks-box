@@ -41,7 +41,8 @@ func (h helpCommand) Execute(args ...string) (string, error) {
 	tmpl, err := template.New("version", dedent.Dedent(
 		`{{ range $name, $cmd := .commands }}
 		- {{ $name }}: {{ $cmd.Help }}
-		{{ end }}`))
+		{{- end }}
+		`))
 	if err != nil {
 		return "", err
 	}
