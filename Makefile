@@ -3,9 +3,9 @@ executable        = meeseeks-box
 namespace         = pcarranza
 version           = ${CI_COMMIT_TAG}
 
-.PHONY: all package build package release clean version
+.PHONY: all version test package build build-linux build-darwin build-arm package package-linux packager-arm release release-linux release-arm clean
 
-all: test build package release clean
+all: test version build package release clean
 
 version:
 	if [ ! -z "$(version)" ]; then \
@@ -29,12 +29,12 @@ build-darwin: test version
 
 build: test build-linux build-arm build-darwin
 
-package-linux: 
+package-linux: build-linx
 	cp Dockerfile build/linux && \
 		cd build/linux && \
 		docker build . -t $(namespace)/$(executable):latest
 
-package-arm:  build-arm
+package-arm: build-arm
 	cp Dockerfile build/arm && \
 		cd build/arm && \
 		sed -i '' -e 's/alpine/arm32v6\/alpine/g' Dockerfile && \
