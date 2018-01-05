@@ -6,6 +6,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
 	"gitlab.com/mr-meeseeks/meeseeks-box/slack"
@@ -36,6 +37,8 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	auth.Configure(cnf)
 
 	token := os.Getenv("SLACK_TOKEN")
 	if token == "" {

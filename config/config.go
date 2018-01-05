@@ -12,9 +12,10 @@ import (
 
 // Authorization Strategies determine who has access to what
 const (
-	AuthStrategyAny      = "any"
-	AuthStrategyUserList = "userlist"
-	AuthStrategyNone     = "none"
+	AuthStrategyAny          = "any"
+	AuthStrategyUserList     = "userlist"
+	AuthStrategyAllowedGroup = "group"
+	AuthStrategyNone         = "none"
 )
 
 // Defaults for commands
@@ -89,18 +90,19 @@ type Config struct {
 	Messages map[string][]string `yaml:"messages"`
 	Commands map[string]Command  `yaml:"commands"`
 	Colors   MessageColors       `yaml:"colors"`
+	Groups   map[string][]string `yaml:"groups"`
 }
 
 // Command is the struct that handles a command configuration
 type Command struct {
-	Cmd          string            `yaml:"command"`
-	Args         []string          `yaml:"arguments"`
-	Authorized   []string          `yaml:"authorized"`
-	AuthStrategy string            `yaml:"auth_strategy"`
-	Timeout      time.Duration     `yaml:"timeout"`
-	Templates    map[string]string `yaml:"templates"`
-	Help         string            `yaml:"help"`
-	Type         int
+	Cmd           string            `yaml:"command"`
+	Args          []string          `yaml:"arguments"`
+	AllowedGroups []string          `yaml:"allowed_groups"`
+	AuthStrategy  string            `yaml:"auth_strategy"`
+	Timeout       time.Duration     `yaml:"timeout"`
+	Templates     map[string]string `yaml:"templates"`
+	Help          string            `yaml:"help"`
+	Type          int
 }
 
 // MessageColors contains the configured reply message colora

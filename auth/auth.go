@@ -16,9 +16,9 @@ type Authorizer interface {
 var ErrUserNotAllowed = errors.New("User no allower")
 
 var authStrategies = map[string]Authorizer{
-	config.AuthStrategyAny:      anyUserAllowed{},
-	config.AuthStrategyUserList: userInListIsAllowed{},
-	config.AuthStrategyNone:     noUserAllowed{},
+	config.AuthStrategyAny:          anyUserAllowed{},
+	config.AuthStrategyAllowedGroup: userInGroupAllowed{},
+	config.AuthStrategyNone:         noUserAllowed{},
 }
 
 // Check checks if a user is allowed to run a command given the command authorization strategy
@@ -47,14 +47,22 @@ func (a noUserAllowed) Check(_ string, _ config.Command) error {
 	return ErrUserNotAllowed
 }
 
-type userInListIsAllowed struct {
+type userInGroupAllowed struct {
 }
 
-// IsAllowed implements Authorizer.IsAllowed
-func (a userInListIsAllowed) Check(username string, cmd config.Command) error {
-	for _, u := range cmd.Authorized {
-		if username == u {
+func (a userInGroupAllowed) Check(username string, cmd config.Command) error {
+	for _, group := range cmd.AllowedGroups {
+		err := groups.CheckUserInGroup(username, group)
+		switch err {
+		case nil:
+			log.Debugf("User %s found in group %s", username, group)
 			return nil
+		case ErrUserNotInGroup:
+			log.Debugf("User % is not in group %s", username, group)
+		case ErrGroupNotFound:
+			log.Errorf("Could not found group %s", group)
+		default:
+			log.Errorf("Unexpected error %s", err)
 		}
 	}
 	return ErrUserNotAllowed

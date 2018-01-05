@@ -5,8 +5,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
