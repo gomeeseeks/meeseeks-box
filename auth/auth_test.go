@@ -3,11 +3,16 @@ package auth_test
 import (
 	"testing"
 
+	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/auth"
 )
 
 func Test_Auth(t *testing.T) {
+	auth.Configure(config.Config{
+		Groups: map[string][]string{
+			"admins": []string{"admin_user"},
+		},
+	})
 	tt := []struct {
 		name     string
 		username string
@@ -19,7 +24,6 @@ func Test_Auth(t *testing.T) {
 			username: "myself",
 			cmd: config.Command{
 				Cmd:          "echo",
-				Authorized:   []string{},
 				AuthStrategy: config.AuthStrategyAny,
 			},
 			expected: nil,
@@ -29,28 +33,27 @@ func Test_Auth(t *testing.T) {
 			username: "myself",
 			cmd: config.Command{
 				Cmd:          "echo",
-				Authorized:   []string{"myself"},
 				AuthStrategy: config.AuthStrategyNone,
 			},
 			expected: auth.ErrUserNotAllowed,
 		},
 		{
-			name:     "authorized list including user",
-			username: "myself",
+			name:     "authorized groups",
+			username: "admin_user",
 			cmd: config.Command{
-				Cmd:          "echo",
-				Authorized:   []string{"myself"},
-				AuthStrategy: config.AuthStrategyUserList,
+				Cmd:           "echo",
+				AllowedGroups: []string{"admins"},
+				AuthStrategy:  config.AuthStrategyAllowedGroup,
 			},
 			expected: nil,
 		},
 		{
-			name:     "authorized list excluding user",
-			username: "someoneelse",
+			name:     "authorized groups with unauthorized user",
+			username: "normal_user",
 			cmd: config.Command{
-				Cmd:          "echo",
-				Authorized:   []string{"myself"},
-				AuthStrategy: config.AuthStrategyUserList,
+				Cmd:           "echo",
+				AllowedGroups: []string{"admins"},
+				AuthStrategy:  config.AuthStrategyAllowedGroup,
 			},
 			expected: auth.ErrUserNotAllowed,
 		},
