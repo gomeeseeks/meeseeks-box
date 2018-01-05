@@ -9,66 +9,109 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Default command templates
+// Template names used for rendering
 const (
-	defaultHandshakeTemplate = "{{ AnyValue \"handshake\" . }}"
-	defaultSuccessTemplate   = "{{ .user }} {{ AnyValue \"success\" . }}" +
-		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}"
-	defaultFailureTemplate = "{{ .user }} {{ AnyValue \"failed\" . }} :disappointed: {{ .error }}" +
-		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}"
-	defaultUnknownCommand       = "{{ .user }} {{ AnyValue \"unknowncommand\" . }} {{ .command }}"
-	defaultUnauthorizedTemplate = "{{ .user }} {{ AnyValue \"unauthorized\" . }} {{ .command }}"
+	HandshakeKey      = "handshake"
+	SuccessKey        = "success"
+	FailureKey        = "failure"
+	UnknownCommandKey = "unknowncommand"
+	UnauthorizedKey   = "unauthorized"
+)
+
+// Default command templates
+var (
+	DefaultHandshakeTemplate = fmt.Sprintf("{{ AnyValue \"%s\" . }}", HandshakeKey)
+	DefaultSuccessTemplate   = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}"+
+		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", SuccessKey)
+	DefaultFailureTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} :disappointed: {{ .error }}"+
+		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", FailureKey)
+	DefaultUnknownCommandTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}",
+		UnknownCommandKey)
+	DefaultUnauthorizedTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}",
+		UnauthorizedKey)
+)
+
+// Default messages
+var (
+	DefaultHandshakeMessages      = []string{"I'm Mr Meeseeks! look at me!", "Mr Meeseeks!", "Uuuuh, yeah! can do!", "Can doo...", "Uuuuh, ok!"}
+	DefaultSuccessMessages        = []string{"All done!", "Mr Meeseeks", "Uuuuh, nice!"}
+	DefaultFailedMessages         = []string{"Uuuh!, no, it failed"}
+	DefaultUnauthorizedMessages   = []string{"Uuuuh, yeah! you are not allowed to do"}
+	DefaultUnknownCommandMessages = []string{"Uuuh! no, I don't know how to do"}
 )
 
 // Templates is a set of templates for the basic operations
 type Templates struct {
-	Handshake      Renderer
-	Success        Renderer
-	Failure        Renderer
-	UnknownCommand Renderer
-	Unauthorized   Renderer
+	renderers      map[string]Renderer
 	defaultPayload Payload
 }
 
-// DefaultTemplates builds a set of default template renderers
-func DefaultTemplates(messages map[string][]string) Templates {
-	handshake, err := New("handshake", defaultHandshakeTemplate)
-	if err != nil {
-		log.Fatalf("could not parse default handshake template: %s", err)
+// TemplatesBuilder is a helper object that is used to build the template renderes
+type TemplatesBuilder struct {
+	messages  map[string][]string
+	templates map[string]string
+}
+
+// NewBuilder creates a new template builder fill with default values
+func NewBuilder() *TemplatesBuilder {
+	return &TemplatesBuilder{
+		templates: map[string]string{
+			HandshakeKey:      DefaultHandshakeTemplate,
+			SuccessKey:        DefaultSuccessTemplate,
+			FailureKey:        DefaultFailureTemplate,
+			UnknownCommandKey: DefaultUnknownCommandTemplate,
+			UnauthorizedKey:   DefaultUnauthorizedTemplate,
+		},
+		messages: map[string][]string{
+			HandshakeKey:      DefaultHandshakeMessages,
+			SuccessKey:        DefaultSuccessMessages,
+			FailureKey:        DefaultFailedMessages,
+			UnknownCommandKey: DefaultUnknownCommandMessages,
+			UnauthorizedKey:   DefaultUnauthorizedMessages,
+		},
+	}
+}
+
+// WithMessages allows to change messages from the template builder
+func (b *TemplatesBuilder) WithMessages(messages map[string][]string) *TemplatesBuilder {
+	for name, message := range messages {
+		b.messages[name] = message
+	}
+	return b
+}
+
+// WithTemplates allows to change templates from the template builder
+func (b *TemplatesBuilder) WithTemplates(templates map[string]string) *TemplatesBuilder {
+	for name, template := range templates {
+		b.templates[name] = template
+	}
+	return b
+}
+
+// Clone returns a copy of this template builder
+func (b *TemplatesBuilder) Clone() *TemplatesBuilder {
+	return NewBuilder().WithMessages(b.messages).WithTemplates(b.templates)
+}
+
+// Build creates a Templates object will all the necessary renderes initialized
+func (b *TemplatesBuilder) Build() Templates {
+	renderers := make(map[string]Renderer)
+	for name, template := range b.templates {
+		renderer, err := New(name, template)
+		if err != nil {
+			log.Fatalf("could not parse %s template: %s", name, err)
+		}
+		renderers[name] = renderer
 	}
 
-	success, err := New("success", defaultSuccessTemplate)
-	if err != nil {
-		log.Fatalf("could not parse default success template: %s", err)
-	}
-
-	failure, err := New("failure", defaultFailureTemplate)
-	if err != nil {
-		log.Fatalf("could not parse default failure template: %s", err)
-	}
-
-	unknownCommand, err := New("unknowncommand", defaultUnknownCommand)
-	if err != nil {
-		log.Fatalf("could not parse default unknown command template: %s", err)
-	}
-
-	unauthorized, err := New("unauthorized", defaultUnauthorizedTemplate)
-	if err != nil {
-		log.Fatalf("could not parse default unauthorized template: %s", err)
-	}
-
-	defaultPayload := Payload{}
-	for k, v := range messages {
-		defaultPayload[k] = v
+	payload := Payload{}
+	for k, v := range b.messages {
+		payload[k] = v
 	}
 
 	return Templates{
-		Handshake:      handshake,
-		Success:        success,
-		Failure:        failure,
-		UnknownCommand: unknownCommand,
-		Unauthorized:   unauthorized,
-		defaultPayload: defaultPayload,
+		renderers:      renderers,
+		defaultPayload: payload,
 	}
 }
 
@@ -76,7 +119,7 @@ func DefaultTemplates(messages map[string][]string) Templates {
 func (t Templates) RenderHandshake(user string) (string, error) {
 	p := t.newPayload()
 	p["user"] = user
-	return t.Handshake.Render(p)
+	return t.renderers[HandshakeKey].Render(p)
 }
 
 // RenderUnknownCommand renders an unknown command message
@@ -84,7 +127,7 @@ func (t Templates) RenderUnknownCommand(user, cmd string) (string, error) {
 	p := t.newPayload()
 	p["user"] = user
 	p["command"] = cmd
-	return t.UnknownCommand.Render(p)
+	return t.renderers[UnknownCommandKey].Render(p)
 }
 
 // RenderUnauthorizedCommand renders an unauthorized command message
@@ -92,7 +135,7 @@ func (t Templates) RenderUnauthorizedCommand(user, cmd string) (string, error) {
 	p := t.newPayload()
 	p["user"] = user
 	p["command"] = cmd
-	return t.Unauthorized.Render(p)
+	return t.renderers[UnauthorizedKey].Render(p)
 }
 
 // RenderSuccess renders a success message
@@ -100,7 +143,7 @@ func (t Templates) RenderSuccess(user, output string) (string, error) {
 	p := t.newPayload()
 	p["user"] = user
 	p["output"] = output
-	return t.Success.Render(p)
+	return t.renderers[SuccessKey].Render(p)
 }
 
 // RenderFailure renders a failure message
@@ -109,7 +152,7 @@ func (t Templates) RenderFailure(user, err, output string) (string, error) {
 	p["user"] = user
 	p["error"] = err
 	p["output"] = output
-	return t.Failure.Render(p)
+	return t.renderers[FailureKey].Render(p)
 }
 
 func (t Templates) newPayload() Payload {

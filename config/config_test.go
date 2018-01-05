@@ -17,13 +17,13 @@ func Test_ConfigurationReading(t *testing.T) {
 		Error:   config.DefaultErrColorMessage,
 		Success: config.DefaultSuccessColorMessage,
 	}
-	defaultMessages := map[string][]string{
-		"handshake":      config.DefaultHandshake,
-		"success":        config.DefaultSuccess,
-		"failed":         config.DefaultFailed,
-		"unauthorized":   config.DefaultUnauthorized,
-		"unknowncommand": config.DefaultUnknownCommand,
-	}
+	// defaultMessages := map[string][]string{
+	// 	"handshake":      config.DefaultHandshake,
+	// 	"success":        config.DefaultSuccess,
+	// 	"failed":         config.DefaultFailed,
+	// 	"unauthorized":   config.DefaultUnauthorized,
+	// 	"unknowncommand": config.DefaultUnknownCommand,
+	// }
 	tt := []struct {
 		Name     string
 		Content  string
@@ -33,8 +33,8 @@ func Test_ConfigurationReading(t *testing.T) {
 			"Default configuration",
 			"",
 			config.Config{
-				Messages: defaultMessages,
-				Colors:   defaultColors,
+				// Messages: defaultMessages,
+				Colors: defaultColors,
 			},
 		},
 		{
@@ -45,11 +45,11 @@ func Test_ConfigurationReading(t *testing.T) {
 				`),
 			config.Config{
 				Messages: map[string][]string{
-					"handshake":      []string{"hallo"},
-					"success":        config.DefaultSuccess,
-					"failed":         config.DefaultFailed,
-					"unauthorized":   config.DefaultUnauthorized,
-					"unknowncommand": config.DefaultUnknownCommand,
+					"handshake": []string{"hallo"},
+					// "success":        config.DefaultSuccess,
+					// "failed":         config.DefaultFailed,
+					// "unauthorized":   config.DefaultUnauthorized,
+					// "unknowncommand": config.DefaultUnknownCommand,
 				},
 				Colors: defaultColors,
 			},
@@ -63,7 +63,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				  error: "#000000"
 				`),
 			config.Config{
-				Messages: defaultMessages,
+				// Messages: defaultMessages,
 				Colors: config.MessageColors{
 					Info:    "#FFFFFF",
 					Success: "#CCCCCC",
@@ -81,7 +81,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				    arguments: ["none"]
 				`),
 			config.Config{
-				Messages: defaultMessages,
+				// Messages: defaultMessages,
 				Commands: map[string]config.Command{
 					"something": config.Command{
 						Cmd:          "ssh",

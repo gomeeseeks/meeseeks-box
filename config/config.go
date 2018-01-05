@@ -17,15 +17,6 @@ const (
 	AuthStrategyNone     = "none"
 )
 
-// Default messages to use
-var (
-	DefaultHandshake      = []string{"I'm Mr Meeseeks! look at me!", "Mr Meeseeks!", "Uuuuh, yeah! can do!", "Can doo...", "Uuuuh, ok!"}
-	DefaultSuccess        = []string{"All done!", "Mr Meeseeks", "Uuuuh, nice!"}
-	DefaultFailed         = []string{"Uuuh!, no, it failed"}
-	DefaultUnauthorized   = []string{"Uuuuh, yeah! you are not allowed to do"}
-	DefaultUnknownCommand = []string{"Uuuh! no, I don't know how to do"}
-)
-
 // Defaults for commands
 const (
 	DefaultCommandTimeout = 60 * time.Second
@@ -54,13 +45,6 @@ const (
 // New parses the configuration from a reader into an object and returns it
 func New(r io.Reader) (Config, error) {
 	c := Config{
-		Messages: map[string][]string{
-			"handshake":      DefaultHandshake,
-			"success":        DefaultSuccess,
-			"failed":         DefaultFailed,
-			"unauthorized":   DefaultUnauthorized,
-			"unknowncommand": DefaultUnknownCommand,
-		},
 		Colors: MessageColors{
 			Info:    DefaultInfoColorMessage,
 			Success: DefaultSuccessColorMessage,
@@ -109,21 +93,14 @@ type Config struct {
 
 // Command is the struct that handles a command configuration
 type Command struct {
-	Cmd          string          `yaml:"command"`
-	Args         []string        `yaml:"arguments"`
-	Authorized   []string        `yaml:"authorized"`
-	AuthStrategy string          `yaml:"auth_strategy"`
-	Timeout      time.Duration   `yaml:"timeout"`
-	Templates    CommandTemplate `yaml:"templates"`
-	Help         string          `yaml:"help"`
+	Cmd          string            `yaml:"command"`
+	Args         []string          `yaml:"arguments"`
+	Authorized   []string          `yaml:"authorized"`
+	AuthStrategy string            `yaml:"auth_strategy"`
+	Timeout      time.Duration     `yaml:"timeout"`
+	Templates    map[string]string `yaml:"templates"`
+	Help         string            `yaml:"help"`
 	Type         int
-}
-
-// CommandTemplate is the struct in which the templates used to render a command are kept
-type CommandTemplate struct {
-	Handshake string `yaml:"on_handshake"`
-	Success   string `yaml:"on_success"`
-	Failure   string `yaml:"on_failure"`
 }
 
 // MessageColors contains the configured reply message colora

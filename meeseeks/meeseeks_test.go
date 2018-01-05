@@ -9,8 +9,8 @@ import (
 
 	"regexp"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 )
 
@@ -21,7 +21,7 @@ type expectedMessage struct {
 }
 
 func Test_BasicReplying(t *testing.T) {
-	handshakeMatcher := fmt.Sprintf("^(%s)$", strings.Join(config.DefaultHandshake, "|"))
+	handshakeMatcher := fmt.Sprintf("^(%s)$", strings.Join(template.DefaultHandshakeMessages, "|"))
 
 	tt := []struct {
 		name     string
