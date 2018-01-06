@@ -90,6 +90,8 @@ func Test_GroupsCommand(t *testing.T) {
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("groups")
+	stubs.AssertEquals(t, cmd.HasHandshake(), false)
+	stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAllowedGroup)
 	stubs.Must(t, "failed to get help command", err)
 
 	out, err := cmd.Execute()
