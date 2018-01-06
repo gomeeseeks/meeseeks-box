@@ -36,6 +36,9 @@ func New(cnf config.Config) (Commands, error) {
 	commands[config.BuiltinVersionCommand] = versionCommand{
 		Help: "prints the running meeseeks version",
 	}
+	commands[config.BuiltinGroupsCommand] = groupsCommand{
+		Help: "prints the configured groups",
+	}
 
 	for name, configCommand := range cnf.Commands {
 		command, err := buildCommand(configCommand)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/renstrom/dedent"
+	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
@@ -19,6 +20,12 @@ var builtinTemplates = map[string]string{
 var allowAllConfiguredCommand = config.Command{
 	AuthStrategy: config.AuthStrategyAny,
 	Templates:    builtinTemplates,
+}
+
+var allowAdminsCommand = config.Command{
+	AuthStrategy:  config.AuthStrategyAllowedGroup,
+	Templates:     builtinTemplates,
+	AllowedGroups: []string{"admin"},
 }
 
 func (b builtinCommand) HasHandshake() bool {
@@ -55,5 +62,25 @@ func (h helpCommand) Execute(args ...string) (string, error) {
 	}
 	return tmpl.Render(template.Payload{
 		"commands": h.commands,
+	})
+}
+
+type groupsCommand struct {
+	builtinCommand
+	Help string
+}
+
+func (g groupsCommand) Execute(args ...string) (string, error) {
+	tmpl, err := template.New("version", dedent.Dedent(`
+		{{- range $group, $users := .groups }}
+		- {{ $group }}:
+		  {{- range $index, $user := $users }}{{ if ne $index 0 }},{{ end }} {{ $user }}{{ end }}
+		{{- end }}
+		`))
+	if err != nil {
+		return "", err
+	}
+	return tmpl.Render(template.Payload{
+		"groups": auth.GetGroups(),
 	})
 }

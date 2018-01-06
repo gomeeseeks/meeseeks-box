@@ -41,6 +41,7 @@ const (
 const (
 	BuiltinVersionCommand = "version"
 	BuiltinHelpCommand    = "help"
+	BuiltinGroupsCommand  = "groups"
 )
 
 // New parses the configuration from a reader into an object and returns it

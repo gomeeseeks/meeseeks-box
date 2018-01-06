@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/renstrom/dedent"
+	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
@@ -71,7 +72,31 @@ func Test_HelpCommand(t *testing.T) {
 
 	stubs.AssertEquals(t, dedent.Dedent(`
 		- echo: command that prints back the arguments passed
+		- groups: prints the configured groups
 		- help: prints all the kwnown commands and its associated help
 		- version: prints the running meeseeks version
+		`), out)
+}
+
+func Test_GroupsCommand(t *testing.T) {
+	auth.Configure(config.Config{
+		Groups: map[string][]string{
+			"admins": []string{"admin_user"},
+			"other":  []string{"user_one", "user_two"},
+		},
+	})
+
+	cmds, err := commands.New(configWithEcho)
+	stubs.Must(t, "could not build commands", err)
+
+	cmd, err := cmds.Find("groups")
+	stubs.Must(t, "failed to get help command", err)
+
+	out, err := cmd.Execute()
+	stubs.Must(t, "failed to execute help command", err)
+
+	stubs.AssertEquals(t, dedent.Dedent(`
+		- admins: admin_user
+		- other: user_one, user_two
 		`), out)
 }
