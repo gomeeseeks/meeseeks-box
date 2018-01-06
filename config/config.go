@@ -13,7 +13,6 @@ import (
 // Authorization Strategies determine who has access to what
 const (
 	AuthStrategyAny          = "any"
-	AuthStrategyUserList     = "userlist"
 	AuthStrategyAllowedGroup = "group"
 	AuthStrategyNone         = "none"
 )
