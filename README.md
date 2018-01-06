@@ -56,9 +56,9 @@ A command can be configured the following way:
 Meeseeks include a set of builtin commands that can be used to introspect the
 system, these are:
 
-- help: prints the list of configured commands
-- groups: prints the configured groups and which users are included there
-- version: prints the current executable version
+- `help`: prints the list of configured commands
+- `groups`: prints the configured groups and which users are included there
+- `version`: prints the current executable version
 
 # Configuration
 
