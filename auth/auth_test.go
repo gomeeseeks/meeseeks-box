@@ -79,8 +79,8 @@ func Test_Groups(t *testing.T) {
 	)
 	stubs.AssertEquals(t,
 		map[string][]string{
-			config.AdminGroup: []string{"user1", "user2"},
 			"developer":       []string{"user1"},
+			config.AdminGroup: []string{"user1", "user2"},
 		},
 		auth.GetGroups())
 }

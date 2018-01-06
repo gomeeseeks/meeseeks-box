@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"sort"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 )
@@ -58,6 +59,7 @@ func GetGroups() map[string][]string {
 		for user := range users {
 			groupUsers = append(groupUsers, user)
 		}
+		sort.Strings(groupUsers) // Sort them to be stable
 		g[group] = groupUsers
 	}
 	return g
