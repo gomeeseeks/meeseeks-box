@@ -11,7 +11,7 @@ import (
 func Test_Auth(t *testing.T) {
 	auth.Configure(config.Config{
 		Groups: map[string][]string{
-			"admins": []string{"admin_user"},
+			config.AdminGroup: []string{"admin_user"},
 		},
 	})
 	tt := []struct {
@@ -43,7 +43,7 @@ func Test_Auth(t *testing.T) {
 			username: "admin_user",
 			cmd: config.Command{
 				Cmd:           "echo",
-				AllowedGroups: []string{"admins"},
+				AllowedGroups: []string{config.AdminGroup},
 				AuthStrategy:  config.AuthStrategyAllowedGroup,
 			},
 			expected: nil,
@@ -53,7 +53,7 @@ func Test_Auth(t *testing.T) {
 			username: "normal_user",
 			cmd: config.Command{
 				Cmd:           "echo",
-				AllowedGroups: []string{"admins"},
+				AllowedGroups: []string{config.AdminGroup},
 				AuthStrategy:  config.AuthStrategyAllowedGroup,
 			},
 			expected: auth.ErrUserNotAllowed,
@@ -72,15 +72,15 @@ func Test_Groups(t *testing.T) {
 	auth.Configure(
 		config.Config{
 			Groups: map[string][]string{
-				"admin":     []string{"user1", "user2"},
-				"developer": []string{"user1"},
+				config.AdminGroup: []string{"user1", "user2"},
+				"developer":       []string{"user1"},
 			},
 		},
 	)
 	stubs.AssertEquals(t,
 		map[string][]string{
-			"admin":     []string{"user1", "user2"},
-			"developer": []string{"user1"},
+			config.AdminGroup: []string{"user1", "user2"},
+			"developer":       []string{"user1"},
 		},
 		auth.GetGroups())
 }
