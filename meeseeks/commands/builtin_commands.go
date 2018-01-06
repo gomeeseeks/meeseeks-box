@@ -10,14 +10,11 @@ import (
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 )
 
-type builtinCommand struct {
-}
-
 var builtinTemplates = map[string]string{
 	template.SuccessKey: fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}{{ with $out := .output }}\n{{ $out }}{{ end }}", template.SuccessKey),
 }
 
-var allowAllConfiguredCommand = config.Command{
+var allowAllCommand = config.Command{
 	AuthStrategy: config.AuthStrategyAny,
 	Templates:    builtinTemplates,
 }
@@ -28,16 +25,30 @@ var allowAdminsCommand = config.Command{
 	AllowedGroups: []string{"admin"},
 }
 
-func (b builtinCommand) HasHandshake() bool {
+type noHandshake struct {
+}
+
+func (b noHandshake) HasHandshake() bool {
 	return false
 }
 
-func (b builtinCommand) ConfiguredCommand() config.Command {
-	return allowAllConfiguredCommand
+type allowAll struct {
+}
+
+func (a allowAll) ConfiguredCommand() config.Command {
+	return allowAllCommand
+}
+
+type allowAdmins struct {
+}
+
+func (a allowAdmins) ConfiguredCommand() config.Command {
+	return allowAdminsCommand
 }
 
 type versionCommand struct {
-	builtinCommand
+	noHandshake
+	allowAll
 	Help string
 }
 
@@ -46,7 +57,8 @@ func (v versionCommand) Execute(args ...string) (string, error) {
 }
 
 type helpCommand struct {
-	builtinCommand
+	noHandshake
+	allowAll
 	commands *map[string]Command
 	Help     string
 }
@@ -66,7 +78,8 @@ func (h helpCommand) Execute(args ...string) (string, error) {
 }
 
 type groupsCommand struct {
-	builtinCommand
+	noHandshake
+	allowAdmins
 	Help string
 }
 
