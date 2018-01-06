@@ -29,7 +29,7 @@ build-darwin: test version
 
 build: test build-linux build-arm build-darwin
 
-package-linux: build-linx
+package-linux: build-linux
 	cp Dockerfile build/linux && \
 		cd build/linux && \
 		docker build . -t $(namespace)/$(executable):latest
