@@ -61,4 +61,4 @@ release: release-linux
 
 clean:
 	rm -rf ./build
-	git reset --hard
+	git checkout version/version.go
