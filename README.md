@@ -13,7 +13,7 @@ It follows the Unix philosophy of doing only one thing well, only caring about
 gluing commands allowing everyone to build their own ChatOps experience by
 going to the basics of using simple bash scripts as the execution unit.
 
-# How to use
+## How to use
 
 It is composed by a single go binary that requires a `SLACK_TOKEN` environment
 variable set to start up.
@@ -22,18 +22,40 @@ To start adding commands add a configuration file and load it adding the
 `-config=config-file.yml` argument and then restarting the binary (still no hot
 reload supported)
 
-## Example file
+### Example file
 
 ```yaml
+groups:
+  admin:
+  - my_user
 commands:
   echo:
     command: "echo"
     auth_strategy: any
     timeout: 5
     help: command that prints back the arguments passed
+  curl:
+    command: "curl"
+    args:
+    - "-L"
+    - "-v"
+    auth_strategy: groups
+    allowed_groups:
+    - admin
+    help: downloads the provided url
 ```
 
-## Command configuration
+## Configuration
+
+Besides configuring commands, other things can be configured
+
+### Permissions
+
+- `groups`: map group name and user list. By using the `allowed_groups` we will
+  be forced to define which users are in which groups, this can only be set in
+  configuration for now, for which
+
+### Commands
 
 A command can be configured the following way:
 
@@ -60,25 +82,6 @@ system, these are:
 - `groups`: prints the configured groups and which users are included there
 - `version`: prints the current executable version
 
-# Configuration
-
-Besides configuring commands, other things can be configured
-
-## Permissions
-
-- `groups`: map group name and user list. By using the `allowed_groups` we will
-  be forced to define which users are in which groups, this can only be set in
-  configuration for now, for which
-
-For example:
-
-```yaml
-groups:
-  admin: # default admin group used by builtin commands
-  - "user1"
-  - "user2"
-```
-
 ## Interface
 
 It's strange that you want to change this, but anyway, here it is.
@@ -89,7 +92,7 @@ It's strange that you want to change this, but anyway, here it is.
 - `colors`: colors to use for info, error and success messages in the slack
   interface.
 
-# Templating
+## Templating
 
 Commands support to change templates. All the templating is done with the go
 package `text/template`, and all the rendering data is submitted with a Payload
@@ -97,4 +100,4 @@ that is nothing but a `map[string]interface{}`, handle with care, but if you
 insist, check the following files to understand how it works:
 
 - [Templates](./meeseeks/template/template.go)
-- [Sample tests](./meeseeks/template/template.go)
+- [Sample tests](./meeseeks/template/template_tet.go)
