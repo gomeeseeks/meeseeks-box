@@ -18,6 +18,9 @@ const (
 	AuthStrategyNone         = "none"
 )
 
+// AdminGroup is the default admin group used by builtin commands
+const AdminGroup = "admin"
+
 // Defaults for commands
 const (
 	DefaultCommandTimeout = 60 * time.Second

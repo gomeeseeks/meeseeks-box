@@ -22,7 +22,7 @@ var allowAllCommand = config.Command{
 var allowAdminsCommand = config.Command{
 	AuthStrategy:  config.AuthStrategyAllowedGroup,
 	Templates:     builtinTemplates,
-	AllowedGroups: []string{"admin"},
+	AllowedGroups: []string{config.AdminGroup},
 }
 
 type noHandshake struct {
