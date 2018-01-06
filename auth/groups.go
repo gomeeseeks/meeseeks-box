@@ -11,9 +11,7 @@ type Groups struct {
 	groups map[string]map[string]bool
 }
 
-var groups = &Groups{
-	groups: map[string]map[string]bool{},
-}
+var groups *Groups
 
 // Errors
 var (
@@ -25,13 +23,19 @@ var (
 //
 // This should go away the moment we start storing groups in some storage
 func Configure(cnf config.Config) {
+	g := Groups{
+		groups: map[string]map[string]bool{},
+	}
+
 	for name, users := range cnf.Groups {
 		group := make(map[string]bool)
 		for _, user := range users {
 			group[user] = true
 		}
-		groups.groups[name] = group
+		g.groups[name] = group
 	}
+
+	groups = &g
 }
 
 // CheckUserInGroup returns nil if the user belongs to the given group, else, an error

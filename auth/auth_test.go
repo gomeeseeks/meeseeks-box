@@ -5,6 +5,7 @@ import (
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 )
 
 func Test_Auth(t *testing.T) {
@@ -65,4 +66,21 @@ func Test_Auth(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_Groups(t *testing.T) {
+	auth.Configure(
+		config.Config{
+			Groups: map[string][]string{
+				"admin":     []string{"user1", "user2"},
+				"developer": []string{"user1"},
+			},
+		},
+	)
+	stubs.AssertEquals(t,
+		map[string][]string{
+			"admin":     []string{"user1", "user2"},
+			"developer": []string{"user1"},
+		},
+		auth.GetGroups())
 }
