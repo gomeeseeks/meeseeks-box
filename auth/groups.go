@@ -45,3 +45,16 @@ func (g *Groups) CheckUserInGroup(username, group string) error {
 	}
 	return nil
 }
+
+// GetGroups returns the groups and users that are setup
+func GetGroups() map[string][]string {
+	g := make(map[string][]string)
+	for group, users := range groups.groups {
+		groupUsers := make([]string, 0)
+		for user := range users {
+			groupUsers = append(groupUsers, user)
+		}
+		g[group] = groupUsers
+	}
+	return g
+}
