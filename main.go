@@ -8,6 +8,7 @@ import (
 	"sync"
 	"syscall"
 
+	bolt "github.com/coreos/bbolt"
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
@@ -86,4 +87,12 @@ func must(err error) {
 		log.Println(err)
 		os.Exit(1)
 	}
+}
+
+func openDB(cnf config.Config) (*bolt.DB, error) {
+	db, err := bolt.Open(cnf.Database.Path, cnf.Database.Mode, &bolt.Options{
+		Timeout: cnf.Database.Timeout,
+	})
+	db.Close()
+	return db, err
 }

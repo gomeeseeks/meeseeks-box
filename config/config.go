@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -49,6 +50,11 @@ const (
 // New parses the configuration from a reader into an object and returns it
 func New(r io.Reader) (Config, error) {
 	c := Config{
+		Database: Database{
+			Path:    "meeseeks.db",
+			Mode:    0600,
+			Timeout: 2,
+		},
 		Colors: MessageColors{
 			Info:    DefaultInfoColorMessage,
 			Success: DefaultSuccessColorMessage,
@@ -90,6 +96,7 @@ func New(r io.Reader) (Config, error) {
 
 // Config is the struct used to load MrMeeseeks configuration yaml
 type Config struct {
+	Database Database            `yaml:"db"`
 	Messages map[string][]string `yaml:"messages"`
 	Commands map[string]Command  `yaml:"commands"`
 	Colors   MessageColors       `yaml:"colors"`
@@ -113,4 +120,11 @@ type MessageColors struct {
 	Info    string `yaml:"info"`
 	Success string `yaml:"success"`
 	Error   string `yaml:"error"`
+}
+
+// Database holds the configuration for the BoltDB database
+type Database struct {
+	Path    string        `yaml:"path"`
+	Timeout time.Duration `yaml:"timeout"`
+	Mode    os.FileMode   `yaml:"file_mode"`
 }
