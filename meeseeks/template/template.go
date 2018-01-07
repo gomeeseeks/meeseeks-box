@@ -33,7 +33,9 @@ var (
 
 // Default messages
 var (
-	DefaultHandshakeMessages      = []string{"I'm Mr Meeseeks! look at me!", "Mr Meeseeks!", "Uuuuh, yeah! can do!", "Can doo...", "Uuuuh, ok!"}
+	DefaultHandshakeMessages = []string{"I'm Mr Meeseeks! look at me!", "Mr Meeseeks!",
+		"Ooh, yeah! Can do!", "Ooh, ok!", "Yes, siree!",
+		"Ooh, I'm Mr. Meeseeks! Look at me!"}
 	DefaultSuccessMessages        = []string{"All done!", "Mr Meeseeks", "Uuuuh, nice!"}
 	DefaultFailedMessages         = []string{"Uuuh!, no, it failed"}
 	DefaultUnauthorizedMessages   = []string{"Uuuuh, yeah! you are not allowed to do"}
