@@ -77,19 +77,19 @@ func (m Meeseeks) Process(message Message) {
 		return
 	}
 
-	log.Infof("Accepted command '%s' from user %s with args: %s", cmd, message.GetUsername(), args[1:])
+	log.Infof("Accepted command '%s' from user '%s' with args: %s", cmd, message.GetUsername(), args[1:])
 	m.replyWithHandshake(command, message)
 
 	out, err := command.Execute(args[1:]...)
 	if err != nil {
-		log.Errorf("Command '%s' from user %s failed execution with error: %s",
+		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 			cmd, message.GetUsername(), err)
 		m.replyWithCommandFailed(command, message, err, out)
 		return
 	}
 
 	m.replyWithSuccess(command, message, out)
-	log.Infof("Command '%s' from user %s succeeded execution", cmd, message.GetUsername())
+	log.Infof("Command '%s' from user '%s' succeeded execution", cmd, message.GetUsername())
 }
 
 func (m Meeseeks) buildTemplatesFor(cmd commands.Command) template.Templates {
@@ -99,18 +99,18 @@ func (m Meeseeks) buildTemplatesFor(cmd commands.Command) template.Templates {
 func (m Meeseeks) replyWithError(message Message, err error, out string) {
 	msg, err := m.templates.Build().RenderFailure(message.GetReplyTo(), err.Error(), out)
 	if err != nil {
-		log.Fatalf("could not render failure template %s", err)
+		log.Fatalf("could not render failure template: %s", err)
 	}
 
 	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
 }
 
 func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
-	log.Debugf("Could not find command '%s' in the registered commands", cmd)
+	log.Debugf("Could not find command '%s' in the command registry", cmd)
 
 	msg, err := m.templates.Build().RenderUnknownCommand(message.GetReplyTo(), cmd)
 	if err != nil {
-		log.Fatalf("could not render unknown command template %s", err)
+		log.Fatalf("could not render unknown command template: %s", err)
 	}
 
 	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
@@ -122,7 +122,7 @@ func (m Meeseeks) replyWithHandshake(cmd commands.Command, message Message) {
 	}
 	msg, err := m.buildTemplatesFor(cmd).RenderHandshake(message.GetReplyTo())
 	if err != nil {
-		log.Fatalf("could not render unknown command template %s", err)
+		log.Fatalf("could not render unknown command template: %s", err)
 	}
 
 	m.client.Reply(msg, m.config.Colors.Info, message.GetChannel())

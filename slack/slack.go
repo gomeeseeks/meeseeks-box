@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -18,16 +19,15 @@ type Client struct {
 	messageMatch func(*slack.MessageEvent) *Message
 }
 
-// ClientConfig client configuration used to setup the Slack client
-type ClientConfig struct {
-	Token string
-	Debug bool
-}
+// Connect builds a new chat client
+func Connect(debug bool) (*Client, error) {
+	token := os.Getenv("SLACK_TOKEN")
+	if token == "" {
+		return nil, fmt.Errorf("could not connect to slack: SLACK_TOKEN env var is empty")
+	}
 
-// New builds a new chat client
-func New(conf ClientConfig) (*Client, error) {
-	slackAPI := slack.New(conf.Token)
-	slackAPI.SetDebug(conf.Debug)
+	slackAPI := slack.New(token)
+	slackAPI.SetDebug(debug)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -100,29 +100,32 @@ func (m messageMatcher) messageToMe(message *slack.MessageEvent) (string, bool) 
 }
 
 // ListenMessages listens to messages and sends the matching ones through the channel
-func (c *Client) ListenMessages(ch chan Message) {
+func (c *Client) ListenMessages(ch chan<- Message) {
 	log.Infof("Listening messages")
 
 	for msg := range c.rtm.IncomingEvents {
-
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
 			message := c.messageMatch(ev)
 			if message == nil {
 				continue
 			}
-			log.Infof("Received matching message", ev.Text)
+
+			log.Debugf("Received matching message %#v", ev.Text)
 			u, err := c.rtm.GetUserInfo(ev.User)
 			if err != nil {
 				log.Errorf("could not find user with id %s because %s, weeeird", ev.User, err)
+				continue
 			}
 			message.username = u.Name
-			ch <- *message
-		default:
-			log.Debugf("Received Slack Event %#v\n", ev)
-		}
 
+			ch <- *message
+
+		default:
+			log.Debugf("Ignored Slack Event %#v", ev)
+		}
 	}
+	log.Infof("Stopped listening to messages")
 }
 
 // Reply replies to the user building a message with attachment
