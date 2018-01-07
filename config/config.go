@@ -53,7 +53,7 @@ func New(r io.Reader) (Config, error) {
 		Database: Database{
 			Path:    "meeseeks.db",
 			Mode:    0600,
-			Timeout: 2,
+			Timeout: 2 * time.Second,
 		},
 		Colors: MessageColors{
 			Info:    DefaultInfoColorMessage,

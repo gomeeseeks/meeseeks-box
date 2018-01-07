@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
@@ -17,6 +18,11 @@ func Test_ConfigurationReading(t *testing.T) {
 		Error:   config.DefaultErrColorMessage,
 		Success: config.DefaultSuccessColorMessage,
 	}
+	defaultDatabase := config.Database{
+		Path:    "meeseeks.db",
+		Mode:    0600,
+		Timeout: 2 * time.Second,
+	}
 	tt := []struct {
 		Name     string
 		Content  string
@@ -26,7 +32,8 @@ func Test_ConfigurationReading(t *testing.T) {
 			"Default configuration",
 			"",
 			config.Config{
-				Colors: defaultColors,
+				Colors:   defaultColors,
+				Database: defaultDatabase,
 			},
 		},
 		{
@@ -39,7 +46,8 @@ func Test_ConfigurationReading(t *testing.T) {
 				Messages: map[string][]string{
 					"handshake": []string{"hallo"},
 				},
-				Colors: defaultColors,
+				Colors:   defaultColors,
+				Database: defaultDatabase,
 			},
 		},
 		{
@@ -56,6 +64,7 @@ func Test_ConfigurationReading(t *testing.T) {
 					Success: "#CCCCCC",
 					Error:   "#000000",
 				},
+				Database: defaultDatabase,
 			},
 		},
 		{
@@ -77,7 +86,8 @@ func Test_ConfigurationReading(t *testing.T) {
 						AuthStrategy: config.AuthStrategyNone,
 					},
 				},
-				Colors: defaultColors,
+				Colors:   defaultColors,
+				Database: defaultDatabase,
 			},
 		},
 	}
