@@ -22,6 +22,7 @@ type Request struct {
 	Command  string
 	Args     []string
 	Username string
+	ReplyTo  string
 	Channel  string
 	IsIM     bool
 }
@@ -41,6 +42,7 @@ func RequestFromMessage(msg message.Message) (Request, error) {
 		Command:  args[0],
 		Args:     args[1:],
 		Username: msg.GetUsername(),
+		ReplyTo:  msg.GetReplyTo(),
 		Channel:  msg.GetChannel(),
 		IsIM:     msg.IsIM(),
 	}, nil
