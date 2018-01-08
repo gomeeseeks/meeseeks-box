@@ -1,17 +1,50 @@
-package commands
+package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/command/parser"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/message"
 )
 
 // Command Errors
 var (
 	ErrCommandNotFound = fmt.Errorf("Can't find command")
+	ErrNoCommandToRun  = errors.New("No command to run")
 )
+
+// Request is a structure that holds all the command execution request
+type Request struct {
+	Command  string
+	Args     []string
+	Username string
+	Channel  string
+	IsIM     bool
+}
+
+// RequestFromMessage gets a message and generates a valid request from it
+func RequestFromMessage(msg message.Message) (Request, error) {
+	args, err := parser.Parse(msg.GetText())
+	if err != nil {
+		return Request{}, err
+	}
+
+	if len(args) == 0 {
+		return Request{}, ErrNoCommandToRun
+	}
+
+	return Request{
+		Command:  args[0],
+		Args:     args[1:],
+		Username: msg.GetUsername(),
+		Channel:  msg.GetChannel(),
+		IsIM:     msg.IsIM(),
+	}, nil
+}
 
 // Command is the base interface for any command
 type Command interface {

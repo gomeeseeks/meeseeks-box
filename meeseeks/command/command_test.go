@@ -1,4 +1,4 @@
-package commands_test
+package command_test
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/command"
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 )
@@ -24,7 +24,7 @@ var configWithEcho = config.Config{
 }
 
 func Test_ShellCommand(t *testing.T) {
-	cmds, err := commands.New(configWithEcho)
+	cmds, err := command.New(configWithEcho)
 	stubs.Must(t, "shell command failed to build", err)
 
 	cmd, err := cmds.Find("echo")
@@ -36,19 +36,19 @@ func Test_ShellCommand(t *testing.T) {
 }
 
 func Test_InvalidCommand(t *testing.T) {
-	cmds, err := commands.New(
+	cmds, err := command.New(
 		config.Config{
 			Commands: map[string]config.Command{},
 		})
 	stubs.Must(t, "could not build commands", err)
 	_, err = cmds.Find("non-existing")
-	if err != commands.ErrCommandNotFound {
+	if err != command.ErrCommandNotFound {
 		t.Fatalf("command build should have failed with an error, got %s instead", err)
 	}
 }
 
 func Test_VersionCommand(t *testing.T) {
-	cmds, err := commands.New(config.Config{})
+	cmds, err := command.New(config.Config{})
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("version")
@@ -61,7 +61,7 @@ func Test_VersionCommand(t *testing.T) {
 }
 
 func Test_HelpCommand(t *testing.T) {
-	cmds, err := commands.New(configWithEcho)
+	cmds, err := command.New(configWithEcho)
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("help")
@@ -86,7 +86,7 @@ func Test_GroupsCommand(t *testing.T) {
 		},
 	})
 
-	cmds, err := commands.New(configWithEcho)
+	cmds, err := command.New(configWithEcho)
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("groups")

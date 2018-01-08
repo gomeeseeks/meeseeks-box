@@ -24,7 +24,9 @@ type Job struct {
 	ID        uint64    `json:"ID"`
 	Command   string    `json:"Command"`
 	Args      []string  `json:"Args"`
-	Owner     string    `json:"Username"` // User who requested the job
+	Username  string    `json:"Username"`
+	Channel   string    `json:"Channel"`
+	IsIM      bool      `json:"IsIM"`
 	StartTime time.Time `json:"StartTime"`
 	EndTime   time.Time `json:"EndTime"`
 	Status    int       `json:"Status"`
@@ -40,7 +42,7 @@ func Create(username, command string, args ...string) (Job, error) {
 		job = &Job{
 			ID:        jobID,
 			Command:   command,
-			Owner:     username,
+			Username:  username,
 			Args:      args,
 			StartTime: time.Now().UTC(),
 			Status:    RunningStatus,

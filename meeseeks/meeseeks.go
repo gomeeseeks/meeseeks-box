@@ -1,30 +1,14 @@
 package meeseeks
 
 import (
-	"errors"
-
 	log "github.com/sirupsen/logrus"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/command"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/message"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 )
-
-var (
-	errCommandNotFound = errors.New("Could not find command")
-	errNoCommandToRun  = errors.New("No command to run")
-)
-
-// Message interface to interact with an abstract message
-type Message interface {
-	GetText() string
-	GetChannel() string
-	GetReplyTo() string
-	GetUsername() string
-	IsIM() bool
-}
 
 // Client interface that provides a way of replying to messages on a channel
 type Client interface {
@@ -36,13 +20,13 @@ type Client interface {
 type Meeseeks struct {
 	client    Client
 	config    config.Config
-	commands  commands.Commands
+	commands  command.Commands
 	templates *template.TemplatesBuilder
 }
 
 // New creates a new Meeseeks service
 func New(client Client, conf config.Config) Meeseeks {
-	cmds, _ := commands.New(conf) // TODO handle the error
+	cmds, _ := command.New(conf) // TODO handle the error
 	templatesBuilder := template.NewBuilder().WithMessages(conf.Messages)
 	return Meeseeks{
 		client:    client,
@@ -53,50 +37,44 @@ func New(client Client, conf config.Config) Meeseeks {
 }
 
 // Process processes a received message
-func (m Meeseeks) Process(message Message) {
-	args, err := commandparser.ParseCommand(message.GetText())
+func (m Meeseeks) Process(msg message.Message) {
+	req, err := command.RequestFromMessage(msg)
 	if err != nil {
-		log.Debugf("Failed to parse message '%s' as a command: %s", message.GetText(), err)
-		m.replyWithError(message, err, "can't parse command")
-	}
-
-	if len(args) == 0 {
-		log.Debugf("Could not find any command in message '%s'", message.GetText())
-		m.replyWithError(message, errNoCommandToRun, "")
+		log.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
+		m.replyWithError(msg, err, "")
 		return
 	}
 
-	cmd := args[0]
-	command, err := m.commands.Find(cmd)
-	if err == commands.ErrCommandNotFound {
-		m.replyWithUnknownCommand(message, args[0])
+	cmd, err := m.commands.Find(req.Command)
+	if err == command.ErrCommandNotFound {
+		m.replyWithUnknownCommand(msg, req.Command)
 		return
 	}
-	if err = auth.Check(message.GetUsername(), command.ConfiguredCommand()); err != nil {
-		m.replyWithUnauthorizedCommand(command, cmd, message)
+	if err = auth.Check(req.Command, cmd.ConfiguredCommand()); err != nil {
+		m.replyWithUnauthorizedCommand(cmd, req.Command, msg)
 		return
 	}
 
-	log.Infof("Accepted command '%s' from user '%s' with args: %s", cmd, message.GetUsername(), args[1:])
-	m.replyWithHandshake(command, message)
+	log.Infof("Accepted command '%s' from user '%s' with args: %s", req.Command, req.Username, req.Args)
+	m.replyWithHandshake(cmd, msg)
 
-	out, err := command.Execute(args[1:]...)
+	out, err := cmd.Execute(req.Args...)
 	if err != nil {
 		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
-			cmd, message.GetUsername(), err)
-		m.replyWithCommandFailed(command, message, err, out)
+			cmd, req.Username, err)
+		m.replyWithCommandFailed(cmd, msg, err, out)
 		return
 	}
 
-	m.replyWithSuccess(command, message, out)
-	log.Infof("Command '%s' from user '%s' succeeded execution", cmd, message.GetUsername())
+	m.replyWithSuccess(cmd, msg, out)
+	log.Infof("Command '%s' from user '%s' succeeded execution", cmd, req.Username)
 }
 
-func (m Meeseeks) buildTemplatesFor(cmd commands.Command) template.Templates {
+func (m Meeseeks) buildTemplatesFor(cmd command.Command) template.Templates {
 	return m.templates.Clone().WithTemplates(cmd.ConfiguredCommand().Templates).Build()
 }
 
-func (m Meeseeks) replyWithError(message Message, err error, out string) {
+func (m Meeseeks) replyWithError(message message.Message, err error, out string) {
 	msg, err := m.templates.Build().RenderFailure(message.GetReplyTo(), err.Error(), out)
 	if err != nil {
 		log.Fatalf("could not render failure template: %s", err)
@@ -105,7 +83,7 @@ func (m Meeseeks) replyWithError(message Message, err error, out string) {
 	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
 }
 
-func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
+func (m Meeseeks) replyWithUnknownCommand(message message.Message, cmd string) {
 	log.Debugf("Could not find command '%s' in the command registry", cmd)
 
 	msg, err := m.templates.Build().RenderUnknownCommand(message.GetReplyTo(), cmd)
@@ -116,7 +94,7 @@ func (m Meeseeks) replyWithUnknownCommand(message Message, cmd string) {
 	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
 }
 
-func (m Meeseeks) replyWithHandshake(cmd commands.Command, message Message) {
+func (m Meeseeks) replyWithHandshake(cmd command.Command, message message.Message) {
 	if !cmd.HasHandshake() {
 		return
 	}
@@ -128,7 +106,7 @@ func (m Meeseeks) replyWithHandshake(cmd commands.Command, message Message) {
 	m.client.Reply(msg, m.config.Colors.Info, message.GetChannel())
 }
 
-func (m Meeseeks) replyWithUnauthorizedCommand(cmd commands.Command, commandName string, message Message) {
+func (m Meeseeks) replyWithUnauthorizedCommand(cmd command.Command, commandName string, message message.Message) {
 	log.Debugf("User %s is not allowed to run command '%s'", message.GetUsername(), cmd)
 
 	msg, err := m.buildTemplatesFor(cmd).RenderUnauthorizedCommand(message.GetReplyTo(), commandName)
@@ -139,7 +117,7 @@ func (m Meeseeks) replyWithUnauthorizedCommand(cmd commands.Command, commandName
 	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
 }
 
-func (m Meeseeks) replyWithCommandFailed(cmd commands.Command, message Message, err error, out string) {
+func (m Meeseeks) replyWithCommandFailed(cmd command.Command, message message.Message, err error, out string) {
 	msg, err := m.buildTemplatesFor(cmd).RenderFailure(message.GetReplyTo(), err.Error(), out)
 	if err != nil {
 		log.Fatalf("could not render failure template %s", err)
@@ -148,7 +126,7 @@ func (m Meeseeks) replyWithCommandFailed(cmd commands.Command, message Message, 
 	m.client.Reply(msg, m.config.Colors.Error, message.GetChannel())
 }
 
-func (m Meeseeks) replyWithSuccess(cmd commands.Command, message Message, out string) {
+func (m Meeseeks) replyWithSuccess(cmd command.Command, message message.Message, out string) {
 	msg, err := m.buildTemplatesFor(cmd).RenderSuccess(message.GetReplyTo(), out)
 
 	if err != nil {
