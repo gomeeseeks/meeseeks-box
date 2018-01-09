@@ -6,12 +6,18 @@ import (
 	"strings"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
 	stub "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 )
 
+var req = request.Request{
+	Command:  "mycommand",
+	Username: "myself",
+}
+
 func Test_CreatingAndThenGettingAJob(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
-		expected, err := jobs.Create("myself", "mycommand")
+		expected, err := jobs.Create(req)
 		stub.Must(t, "Could not store a job: ", err)
 
 		actual, err := jobs.Get(expected.ID)
@@ -23,7 +29,7 @@ func Test_CreatingAndThenGettingAJob(t *testing.T) {
 
 func Test_MarkSuccessFul(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
-		job, err := jobs.Create("myself", "mycommand")
+		job, err := jobs.Create(req)
 		stub.Must(t, "Could not store a job: ", err)
 
 		err = jobs.Finish(job.ID, jobs.SuccessStatus)
@@ -41,7 +47,7 @@ func Test_MarkSuccessFul(t *testing.T) {
 
 func Test_MarkSuccessFulWithRunningEndStateFails(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
-		job, err := jobs.Create("myself", "mycommand")
+		job, err := jobs.Create(req)
 		stub.Must(t, "Could not store a job: ", err)
 
 		err = jobs.Finish(job.ID, jobs.RunningStatus)
@@ -53,15 +59,15 @@ func Test_MarkSuccessFulWithRunningEndStateFails(t *testing.T) {
 
 func Test_LatestReturnsInOrder(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
-		jobs.Create("myself", "mycommand")
-		jobs.Create("myself", "mycommand")
-		jobs.Create("myself", "mycommand")
+		jobs.Create(req)
+		jobs.Create(req)
+		jobs.Create(req)
 
 		latest, err := jobs.Latest(2)
 		if err != nil {
 			t.Fatalf("Failed to get the latest jobs: %s", err)
 		}
-		stub.AssertEquals(t, len(latest), 2)
+		stub.AssertEquals(t, 2, len(latest))
 		stub.AssertEquals(t, uint64(2), latest[0].ID)
 		stub.AssertEquals(t, uint64(3), latest[1].ID)
 	}))
@@ -69,14 +75,14 @@ func Test_LatestReturnsInOrder(t *testing.T) {
 
 func Test_LatestReturnsEnough(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
-		jobs.Create("myself", "mycommand")
-		jobs.Create("myself", "mycommand")
+		jobs.Create(req)
+		jobs.Create(req)
 
 		latest, err := jobs.Latest(5)
 		if err != nil {
 			t.Fatalf("Failed to get the latest jobs: %s", err)
 		}
-		stub.AssertEquals(t, len(latest), 2)
+		stub.AssertEquals(t, 2, len(latest))
 		stub.AssertEquals(t, uint64(1), latest[0].ID)
 		stub.AssertEquals(t, uint64(2), latest[1].ID)
 	}))

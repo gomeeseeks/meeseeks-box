@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/db"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
 
 	"encoding/json"
 
 	bolt "github.com/coreos/bbolt"
-	database "gitlab.com/mr-meeseeks/meeseeks-box/db"
 )
 
 // Jobs status
@@ -36,14 +36,16 @@ var jobsBucketKey = []byte("jobs")
 var usersBucketKey = []byte("users")
 
 // Create registers a new job in running state in the database
-func Create(username, command string, args ...string) (Job, error) {
+func Create(req request.Request) (Job, error) {
 	var job *Job
-	err := database.Create(jobsBucketKey, func(jobID uint64, bucket *bolt.Bucket) error {
+	err := db.Create(jobsBucketKey, func(jobID uint64, bucket *bolt.Bucket) error {
 		job = &Job{
 			ID:        jobID,
-			Command:   command,
-			Username:  username,
-			Args:      args,
+			Command:   req.Command,
+			Username:  req.Username,
+			Args:      req.Args,
+			Channel:   req.Channel,
+			IsIM:      req.IsIM,
 			StartTime: time.Now().UTC(),
 			Status:    RunningStatus,
 		}
@@ -58,7 +60,7 @@ func Create(username, command string, args ...string) (Job, error) {
 // Get returns a job by id
 func Get(id uint64) (Job, error) {
 	job := &Job{}
-	err := database.View(func(tx *bolt.Tx) error {
+	err := db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(jobsBucketKey)
 		return json.Unmarshal(bucket.Get(db.IDToBytes(id)), job)
 	})
@@ -85,7 +87,7 @@ func Finish(id uint64, endState int) error {
 // Latest returns the last N jobs
 func Latest(limit int) ([]Job, error) {
 	latest := make([]Job, 0)
-	err := database.View(func(tx *bolt.Tx) error {
+	err := db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(jobsBucketKey)
 		cur := bucket.Cursor()
 		_, payload := cur.Last()
@@ -107,7 +109,7 @@ func Latest(limit int) ([]Job, error) {
 }
 
 func change(id uint64, f func(job *Job) error) error {
-	return database.Update(func(tx *bolt.Tx) error {
+	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(jobsBucketKey)
 		job := &Job{}
 		if err := json.Unmarshal(bucket.Get(db.IDToBytes(id)), job); err != nil {
@@ -125,5 +127,5 @@ func save(job *Job, bucket *bolt.Bucket) error {
 	if err != nil {
 		return err
 	}
-	return bucket.Put(database.IDToBytes(job.ID), buffer)
+	return bucket.Put(db.IDToBytes(job.ID), buffer)
 }
