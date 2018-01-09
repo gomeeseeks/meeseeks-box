@@ -2,6 +2,7 @@ package meeseeks
 
 import (
 	log "github.com/sirupsen/logrus"
+	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
@@ -58,18 +59,21 @@ func (m Meeseeks) Process(msg message.Message) {
 
 	log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 		req.Command, req.Username, req.Channel, req.Args)
+	jobs.Create(req)
+
 	m.replyWithHandshake(req, cmd)
 
 	out, err := cmd.Execute(req.Args...)
 	if err != nil {
 		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
-			cmd, req.Username, err)
+			req.Command, req.Username, err)
 		m.replyWithCommandFailed(req, cmd, err, out)
 		return
 	}
 
 	m.replyWithSuccess(req, cmd, out)
-	log.Infof("Command '%s' from user '%s' succeeded execution", cmd, req.Username)
+	log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
+		req.Username)
 }
 
 func (m Meeseeks) replyWithInvalidMessage(msg message.Message, err error) {

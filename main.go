@@ -8,6 +8,8 @@ import (
 	"sync"
 	"syscall"
 
+	"gitlab.com/mr-meeseeks/meeseeks-box/db"
+
 	bolt "github.com/coreos/bbolt"
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
@@ -36,6 +38,7 @@ func main() {
 	must(err)
 
 	auth.Configure(cnf)
+	db.Configure(cnf)
 
 	client, err := slack.Connect(*debugMode)
 	must(err)

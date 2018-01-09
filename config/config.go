@@ -97,7 +97,7 @@ func New(r io.Reader) (Config, error) {
 
 // Config is the struct used to load MrMeeseeks configuration yaml
 type Config struct {
-	Database Database            `yaml:"db"`
+	Database Database            `yaml:"database"`
 	Messages map[string][]string `yaml:"messages"`
 	Commands map[string]Command  `yaml:"commands"`
 	Colors   MessageColors       `yaml:"colors"`
