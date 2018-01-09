@@ -1,4 +1,4 @@
-package commandparser
+package parser
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ const (
 var ErrUnclosedQuoteInCommand = errors.New("Unclosed quote on command")
 
 // ParseCommand parses a command and returns a slice of strings and an error if the command is wrongly built
-func ParseCommand(command string) ([]string, error) {
+func Parse(command string) ([]string, error) {
 	args := make([]string, 0)
 	state := startState
 	current := ""

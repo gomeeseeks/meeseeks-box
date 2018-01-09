@@ -1,7 +1,9 @@
-package commands
+package command
 
 import (
 	"fmt"
+
+	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 
 	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
@@ -95,5 +97,30 @@ func (g groupsCommand) Execute(args ...string) (string, error) {
 	}
 	return tmpl.Render(template.Payload{
 		"groups": auth.GetGroups(),
+	})
+}
+
+type jobsCommand struct {
+	noHandshake
+	allowAll
+	Help string
+}
+
+func (j jobsCommand) Execute(args ...string) (string, error) {
+	tmpl, err := template.New("jobs", dedent.Dedent(`
+		{{- range $job := .jobs }}
+		- {{ $job.StartTime }} - *{{ $job.Command }}* by *{{ $job.Username }}* in *{{ $job.Channel }}*
+		{{- end}}
+		`))
+	if err != nil {
+		return "", err
+	}
+
+	jobs, err := jobs.Latest(10)
+	if err != nil {
+		return "", err
+	}
+	return tmpl.Render(template.Payload{
+		"jobs": jobs,
 	})
 }

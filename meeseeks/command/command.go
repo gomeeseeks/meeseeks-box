@@ -1,4 +1,4 @@
-package commands
+package command
 
 import (
 	"context"
@@ -38,6 +38,9 @@ func New(cnf config.Config) (Commands, error) {
 	}
 	commands[config.BuiltinGroupsCommand] = groupsCommand{
 		Help: "prints the configured groups",
+	}
+	commands[config.BuiltinJobsCommand] = jobsCommand{
+		Help: "shows the last executed jobs",
 	}
 
 	for name, configCommand := range cnf.Commands {

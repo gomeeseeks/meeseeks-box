@@ -1,10 +1,10 @@
-package commandparser_test
+package parser_test
 
 import (
 	"reflect"
 	"testing"
 
-	parser "gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commandparser"
+	parser "gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request/parser"
 )
 
 func Test_ParsingCommandsCorrectly(t *testing.T) {
@@ -41,7 +41,7 @@ func Test_ParsingCommandsCorrectly(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			args, err := parser.ParseCommand(tc.command)
+			args, err := parser.Parse(tc.command)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -53,7 +53,7 @@ func Test_ParsingCommandsCorrectly(t *testing.T) {
 }
 
 func Test_InvalidCommand(t *testing.T) {
-	_, err := parser.ParseCommand("echo 'invalid arg because unclosed quote")
+	_, err := parser.Parse("echo 'invalid arg because unclosed quote")
 	if err != parser.ErrUnclosedQuoteInCommand {
 		t.Fatalf("Got an invalid error, expected %s; got %s", parser.ErrUnclosedQuoteInCommand, err)
 	}

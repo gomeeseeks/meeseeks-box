@@ -1,4 +1,4 @@
-package commands_test
+package command_test
 
 import (
 	"testing"
@@ -6,9 +6,13 @@ import (
 	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
-	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
+	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
+
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/command"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
+
+	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 )
 
 var configWithEcho = config.Config{
@@ -24,7 +28,7 @@ var configWithEcho = config.Config{
 }
 
 func Test_ShellCommand(t *testing.T) {
-	cmds, err := commands.New(configWithEcho)
+	cmds, err := command.New(configWithEcho)
 	stubs.Must(t, "shell command failed to build", err)
 
 	cmd, err := cmds.Find("echo")
@@ -36,19 +40,19 @@ func Test_ShellCommand(t *testing.T) {
 }
 
 func Test_InvalidCommand(t *testing.T) {
-	cmds, err := commands.New(
+	cmds, err := command.New(
 		config.Config{
 			Commands: map[string]config.Command{},
 		})
 	stubs.Must(t, "could not build commands", err)
 	_, err = cmds.Find("non-existing")
-	if err != commands.ErrCommandNotFound {
+	if err != command.ErrCommandNotFound {
 		t.Fatalf("command build should have failed with an error, got %s instead", err)
 	}
 }
 
 func Test_VersionCommand(t *testing.T) {
-	cmds, err := commands.New(config.Config{})
+	cmds, err := command.New(config.Config{})
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("version")
@@ -61,7 +65,7 @@ func Test_VersionCommand(t *testing.T) {
 }
 
 func Test_HelpCommand(t *testing.T) {
-	cmds, err := commands.New(configWithEcho)
+	cmds, err := command.New(configWithEcho)
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("help")
@@ -74,6 +78,7 @@ func Test_HelpCommand(t *testing.T) {
 		- echo: command that prints back the arguments passed
 		- groups: prints the configured groups
 		- help: prints all the kwnown commands and its associated help
+		- jobs: shows the last executed jobs
 		- version: prints the running meeseeks version
 		`), out)
 }
@@ -86,13 +91,13 @@ func Test_GroupsCommand(t *testing.T) {
 		},
 	})
 
-	cmds, err := commands.New(configWithEcho)
+	cmds, err := command.New(configWithEcho)
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("groups")
+	stubs.Must(t, "failed to get help command", err)
 	stubs.AssertEquals(t, cmd.HasHandshake(), false)
 	stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAllowedGroup)
-	stubs.Must(t, "failed to get help command", err)
 
 	out, err := cmd.Execute()
 	stubs.Must(t, "failed to execute help command", err)
@@ -101,4 +106,31 @@ func Test_GroupsCommand(t *testing.T) {
 		- admins: admin_user
 		- other: user_one, user_two
 		`), out)
+}
+
+func Test_JobsCommand(t *testing.T) {
+	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
+		jobs.Create(request.Request{
+			Command:  "command",
+			Channel:  "general",
+			Username: "someone",
+			Args:     []string{"arg1", "arg2"},
+		})
+		cmds, err := command.New(configWithEcho)
+		stubs.Must(t, "could not build commands", err)
+
+		cmd, err := cmds.Find("jobs")
+		stubs.Must(t, "failed to get jobs command", err)
+		stubs.AssertEquals(t, cmd.HasHandshake(), false)
+		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+
+		_, err = cmd.Execute()
+		stubs.Must(t, "failed to execute help command", err)
+
+		// Because this returns a datetime that changes all the time,
+		// and I'm being lazy, I rather not add it now.
+		// stubs.AssertEquals(t, dedent.Dedent(`
+		// 	- DATETIME - *command* by *someone* in *general*
+		// 	`), out)
+	}))
 }

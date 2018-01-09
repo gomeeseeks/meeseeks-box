@@ -3,12 +3,16 @@ package testingstubs
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"gitlab.com/mr-meeseeks/meeseeks-box/db"
 )
 
 // SentMessage is a message that has been sent through a client
@@ -117,7 +121,7 @@ func (m MessageStub) IsIM() bool {
 // AssertEquals Helper function for asserting that a value is what we expect
 func AssertEquals(t *testing.T, expected, actual interface{}) {
 	if !reflect.DeepEqual(expected, actual) {
-		t.Fatalf("Value is not as expected,\nexpected %+v;\ngot %+v", expected, actual)
+		t.Fatalf("Value is not as expected,\nexpected %#v;\ngot %#v", expected, actual)
 	}
 }
 
@@ -128,4 +132,23 @@ func Must(t *testing.T, message string, err error, additionalDetails ...string) 
 		m = append(m, additionalDetails...)
 		t.Fatal(m)
 	}
+}
+
+// WithTmpDB creates a temporary database in which to run persistence tests
+func WithTmpDB(f func()) error {
+	tmpdir, err := ioutil.TempDir("", "meeseeks")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpdir)
+
+	db.Configure(config.Config{
+		Database: config.Database{
+			Path:    path.Join(tmpdir, "meeseeks.db"),
+			Mode:    0600,
+			Timeout: time.Second * 1,
+		},
+	})
+	f()
+	return nil
 }
