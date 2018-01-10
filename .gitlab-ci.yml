@@ -26,7 +26,7 @@ test:
 build:
   stage: build
   script:
-    - export CI_COMMIT_TAG=${CI_COMMIT_SHA} make build
+    - make build
     - cp -r build ${CI_PROJECT_DIR}
   artifacts:
     paths:
