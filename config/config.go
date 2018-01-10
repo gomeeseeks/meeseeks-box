@@ -40,14 +40,6 @@ const (
 	RemoteCommandType
 )
 
-// Builtin Commands Names
-const (
-	BuiltinVersionCommand = "version"
-	BuiltinHelpCommand    = "help"
-	BuiltinGroupsCommand  = "groups"
-	BuiltinJobsCommand    = "jobs"
-)
-
 // New parses the configuration from a reader into an object and returns it
 func New(r io.Reader) (Config, error) {
 	c := Config{
