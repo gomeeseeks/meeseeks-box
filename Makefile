@@ -2,6 +2,7 @@ src = $(wildcard *.go)
 executable        = meeseeks-box
 namespace         = pcarranza
 version           = ${CI_COMMIT_TAG}
+sha               = $(shell git rev-parse HEAD)
 
 .PHONY: all version test package build build-linux build-darwin build-arm package package-linux packager-arm release release-linux release-arm clean
 
@@ -10,6 +11,8 @@ all: test version build package release clean
 version:
 	if [ ! -z "$(version)" ]; then \
 		sed -i "" -e 's/"unset"/"$(version)"/g' version/version.go ; \
+	else \
+		sed -i "" -e 's/"unset"/"$(sha)"/g' version/version.go ; \
 	fi
 
 test:
