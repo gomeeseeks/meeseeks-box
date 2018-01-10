@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+
 	tmpl "text/template"
 
+	humanize "github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -188,7 +190,10 @@ type Renderer struct {
 // New creates a new ReplyTemplate pre-parsing the template
 func New(name, template string) (Renderer, error) {
 	t, err := tmpl.New(name).Funcs(tmpl.FuncMap{
-		"AnyValue": anyValue,
+		"AnyValue":       anyValue,
+		"HumanizeTime":   humanize.Time,
+		"HumanizeSize":   humanize.Bytes,
+		"HumanizeNumber": humanize.Ftoa,
 	}).Parse(template)
 	if err != nil {
 		return Renderer{}, fmt.Errorf("could not parse template %s: %s", name, err)
