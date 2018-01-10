@@ -68,8 +68,8 @@ func Test_LatestReturnsInOrder(t *testing.T) {
 			t.Fatalf("Failed to get the latest jobs: %s", err)
 		}
 		stub.AssertEquals(t, 2, len(latest))
-		stub.AssertEquals(t, uint64(2), latest[0].ID)
-		stub.AssertEquals(t, uint64(3), latest[1].ID)
+		stub.AssertEquals(t, uint64(3), latest[0].ID)
+		stub.AssertEquals(t, uint64(2), latest[1].ID)
 	}))
 }
 
@@ -83,7 +83,7 @@ func Test_LatestReturnsEnough(t *testing.T) {
 			t.Fatalf("Failed to get the latest jobs: %s", err)
 		}
 		stub.AssertEquals(t, 2, len(latest))
-		stub.AssertEquals(t, uint64(1), latest[0].ID)
-		stub.AssertEquals(t, uint64(2), latest[1].ID)
+		stub.AssertEquals(t, uint64(2), latest[0].ID)
+		stub.AssertEquals(t, uint64(1), latest[1].ID)
 	}))
 }
