@@ -4,7 +4,8 @@ package message
 type Message interface {
 	GetText() string
 	GetChannel() string
-	GetReplyTo() string
+	GetChannelID() string
+	GetUsernameID() string
 	GetUsername() string
 	IsIM() bool
 }

@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/db"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // SentMessage is a message that has been sent through a client
@@ -87,10 +88,12 @@ func (c ClientStub) ReplyIM(text, color, user string) error {
 
 // MessageStub is a simple stub that implements the Slack.Message interface
 type MessageStub struct {
-	Text    string
-	Channel string
-	User    string
-	IM      bool
+	Text      string
+	Channel   string
+	User      string
+	UserID    string
+	ChannelID string
+	IM        bool
 }
 
 // GetText implements the slack.Message.GetText interface
@@ -103,8 +106,13 @@ func (m MessageStub) GetChannel() string {
 	return m.Channel
 }
 
-// GetReplyTo implements the slack.Message.GetUserFrom interface
-func (m MessageStub) GetReplyTo() string {
+// GetChannelID implements the slack.Message.GetUserFrom interface
+func (m MessageStub) GetChannelID() string {
+	return m.ChannelID
+}
+
+// GetUsernameID implements the slack.Message.GetUserFrom interface
+func (m MessageStub) GetUsernameID() string {
 	return fmt.Sprintf("<@%s>", m.User)
 }
 

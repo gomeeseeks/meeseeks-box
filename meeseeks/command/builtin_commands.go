@@ -109,7 +109,7 @@ type jobsCommand struct {
 func (j jobsCommand) Execute(args ...string) (string, error) {
 	tmpl, err := template.New("jobs", dedent.Dedent(`
 		{{- range $job := .jobs }}
-		- {{ HumanizeTime $job.StartTime }} - *{{ $job.Command }}* by *{{ $job.Username }}* in *{{ $job.Channel }}*
+		- {{ HumanizeTime $job.StartTime }} - *{{ $job.Request.Command }}* by *{{ $job.Request.Username }}* in *{{ $job.Request.ChannelID }}*
 		{{- end}}
 		`))
 	if err != nil {
