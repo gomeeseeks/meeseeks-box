@@ -74,7 +74,9 @@ func (m messageMatcher) Matches(message *slack.MessageEvent) *Message {
 			username = u.Name
 		}
 
-		if c, err := m.rtm.GetChannelInfo(message.Channel); err != nil {
+		if m.isIMChannel(message) {
+			channel = "IM"
+		} else if c, err := m.rtm.GetChannelInfo(message.Channel); err != nil {
 			log.Errorf("could not find channel with id %s because %s, weeeird", message.Channel, err)
 			channel = "unknown-channel"
 		} else {
@@ -191,12 +193,17 @@ func (m Message) GetUsername() string {
 
 // GetChannelID returns the channel id from the which the message was sent
 func (m Message) GetChannelID() string {
-	return fmt.Sprintf("<#%s|%s>", m.channelID, m.channel)
+	return m.channelID
 }
 
 // GetChannel returns the channel from which the message was sent
 func (m Message) GetChannel() string {
 	return m.channel
+}
+
+// GetChannelLink returns the channel that slack will turn into a link
+func (m Message) GetChannelLink() string {
+	return fmt.Sprintf("<#%s|%s>", m.channelID, m.channel)
 }
 
 // IsIM returns if the message is an IM message

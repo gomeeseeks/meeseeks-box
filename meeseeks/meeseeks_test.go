@@ -38,12 +38,12 @@ func Test_BasicReplying(t *testing.T) {
 			expected: []expectedMessage{
 				expectedMessage{
 					TextMatcher: handshakeMatcher,
-					Channel:     "general",
+					Channel:     "generalID",
 					IsIM:        false,
 				},
 				expectedMessage{
 					TextMatcher: "^<@myuser> .*\n```\nhello!\n```$",
-					Channel:     "general",
+					Channel:     "generalID",
 					IsIM:        false,
 				},
 			},
@@ -56,7 +56,7 @@ func Test_BasicReplying(t *testing.T) {
 			expected: []expectedMessage{
 				expectedMessage{
 					TextMatcher: "^<@myuser> Uuuh! no, I don't know how to do unknown-command$",
-					Channel:     "general",
+					Channel:     "generalID",
 					IsIM:        false,
 				},
 			},
@@ -69,7 +69,7 @@ func Test_BasicReplying(t *testing.T) {
 			expected: []expectedMessage{
 				expectedMessage{
 					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: No command to run$",
-					Channel:     "general",
+					Channel:     "generalID",
 					IsIM:        false,
 				},
 			},
@@ -82,7 +82,7 @@ func Test_BasicReplying(t *testing.T) {
 			expected: []expectedMessage{
 				expectedMessage{
 					TextMatcher: "<@myuser> Uuuuh, yeah! you are not allowed to do disallowed",
-					Channel:     "general",
+					Channel:     "generalID",
 					IsIM:        false,
 				},
 			},
@@ -95,12 +95,12 @@ func Test_BasicReplying(t *testing.T) {
 			expected: []expectedMessage{
 				expectedMessage{
 					TextMatcher: handshakeMatcher,
-					Channel:     "general",
+					Channel:     "generalID",
 					IsIM:        false,
 				},
 				expectedMessage{
 					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: exit status 1$",
-					Channel:     "general",
+					Channel:     "generalID",
 					IsIM:        false,
 				},
 			},
@@ -128,9 +128,10 @@ func Test_BasicReplying(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			go m.Process(stubs.MessageStub{
-				Text:    tc.message,
-				Channel: tc.channel,
-				User:    tc.user,
+				Text:      tc.message,
+				Channel:   tc.channel,
+				ChannelID: tc.channel + "ID",
+				User:      tc.user,
 			})
 
 			for _, expected := range tc.expected {

@@ -108,7 +108,12 @@ func (m MessageStub) GetChannel() string {
 
 // GetChannelID implements the slack.Message.GetUserFrom interface
 func (m MessageStub) GetChannelID() string {
-	return m.ChannelID
+	return m.Channel + "ID"
+}
+
+// GetChannelLink implements the slack.Message.GetUserFrom interface
+func (m MessageStub) GetChannelLink() string {
+	return m.Channel + "Link"
 }
 
 // GetUsernameID implements the slack.Message.GetUserFrom interface

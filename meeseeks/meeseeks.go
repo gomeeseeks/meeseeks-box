@@ -59,7 +59,10 @@ func (m Meeseeks) Process(msg message.Message) {
 
 	log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 		req.Command, req.Username, req.Channel, req.Args)
-	jobs.Create(req)
+	_, err = jobs.Create(req)
+	if err != nil {
+		log.Errorf("could not create job: %s", err)
+	}
 
 	m.replyWithHandshake(req, cmd)
 
@@ -82,7 +85,9 @@ func (m Meeseeks) replyWithInvalidMessage(msg message.Message, err error) {
 		log.Fatalf("could not render failure template: %s", err)
 	}
 
-	m.client.Reply(content, m.config.Colors.Error, msg.GetChannel())
+	if err = m.client.Reply(content, m.config.Colors.Error, msg.GetChannelID()); err != nil {
+		log.Errorf("Failed to reply: %s", err)
+	}
 }
 
 func (m Meeseeks) replyWithUnknownCommand(req request.Request) {
@@ -93,7 +98,9 @@ func (m Meeseeks) replyWithUnknownCommand(req request.Request) {
 		log.Fatalf("could not render unknown command template: %s", err)
 	}
 
-	m.client.Reply(msg, m.config.Colors.Error, req.Channel)
+	if err = m.client.Reply(msg, m.config.Colors.Error, req.ChannelID); err != nil {
+		log.Errorf("Failed to reply: %s", err)
+	}
 }
 
 func (m Meeseeks) replyWithHandshake(req request.Request, cmd command.Command) {
@@ -105,18 +112,23 @@ func (m Meeseeks) replyWithHandshake(req request.Request, cmd command.Command) {
 		log.Fatalf("could not render unknown command template: %s", err)
 	}
 
-	m.client.Reply(msg, m.config.Colors.Info, req.Channel)
+	if err = m.client.Reply(msg, m.config.Colors.Info, req.ChannelID); err != nil {
+		log.Errorf("Failed to reply: %s", err)
+	}
 }
 
 func (m Meeseeks) replyWithUnauthorizedCommand(req request.Request, cmd command.Command) {
-	log.Debugf("User %s is not allowed to run command '%s' on channel '%s'", req.Username, req.Command, req.Channel)
+	log.Debugf("User %s is not allowed to run command '%s' on channel '%s'", req.Username,
+		req.Command, req.Channel)
 
 	msg, err := m.buildTemplatesFor(cmd).RenderUnauthorizedCommand(req.UsernameID, req.Command)
 	if err != nil {
 		log.Fatalf("could not render unathorized command template %s", err)
 	}
 
-	m.client.Reply(msg, m.config.Colors.Error, req.Channel)
+	if err = m.client.Reply(msg, m.config.Colors.Error, req.ChannelID); err != nil {
+		log.Errorf("Failed to reply: %s", err)
+	}
 }
 
 func (m Meeseeks) replyWithCommandFailed(req request.Request, cmd command.Command, err error, out string) {
@@ -125,7 +137,9 @@ func (m Meeseeks) replyWithCommandFailed(req request.Request, cmd command.Comman
 		log.Fatalf("could not render failure template %s", err)
 	}
 
-	m.client.Reply(msg, m.config.Colors.Error, req.Channel)
+	if err = m.client.Reply(msg, m.config.Colors.Error, req.ChannelID); err != nil {
+		log.Errorf("Failed to reply: %s", err)
+	}
 }
 
 func (m Meeseeks) replyWithSuccess(req request.Request, cmd command.Command, out string) {
@@ -135,7 +149,9 @@ func (m Meeseeks) replyWithSuccess(req request.Request, cmd command.Command, out
 		log.Fatalf("could not render success template %s", err)
 	}
 
-	m.client.Reply(msg, m.config.Colors.Success, req.Channel)
+	if err = m.client.Reply(msg, m.config.Colors.Success, req.ChannelID); err != nil {
+		log.Errorf("Failed to reply: %s", err)
+	}
 }
 
 func (m Meeseeks) buildTemplatesFor(cmd command.Command) template.Templates {

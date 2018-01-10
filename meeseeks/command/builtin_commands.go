@@ -116,7 +116,7 @@ func (j jobsCommand) Execute(args ...string) (string, error) {
 
 	tmpl, err := template.New("jobs", dedent.Dedent(`
 		{{- range $job := .jobs }}
-		{{ HumanizeTime $job.StartTime }} - *{{ $job.Request.Command }}* by *{{ $job.Request.Username }}* in *{{ $job.Request.ChannelID }}*
+		{{ HumanizeTime $job.StartTime }} - *{{ $job.Request.Command }}* by *{{ $job.Request.Username }}* in *{{ if $job.Request.IsIM }}DM{{ else }}{{ $job.Request.ChannelLink }}{{ end }}*
 		{{- end}}
 		`))
 	if err != nil {
