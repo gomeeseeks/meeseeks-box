@@ -12,12 +12,13 @@ var ErrNoCommandToRun = errors.New("No command to run")
 
 // Request is a structure that holds all the command execution request
 type Request struct {
-	Command  string
-	Args     []string
-	Username string
-	ReplyTo  string
-	Channel  string
-	IsIM     bool
+	Command    string   `json:"Command"`
+	Args       []string `json:"Arguments"`
+	Username   string   `json:"Username"`
+	UsernameID string   `json:"UsernameID"`
+	Channel    string   `json:"Channel"`
+	ChannelID  string   `json:"CannelID"`
+	IsIM       bool     `json:"IsIM"`
 }
 
 // FromMessage gets a message and generates a valid request from it
@@ -32,11 +33,12 @@ func FromMessage(msg message.Message) (Request, error) {
 	}
 
 	return Request{
-		Command:  args[0],
-		Args:     args[1:],
-		Username: msg.GetUsername(),
-		ReplyTo:  msg.GetReplyTo(),
-		Channel:  msg.GetChannel(),
-		IsIM:     msg.IsIM(),
+		Command:    args[0],
+		Args:       args[1:],
+		Username:   msg.GetUsername(),
+		UsernameID: msg.GetUsernameID(),
+		Channel:    msg.GetChannel(),
+		ChannelID:  msg.GetChannelID(),
+		IsIM:       msg.IsIM(),
 	}, nil
 }

@@ -111,10 +111,11 @@ func Test_GroupsCommand(t *testing.T) {
 func Test_JobsCommand(t *testing.T) {
 	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
 		jobs.Create(request.Request{
-			Command:  "command",
-			Channel:  "general",
-			Username: "someone",
-			Args:     []string{"arg1", "arg2"},
+			Command:   "command",
+			Channel:   "general",
+			ChannelID: "123",
+			Username:  "someone",
+			Args:      []string{"arg1", "arg2"},
 		})
 		cmds, err := command.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
@@ -128,7 +129,7 @@ func Test_JobsCommand(t *testing.T) {
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, dedent.Dedent(`
-			- now - *command* by *someone* in *general*
+			- now - *command* by *someone* in *123*
 			`), out)
 	}))
 }

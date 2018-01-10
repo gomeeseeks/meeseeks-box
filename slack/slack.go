@@ -65,12 +65,29 @@ func (m messageMatcher) Matches(message *slack.MessageEvent) *Message {
 		m.botID = m.rtm.GetInfo().User.ID
 		m.prefixMatches = []string{fmt.Sprintf("<@%s>", m.botID)}
 	}
-	if text, ok := m.messageToMe(message); ok {
+	if text, ok := m.shouldCare(message); ok {
+		var username, channel string
+		if u, err := m.rtm.GetUserInfo(message.User); err != nil {
+			log.Errorf("could not find user with id %s because %s, weeeird", message.User, err)
+			username = "unknown-user"
+		} else {
+			username = u.Name
+		}
+
+		if c, err := m.rtm.GetChannelInfo(message.Channel); err != nil {
+			log.Errorf("could not find channel with id %s because %s, weeeird", message.Channel, err)
+			channel = "unknown-channel"
+		} else {
+			channel = c.Name
+		}
+
 		return &Message{
-			text:    text,
-			channel: message.Channel,
-			replyTo: message.User,
-			isIM:    m.isIMChannel(message),
+			text:      text,
+			userID:    message.User,
+			channelID: message.Channel,
+			username:  username,
+			channel:   channel,
+			isIM:      m.isIMChannel(message),
 		}
 	}
 	return nil
@@ -84,7 +101,7 @@ func (m messageMatcher) isIMChannel(message *slack.MessageEvent) bool {
 	return strings.HasPrefix(message.Channel, "D")
 }
 
-func (m messageMatcher) messageToMe(message *slack.MessageEvent) (string, bool) {
+func (m messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) {
 	if m.isMyself(message) {
 		return "", false
 	}
@@ -112,12 +129,6 @@ func (c *Client) ListenMessages(ch chan<- Message) {
 			}
 
 			log.Debugf("Received matching message %#v", ev.Text)
-			u, err := c.rtm.GetUserInfo(ev.User)
-			if err != nil {
-				log.Errorf("could not find user with id %s because %s, weeeird", ev.User, err)
-				continue
-			}
-			message.username = u.Name
 
 			ch <- *message
 
@@ -155,11 +166,12 @@ func (c *Client) ReplyIM(content, color, user string) error {
 
 // Message a chat message
 type Message struct {
-	text     string
-	channel  string
-	replyTo  string
-	username string
-	isIM     bool
+	text      string
+	channel   string
+	channelID string
+	username  string
+	userID    string
+	isIM      bool
 }
 
 // GetText returns the message text
@@ -167,14 +179,19 @@ func (m Message) GetText() string {
 	return m.text
 }
 
-// GetReplyTo returns the user id formatted for using in a slack message
-func (m Message) GetReplyTo() string {
-	return fmt.Sprintf("<@%s>", m.replyTo)
+// GetUsernameID returns the user id formatted for using in a slack message
+func (m Message) GetUsernameID() string {
+	return fmt.Sprintf("<@%s>", m.userID)
 }
 
 // GetUsername returns the user friendly username
 func (m Message) GetUsername() string {
 	return m.username
+}
+
+// GetChannelID returns the channel id from the which the message was sent
+func (m Message) GetChannelID() string {
+	return fmt.Sprintf("<#%s|%s>", m.channelID, m.channel)
 }
 
 // GetChannel returns the channel from which the message was sent

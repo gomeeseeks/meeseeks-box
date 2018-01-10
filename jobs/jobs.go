@@ -21,15 +21,11 @@ const (
 
 // Job represents a single job
 type Job struct {
-	ID        uint64    `json:"ID"`
-	Command   string    `json:"Command"`
-	Args      []string  `json:"Args"`
-	Username  string    `json:"Username"`
-	Channel   string    `json:"Channel"`
-	IsIM      bool      `json:"IsIM"`
-	StartTime time.Time `json:"StartTime"`
-	EndTime   time.Time `json:"EndTime"`
-	Status    int       `json:"Status"`
+	ID        uint64          `json:"ID"`
+	Request   request.Request `json:"Request"`
+	StartTime time.Time       `json:"StartTime"`
+	EndTime   time.Time       `json:"EndTime"`
+	Status    int             `json:"Status"`
 }
 
 var jobsBucketKey = []byte("jobs")
@@ -41,11 +37,7 @@ func Create(req request.Request) (Job, error) {
 	err := db.Create(jobsBucketKey, func(jobID uint64, bucket *bolt.Bucket) error {
 		job = &Job{
 			ID:        jobID,
-			Command:   req.Command,
-			Username:  req.Username,
-			Args:      req.Args,
-			Channel:   req.Channel,
-			IsIM:      req.IsIM,
+			Request:   req,
 			StartTime: time.Now().UTC(),
 			Status:    RunningStatus,
 		}
