@@ -124,13 +124,13 @@ func Test_JobsCommand(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		_, err = cmd.Execute()
+		out, err := cmd.Execute()
 		stubs.Must(t, "failed to execute help command", err)
 
 		// Because this returns a datetime that changes all the time,
 		// and I'm being lazy, I rather not add it now.
-		// stubs.AssertEquals(t, dedent.Dedent(`
-		// 	- DATETIME - *command* by *someone* in *general*
-		// 	`), out)
+		stubs.AssertEquals(t, dedent.Dedent(`
+			- now - *command* by *someone* in *general*
+			`), out)
 	}))
 }
