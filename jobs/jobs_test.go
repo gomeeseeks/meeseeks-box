@@ -13,6 +13,7 @@ import (
 var req = request.Request{
 	Command:  "mycommand",
 	Username: "myself",
+	Channel:  "general",
 }
 
 func Test_CreatingAndThenGettingAJob(t *testing.T) {

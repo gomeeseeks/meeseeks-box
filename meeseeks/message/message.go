@@ -5,6 +5,7 @@ type Message interface {
 	GetText() string
 	GetChannel() string
 	GetChannelID() string
+	GetChannelLink() string
 	GetUsernameID() string
 	GetUsername() string
 	IsIM() bool
