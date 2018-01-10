@@ -1,6 +1,7 @@
 package command
 
 import (
+	"flag"
 	"fmt"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
@@ -107,16 +108,22 @@ type jobsCommand struct {
 }
 
 func (j jobsCommand) Execute(args ...string) (string, error) {
+	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
+	limit := flags.Int("limit", 5, "how many jobs to return")
+	if err := flags.Parse(args); err != nil {
+		return "", err
+	}
+
 	tmpl, err := template.New("jobs", dedent.Dedent(`
 		{{- range $job := .jobs }}
-		- {{ HumanizeTime $job.StartTime }} - *{{ $job.Request.Command }}* by *{{ $job.Request.Username }}* in *{{ $job.Request.ChannelID }}*
+		{{ HumanizeTime $job.StartTime }} - *{{ $job.Request.Command }}* by *{{ $job.Request.Username }}* in *{{ $job.Request.ChannelID }}*
 		{{- end}}
 		`))
 	if err != nil {
 		return "", err
 	}
 
-	jobs, err := jobs.Latest(10)
+	jobs, err := jobs.Latest(*limit)
 	if err != nil {
 		return "", err
 	}

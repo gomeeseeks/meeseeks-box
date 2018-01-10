@@ -129,7 +129,43 @@ func Test_JobsCommand(t *testing.T) {
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, dedent.Dedent(`
-			- now - *command* by *someone* in *123*
+			now - *command* by *someone* in *123*
+			`), out)
+	}))
+}
+
+func Test_JobsChangeLimit(t *testing.T) {
+	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
+		r := request.Request{
+			Command:   "command",
+			Channel:   "general",
+			ChannelID: "123",
+			Username:  "someone",
+			Args:      []string{"arg1", "arg2"},
+		}
+		jobs.Create(r)
+		jobs.Create(r)
+		cmds, err := command.New(configWithEcho)
+		stubs.Must(t, "could not build commands", err)
+
+		cmd, err := cmds.Find("jobs")
+		stubs.Must(t, "failed to get jobs command", err)
+		stubs.AssertEquals(t, cmd.HasHandshake(), false)
+		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+
+		out, err := cmd.Execute()
+		stubs.Must(t, "failed to execute help command", err)
+
+		stubs.AssertEquals(t, dedent.Dedent(`
+			now - *command* by *someone* in *123*
+			now - *command* by *someone* in *123*
+			`), out)
+
+		out, err = cmd.Execute("-limit=1")
+		stubs.Must(t, "failed to execute help command", err)
+
+		stubs.AssertEquals(t, dedent.Dedent(`
+			now - *command* by *someone* in *123*
 			`), out)
 	}))
 }
