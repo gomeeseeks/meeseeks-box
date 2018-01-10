@@ -100,7 +100,7 @@ func Latest(limit int) ([]Job, error) {
 			if err := json.Unmarshal(payload, job); err != nil {
 				return fmt.Errorf("failed to load Job payload %s", err)
 			}
-			latest = append([]Job{*job}, latest...)
+			latest = append(latest, *job)
 			_, payload = cur.Prev()
 		}
 		return nil
