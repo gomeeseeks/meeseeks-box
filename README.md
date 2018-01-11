@@ -2,7 +2,7 @@
 
 > You make a request
 >
-> The Meeseek fulfils the request
+> The Meeseek fulfills the request
 >
 > And then it stops existing
 

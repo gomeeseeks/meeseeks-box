@@ -1,0 +1,49 @@
+project_name: meeseeks-box
+release:
+  github:
+    owner: git@github.com:pcarranza
+    name: meeseeks-box
+  name_template: '{{.Tag}}'
+builds:
+- goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm
+  goarm:
+  - "6"
+  main: .
+  ldflags: -s -w -X gitlab.com/mr-meeseeks/meeseeks-box/version.Version={{.Version}} -X gitlab.com/mr-meeseeks/meeseeks-box/version.Commit={{.Commit}} -X gitlab.com/mr-meeseeks/meeseeks-box/version.Date={{.Date}}
+  binary: meeseeks-box
+archive:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm
+    }}v{{ .Arm }}{{ end }}'
+  format: tar.gz
+  files:
+  - license*
+  - LICENSE*
+  - readme*
+  - README*
+  - changelog*
+  - CHANGELOG*
+snapshot:
+  name_template: SNAPSHOT-{{ .Commit }}
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+dist: dist
+dockers:
+  - image: pcarranza/meeseeks-box
+    goos: linux
+    goarch: amd64
+    goarm: ''
+    binary: meeseeks-box
+    dockerfile: Dockerfile
+    latest: true
+  - image: pcarranza/meeseeks-box-armv6
+    goos: linux
+    goarch: arm
+    goarm: '6'
+    binary: meeseeks-box
+    dockerfile: DockerfileArm
+    latest: true

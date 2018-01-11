@@ -27,7 +27,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		log.Println(version.AppVersion)
+		log.Printf("Version: %s Commit: %s Date: %s", version.Version, version.Commit, version.Date)
 		os.Exit(0)
 	}
 	if *debugMode {
