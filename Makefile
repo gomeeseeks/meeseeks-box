@@ -11,7 +11,7 @@ snapshot: test
 	goreleaser --snapshot --rm-dist
 
 release: test
-	goreleaser --snapshot --rm-dist
+	goreleaser --rm-dist
 
 clean:
 	rm -rf ./dist

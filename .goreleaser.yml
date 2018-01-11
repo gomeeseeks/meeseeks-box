@@ -1,7 +1,7 @@
 project_name: meeseeks-box
 release:
   github:
-    owner: git@github.com:pcarranza
+    owner: pcarranza
     name: meeseeks-box
   name_template: '{{.Tag}}'
 builds:
