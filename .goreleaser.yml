@@ -32,6 +32,13 @@ snapshot:
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
 dist: dist
+changelog:
+  filters:
+    exclude:
+      - typo
+      - Fix
+      - Merge
+      - WIP
 dockers:
   - image: pcarranza/meeseeks-box
     goos: linux
