@@ -56,7 +56,7 @@ type versionCommand struct {
 }
 
 func (v versionCommand) Execute(args ...string) (string, error) {
-	return version.AppVersion, nil
+	return version.Version, nil
 }
 
 type helpCommand struct {

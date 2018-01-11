@@ -8,13 +8,6 @@ sha               = $(shell git rev-parse HEAD)
 
 all: test version build package release clean
 
-version:
-	if [ ! -z "$(version)" ]; then \
-		sed -i "" -e 's/"unset"/"$(version)"/g' version/version.go ; \
-	else \
-		sed -i "" -e 's/"unset"/"$(sha)"/g' version/version.go ; \
-	fi
-
 test:
 	go test -cover ./...
 

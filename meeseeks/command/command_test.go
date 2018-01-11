@@ -70,7 +70,7 @@ func Test_VersionCommand(t *testing.T) {
 	out, err := cmd.Execute()
 	stubs.Must(t, "failed to execute version command", err)
 
-	stubs.AssertEquals(t, version.AppVersion, out)
+	stubs.AssertEquals(t, version.Version, out)
 }
 
 func Test_HelpCommand(t *testing.T) {
