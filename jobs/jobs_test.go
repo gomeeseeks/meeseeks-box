@@ -3,8 +3,6 @@ package jobs_test
 import (
 	"testing"
 
-	"strings"
-
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
 	stub "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
@@ -52,7 +50,7 @@ func Test_MarkSuccessFulWithRunningEndStateFails(t *testing.T) {
 		stub.Must(t, "Could not store a job: ", err)
 
 		err = jobs.Finish(job.ID, jobs.RunningStatus)
-		if !strings.HasPrefix(err.Error(), "invalid end state") {
+		if err.Error() != "invalid status Running" {
 			t.Fatalf("Wrong error %s", err)
 		}
 	}))
