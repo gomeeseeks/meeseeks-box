@@ -119,7 +119,9 @@ func Test_GroupsCommand(t *testing.T) {
 
 func Test_JobsCommand(t *testing.T) {
 	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
-		jobs.Create(req)
+		j, err := jobs.Create(req)
+		stubs.Must(t, "could not create job", err)
+		jobs.Finish(j.ID, jobs.SuccessStatus)
 
 		cmds, err := command.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
@@ -132,9 +134,7 @@ func Test_JobsCommand(t *testing.T) {
 		out, err := cmd.Execute()
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, dedent.Dedent(`
-			now - *command* by *someone* in *<#123>*
-			`), out)
+		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Successful*\n", out)
 	}))
 }
 
@@ -159,9 +159,7 @@ func Test_JobsCommandWithIM(t *testing.T) {
 		out, err := cmd.Execute()
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, dedent.Dedent(`
-			now - *command* by *someone* in *DM*
-			`), out)
+		stubs.AssertEquals(t, "now - *command* by *someone* in *DM* - *Running*\n", out)
 	}))
 }
 func Test_JobsChangeLimit(t *testing.T) {
@@ -180,16 +178,11 @@ func Test_JobsChangeLimit(t *testing.T) {
 		out, err := cmd.Execute()
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, dedent.Dedent(`
-			now - *command* by *someone* in *<#123>*
-			now - *command* by *someone* in *<#123>*
-			`), out)
+		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\nnow - *command* by *someone* in *<#123>* - *Running*\n", out)
 
 		out, err = cmd.Execute("-limit=1")
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, dedent.Dedent(`
-			now - *command* by *someone* in *<#123>*
-			`), out)
+		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\n", out)
 	}))
 }

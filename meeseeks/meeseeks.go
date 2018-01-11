@@ -59,7 +59,7 @@ func (m Meeseeks) Process(msg message.Message) {
 
 	log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 		req.Command, req.Username, req.Channel, req.Args)
-	_, err = jobs.Create(req)
+	j, err := jobs.Create(req)
 	if err != nil {
 		log.Errorf("could not create job: %s", err)
 	}
@@ -71,12 +71,14 @@ func (m Meeseeks) Process(msg message.Message) {
 		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 			req.Command, req.Username, err)
 		m.replyWithCommandFailed(req, cmd, err, out)
+		jobs.Finish(j.ID, jobs.FailedStatus)
 		return
 	}
 
-	m.replyWithSuccess(req, cmd, out)
 	log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 		req.Username)
+	m.replyWithSuccess(req, cmd, out)
+	jobs.Finish(j.ID, jobs.SuccessStatus)
 }
 
 func (m Meeseeks) replyWithInvalidMessage(msg message.Message, err error) {

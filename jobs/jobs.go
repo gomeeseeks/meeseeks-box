@@ -14,9 +14,9 @@ import (
 
 // Jobs status
 const (
-	RunningStatus = iota
-	FailedStatus
-	SuccessStatus
+	RunningStatus = "Running"
+	FailedStatus  = "Failed"
+	SuccessStatus = "Successful"
 )
 
 // Job represents a single job
@@ -25,7 +25,7 @@ type Job struct {
 	Request   request.Request `json:"Request"`
 	StartTime time.Time       `json:"StartTime"`
 	EndTime   time.Time       `json:"EndTime"`
-	Status    int             `json:"Status"`
+	Status    string          `json:"Status"`
 }
 
 var jobsBucketKey = []byte("jobs")
@@ -62,16 +62,16 @@ func Get(id uint64) (Job, error) {
 // Finish sets the status of a job to whatever end state if it's current status is running
 //
 // It also sets the end time of the job
-func Finish(id uint64, endState int) error {
-	if !(endState == SuccessStatus || endState == FailedStatus) {
-		return fmt.Errorf("invalid end state %d", endState)
+func Finish(id uint64, status string) error {
+	if !(status == SuccessStatus || status == FailedStatus) {
+		return fmt.Errorf("invalid status %s", status)
 	}
 	return change(id, func(job *Job) error {
 		if job.Status != RunningStatus {
 			return fmt.Errorf("job is not in running status")
 		}
 		job.EndTime = time.Now().UTC()
-		job.Status = endState
+		job.Status = status
 		return nil
 	})
 }

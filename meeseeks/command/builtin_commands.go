@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 
@@ -114,11 +115,15 @@ func (j jobsCommand) Execute(args ...string) (string, error) {
 		return "", err
 	}
 
-	tmpl, err := template.New("jobs", dedent.Dedent(`
-		{{- range $job := .jobs }}
-		{{ HumanizeTime $job.StartTime }} - *{{ $job.Request.Command }}* by *{{ $job.Request.Username }}* in *{{ if $job.Request.IsIM }}DM{{ else }}{{ $job.Request.ChannelLink }}{{ end }}*
-		{{- end}}
-		`))
+	tmpl, err := template.New("jobs", strings.Join([]string{
+		"{{- range $job := .jobs }}",
+		"{{ HumanizeTime $job.StartTime }}",
+		" - *{{ $job.Request.Command }}*",
+		" by *{{ $job.Request.Username }}*",
+		" in *{{ if $job.Request.IsIM }}DM{{ else }}{{ $job.Request.ChannelLink }}{{ end }}*",
+		" - *{{ $job.Status }}*\n",
+		"{{end}}",
+	}, ""))
 	if err != nil {
 		return "", err
 	}
