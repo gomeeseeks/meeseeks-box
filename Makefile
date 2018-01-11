@@ -7,7 +7,7 @@ all: test
 test:
 	go test -cover ./...
 
-snapshot:
+snapshot: test
 	goreleaser --snapshot --rm-dist
 
 release: test
