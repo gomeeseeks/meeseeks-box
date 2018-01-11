@@ -27,7 +27,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		log.Println(version.AppVersion)
+		log.Println(version.Version)
 		os.Exit(0)
 	}
 	if *debugMode {
