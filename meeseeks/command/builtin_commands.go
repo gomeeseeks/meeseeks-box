@@ -162,7 +162,12 @@ func (j jobsCommand) Execute(req request.Request) (string, error) {
 		return "", err
 	}
 
-	jobs, err := jobs.Latest(*limit)
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: *limit,
+		Match: func(job jobs.Job) bool {
+			return req.Username == job.Request.Username
+		},
+	})
 	if err != nil {
 		return "", err
 	}
@@ -192,11 +197,20 @@ func (l lastCommand) Execute(req request.Request) (string, error) {
 		return "", err
 	}
 
-	j, err := jobs.Last(req.Username, req.Command)
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: 1,
+		Match: func(job jobs.Job) bool {
+			return job.Request.Username == req.Username &&
+				job.Request.Command != BuiltinLastCommand
+		},
+	})
 	if err != nil {
 		return "", fmt.Errorf("failed to get the last job: %s", err)
 	}
+	if len(jobs) == 0 {
+		return "", fmt.Errorf("No last command for current user")
+	}
 	return tmpl.Render(template.Payload{
-		"job": j,
+		"job": jobs[0],
 	})
 }

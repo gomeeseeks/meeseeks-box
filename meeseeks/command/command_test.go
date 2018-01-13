@@ -132,7 +132,7 @@ func Test_JobsCommand(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute(request.Request{})
+		out, err := cmd.Execute(request.Request{Username: "someone"})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n", out)
@@ -157,7 +157,7 @@ func Test_JobsCommandWithIM(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute(request.Request{})
+		out, err := cmd.Execute(request.Request{Username: "someone"})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "*1* - now - *command* by *someone* in *DM* - *Running*\n", out)
@@ -176,12 +176,12 @@ func Test_JobsChangeLimit(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute(request.Request{})
+		out, err := cmd.Execute(request.Request{Username: "someone"})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "*2* - now - *command* by *someone* in *<#123>* - *Running*\n*1* - now - *command* by *someone* in *<#123>* - *Running*\n", out)
 
-		out, err = cmd.Execute(request.Request{Args: []string{"-limit=1"}})
+		out, err = cmd.Execute(request.Request{Username: "someone", Args: []string{"-limit=1"}})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "*2* - now - *command* by *someone* in *<#123>* - *Running*\n", out)
@@ -190,11 +190,11 @@ func Test_JobsChangeLimit(t *testing.T) {
 
 func Test_LastCommand(t *testing.T) {
 	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
+		_, err := jobs.Create(req)
+		stubs.Must(t, "could not create job", err)
+
 		cmds, err := command.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
-
-		_, err = jobs.Create(req)
-		stubs.Must(t, "could not create job", err)
 
 		cmd, err := cmds.Find(command.BuiltinLastCommand)
 		stubs.Must(t, "failed to get jobs command", err)
@@ -205,7 +205,7 @@ func Test_LastCommand(t *testing.T) {
 			Username: req.Username,
 			Command:  command.BuiltinLastCommand,
 		})
-		stubs.Must(t, "failed to execute help command", err)
+		stubs.Must(t, "failed to execute last command", err)
 
 		stubs.AssertEquals(t, "* *Command* command\n* *Args* arg1, arg2\n* *Status* Running\n* *Where* <#123>\n* *When* now\n* *ID* 1\n", out)
 	}))
