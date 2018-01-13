@@ -43,7 +43,7 @@ func Test_ShellCommand(t *testing.T) {
 	cmd, err := cmds.Find("echo")
 	stubs.Must(t, "find cmd failed", err)
 
-	out, err := cmd.Execute("hello", "meeseeks")
+	out, err := cmd.Execute(request.Request{Args: []string{"hello", "meeseeks"}})
 	stubs.Must(t, "shell echo command erred out", err)
 	stubs.AssertEquals(t, out, "hello meeseeks\n")
 }
@@ -67,7 +67,7 @@ func Test_VersionCommand(t *testing.T) {
 	cmd, err := cmds.Find("version")
 	stubs.Must(t, "failed to get version command", err)
 
-	out, err := cmd.Execute()
+	out, err := cmd.Execute(request.Request{})
 	stubs.Must(t, "failed to execute version command", err)
 
 	stubs.AssertEquals(t, version.Version, out)
@@ -80,7 +80,7 @@ func Test_HelpCommand(t *testing.T) {
 	cmd, err := cmds.Find("help")
 	stubs.Must(t, "failed to get help command", err)
 
-	out, err := cmd.Execute()
+	out, err := cmd.Execute(request.Request{})
 	stubs.Must(t, "failed to execute help command", err)
 
 	stubs.AssertEquals(t, dedent.Dedent(`
@@ -88,6 +88,7 @@ func Test_HelpCommand(t *testing.T) {
 		- groups: prints the configured groups
 		- help: prints all the kwnown commands and its associated help
 		- jobs: shows the last executed jobs
+		- last: shows the last executed command by the invoking user
 		- version: prints the running meeseeks version
 		`), out)
 }
@@ -108,7 +109,7 @@ func Test_GroupsCommand(t *testing.T) {
 	stubs.AssertEquals(t, cmd.HasHandshake(), false)
 	stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAllowedGroup)
 
-	out, err := cmd.Execute()
+	out, err := cmd.Execute(request.Request{})
 	stubs.Must(t, "failed to execute help command", err)
 
 	stubs.AssertEquals(t, dedent.Dedent(`
@@ -131,7 +132,7 @@ func Test_JobsCommand(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute()
+		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Successful*\n", out)
@@ -156,7 +157,7 @@ func Test_JobsCommandWithIM(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute()
+		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *DM* - *Running*\n", out)
@@ -175,14 +176,37 @@ func Test_JobsChangeLimit(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute()
+		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\nnow - *command* by *someone* in *<#123>* - *Running*\n", out)
 
-		out, err = cmd.Execute("-limit=1")
+		out, err = cmd.Execute(request.Request{Args: []string{"-limit=1"}})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\n", out)
+	}))
+}
+
+func Test_LastCommand(t *testing.T) {
+	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
+		cmds, err := command.New(configWithEcho)
+		stubs.Must(t, "could not build commands", err)
+
+		_, err = jobs.Create(req)
+		stubs.Must(t, "could not create job", err)
+
+		cmd, err := cmds.Find(command.BuiltinLastCommand)
+		stubs.Must(t, "failed to get jobs command", err)
+		stubs.AssertEquals(t, cmd.HasHandshake(), false)
+		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+
+		out, err := cmd.Execute(request.Request{
+			Username: req.Username,
+			Command:  command.BuiltinLastCommand,
+		})
+		stubs.Must(t, "failed to execute help command", err)
+
+		stubs.AssertEquals(t, "* *ID* 1\n* *Command* command\n* *Args* arg1, arg2\n* *Channel* general\n* *Time* now\n* *Status* Running\n", out)
 	}))
 }

@@ -100,6 +100,31 @@ func Latest(limit int) ([]Job, error) {
 	return latest, err
 }
 
+// Last returns the last job for a given username skipping the commands that are as`skip`
+func Last(username string, skip string) (Job, error) {
+	var last Job
+	err := db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(jobsBucketKey)
+		cur := bucket.Cursor()
+		_, payload := cur.Last()
+		for {
+			if payload == nil {
+				return fmt.Errorf("could find last job for user %s", username)
+			}
+			job := &Job{}
+			if err := json.Unmarshal(payload, job); err != nil {
+				return fmt.Errorf("failed to load Job payload %s", err)
+			}
+			if job.Request.Username == username && job.Request.Command != skip {
+				last = *job
+				return nil
+			}
+			_, payload = cur.Prev()
+		}
+	})
+	return last, err
+}
+
 func change(id uint64, f func(job *Job) error) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(jobsBucketKey)

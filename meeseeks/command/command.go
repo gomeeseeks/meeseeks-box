@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
+
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 )
 
@@ -13,17 +15,9 @@ var (
 	ErrCommandNotFound = fmt.Errorf("Can't find command")
 )
 
-// Builtin Commands Names
-const (
-	BuiltinVersionCommand = "version"
-	BuiltinHelpCommand    = "help"
-	BuiltinGroupsCommand  = "groups"
-	BuiltinJobsCommand    = "jobs"
-)
-
 // Command is the base interface for any command
 type Command interface {
-	Execute(args ...string) (string, error)
+	Execute(req request.Request) (string, error)
 	HasHandshake() bool
 	ConfiguredCommand() config.Command
 }
@@ -37,18 +31,8 @@ type Commands struct {
 func New(cnf config.Config) (Commands, error) {
 	// Add builtin commands
 	commands := make(map[string]Command)
-	commands[BuiltinHelpCommand] = helpCommand{
-		commands: &commands,
-		Help:     "prints all the kwnown commands and its associated help",
-	}
-	commands[BuiltinVersionCommand] = versionCommand{
-		Help: "prints the running meeseeks version",
-	}
-	commands[BuiltinGroupsCommand] = groupsCommand{
-		Help: "prints the configured groups",
-	}
-	commands[BuiltinJobsCommand] = jobsCommand{
-		Help: "shows the last executed jobs",
+	for name, command := range builtInCommands {
+		commands[name] = command
 	}
 
 	for name, configCommand := range cnf.Commands {
@@ -57,6 +41,11 @@ func New(cnf config.Config) (Commands, error) {
 			return Commands{}, err
 		}
 		commands[name] = command
+	}
+
+	commands[BuiltinHelpCommand] = helpCommand{
+		commands: &commands,
+		Help:     "prints all the kwnown commands and its associated help",
 	}
 
 	return Commands{
@@ -95,9 +84,9 @@ func newShellCommand(cmd config.Command) (Command, error) {
 }
 
 // Execute implements Command.Execute for the ShellCommand
-func (c shellCommand) Execute(args ...string) (string, error) {
+func (c shellCommand) Execute(req request.Request) (string, error) {
 	cnfCommand := c.ConfiguredCommand()
-	cmdArgs := append(cnfCommand.Args, args...)
+	cmdArgs := append(cnfCommand.Args, req.Args...)
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), cnfCommand.Timeout)
 	defer cancelFunc()

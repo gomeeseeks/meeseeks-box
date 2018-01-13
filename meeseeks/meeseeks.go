@@ -66,7 +66,7 @@ func (m Meeseeks) Process(msg message.Message) {
 
 	m.replyWithHandshake(req, cmd)
 
-	out, err := cmd.Execute(req.Args...)
+	out, err := cmd.Execute(req)
 	if err != nil {
 		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 			req.Command, req.Username, err)
