@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 
 	bolt "github.com/coreos/bbolt"
+	log "github.com/sirupsen/logrus"
 )
 
 // Jobs status
@@ -41,6 +42,8 @@ func Create(req request.Request) (Job, error) {
 			StartTime: time.Now().UTC(),
 			Status:    RunningStatus,
 		}
+
+		log.Debugf("creating job $#v", job)
 		return save(job, bucket)
 	})
 	if err != nil {
@@ -76,53 +79,45 @@ func Finish(id uint64, status string) error {
 	})
 }
 
-// Latest returns the last N jobs
-func Latest(limit int) ([]Job, error) {
+// JobFilter provides the basic tooling to filter jobs when using Find
+type JobFilter struct {
+	Limit int
+	Match func(Job) bool
+}
+
+// Find will walk through the values on the jobs bucket and will apply the Match function
+// to determine if the job matches a search criteria.
+//
+// Returns a list of jobs in descending order that match the filter
+func Find(filter JobFilter) ([]Job, error) {
 	latest := make([]Job, 0)
+	matcher := func(job Job) bool {
+		return true
+	}
+	if filter.Match != nil {
+		matcher = filter.Match
+	}
 	err := db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(jobsBucketKey)
 		cur := bucket.Cursor()
 		_, payload := cur.Last()
-		for i := 0; i < limit; i++ {
+		for len(latest) < filter.Limit {
 			if payload == nil {
 				break
 			}
 
-			job := &Job{}
-			if err := json.Unmarshal(payload, job); err != nil {
+			job := Job{}
+			if err := json.Unmarshal(payload, &job); err != nil {
 				return fmt.Errorf("failed to load Job payload %s", err)
 			}
-			latest = append(latest, *job)
+			if matcher(job) {
+				latest = append(latest, job)
+			}
 			_, payload = cur.Prev()
 		}
 		return nil
 	})
 	return latest, err
-}
-
-// Last returns the last job for a given username skipping the commands that are as`skip`
-func Last(username string, skip string) (Job, error) {
-	var last Job
-	err := db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(jobsBucketKey)
-		cur := bucket.Cursor()
-		_, payload := cur.Last()
-		for {
-			if payload == nil {
-				return fmt.Errorf("could find last job for user %s", username)
-			}
-			job := &Job{}
-			if err := json.Unmarshal(payload, job); err != nil {
-				return fmt.Errorf("failed to load Job payload %s", err)
-			}
-			if job.Request.Username == username && job.Request.Command != skip {
-				last = *job
-				return nil
-			}
-			_, payload = cur.Prev()
-		}
-	})
-	return last, err
 }
 
 func change(id uint64, f func(job *Job) error) error {

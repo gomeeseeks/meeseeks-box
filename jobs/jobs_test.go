@@ -56,13 +56,13 @@ func Test_MarkSuccessFulWithRunningEndStateFails(t *testing.T) {
 	}))
 }
 
-func Test_LatestReturnsInOrder(t *testing.T) {
+func Test_FilterReturnsInOrder(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
 		jobs.Create(req)
 		jobs.Create(req)
 		jobs.Create(req)
 
-		latest, err := jobs.Latest(2)
+		latest, err := jobs.Find(jobs.JobFilter{Limit: 2})
 		if err != nil {
 			t.Fatalf("Failed to get the latest jobs: %s", err)
 		}
@@ -72,12 +72,12 @@ func Test_LatestReturnsInOrder(t *testing.T) {
 	}))
 }
 
-func Test_LatestReturnsEnough(t *testing.T) {
+func Test_FilterReturnsEnough(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
 		jobs.Create(req)
 		jobs.Create(req)
 
-		latest, err := jobs.Latest(5)
+		latest, err := jobs.Find(jobs.JobFilter{Limit: 5})
 		if err != nil {
 			t.Fatalf("Failed to get the latest jobs: %s", err)
 		}
