@@ -208,13 +208,19 @@ func Test_LastCommand(t *testing.T) {
 		})
 		stubs.Must(t, "failed to execute last command", err)
 
-		stubs.AssertEquals(t, "* *Command* command\n* *Args* arg1, arg2\n* *Status* Running\n* *Where* <#123>\n* *When* now\n* *ID* 1\n", out)
+		stubs.AssertEquals(t, "* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Status* Running\n* *Where* <#123>\n* *When* now\n* *ID* 1\n", out)
 	}))
 }
 
 func Test_FindJobCommand(t *testing.T) {
 	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
-		j, err := jobs.Create(req)
+		j, err := jobs.Create(request.Request{
+			Command:     "command",
+			Channel:     "general",
+			ChannelID:   "123",
+			ChannelLink: "<#123>",
+			Username:    "someone",
+		})
 		stubs.Must(t, "could not create job", err)
 		jobs.Finish(j.ID, jobs.SuccessStatus)
 
@@ -229,6 +235,6 @@ func Test_FindJobCommand(t *testing.T) {
 		out, err := cmd.Execute(request.Request{Username: "someone", Args: []string{"1"}})
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, "* *Command* command\n* *Args* arg1, arg2\n* *Status* Successful\n* *Where* <#123>\n* *When* now\n* *ID* 1\n", out)
+		stubs.AssertEquals(t, "* *Command* command\n* *Status* Successful\n* *Where* <#123>\n* *When* now\n* *ID* 1\n", out)
 	}))
 }
