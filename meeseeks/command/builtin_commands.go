@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
@@ -21,6 +22,7 @@ const (
 	BuiltinHelpCommand    = "help"
 	BuiltinGroupsCommand  = "groups"
 	BuiltinJobsCommand    = "jobs"
+	BuiltinFindJobCommand = "job"
 	BuiltinLastCommand    = "last"
 )
 
@@ -50,10 +52,13 @@ var builtInCommands = map[string]Command{
 		Help: "prints the configured groups",
 	},
 	BuiltinJobsCommand: jobsCommand{
-		Help: "shows the last executed jobs",
+		Help: "shows the last executed jobs for the calling user",
 	},
 	BuiltinLastCommand: lastCommand{
-		Help: "shows the last executed command by the invoking user",
+		Help: "shows the last executed command by the calling user",
+	},
+	BuiltinFindJobCommand: findJob{
+		Help: "find one job",
 	},
 }
 
@@ -209,6 +214,44 @@ func (l lastCommand) Execute(req request.Request) (string, error) {
 	}
 	if len(jobs) == 0 {
 		return "", fmt.Errorf("No last command for current user")
+	}
+	return tmpl.Render(template.Payload{
+		"job": jobs[0],
+	})
+}
+
+type findJob struct {
+	noHandshake
+	allowAll
+	Help string
+}
+
+func (l findJob) Execute(req request.Request) (string, error) {
+	if len(req.Args) == 0 {
+		return "", fmt.Errorf("No job id to search for")
+	}
+	id, err := strconv.ParseUint(req.Args[0], 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("Invalid job ID %s: %s", req.Args[0], err)
+	}
+
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: 1,
+		Match: func(job jobs.Job) bool {
+			return job.Request.Username == req.Username &&
+				job.ID == id
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get the last job: %s", err)
+	}
+	if len(jobs) == 0 {
+		return "", fmt.Errorf("No last command for current user")
+	}
+
+	tmpl, err := template.New("job", commandTemplate)
+	if err != nil {
+		return "", err
 	}
 	return tmpl.Render(template.Payload{
 		"job": jobs[0],

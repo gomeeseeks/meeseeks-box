@@ -43,7 +43,7 @@ func Create(req request.Request) (Job, error) {
 			Status:    RunningStatus,
 		}
 
-		log.Infof("creating job $#v", job)
+		log.Debugf("creating job $#v", job)
 		return save(job, bucket)
 	})
 	if err != nil {
