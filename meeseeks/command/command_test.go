@@ -88,6 +88,7 @@ func Test_HelpCommand(t *testing.T) {
 		- groups: prints the configured groups
 		- help: prints all the kwnown commands and its associated help
 		- jobs: shows the last executed jobs
+		- last: shows the last executed command by the invoking user
 		- version: prints the running meeseeks version
 		`), out)
 }
@@ -184,5 +185,28 @@ func Test_JobsChangeLimit(t *testing.T) {
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\n", out)
+	}))
+}
+
+func Test_LastCommand(t *testing.T) {
+	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
+		cmds, err := command.New(configWithEcho)
+		stubs.Must(t, "could not build commands", err)
+
+		_, err = jobs.Create(req)
+		stubs.Must(t, "could not create job", err)
+
+		cmd, err := cmds.Find(command.BuiltinLastCommand)
+		stubs.Must(t, "failed to get jobs command", err)
+		stubs.AssertEquals(t, cmd.HasHandshake(), false)
+		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+
+		out, err := cmd.Execute(request.Request{
+			Username: req.Username,
+			Command:  command.BuiltinLastCommand,
+		})
+		stubs.Must(t, "failed to execute help command", err)
+
+		stubs.AssertEquals(t, "* *ID* 1\n* *Command* command\n* *Args* arg1, arg2\n* *Channel* general\n* *Time* now\n* *Status* Running\n", out)
 	}))
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	tmpl "text/template"
 
@@ -194,6 +195,7 @@ func New(name, template string) (Renderer, error) {
 		"HumanizeTime":   humanize.Time,
 		"HumanizeSize":   humanize.Bytes,
 		"HumanizeNumber": humanize.Ftoa,
+		"Join":           strings.Join,
 	}).Parse(template)
 	if err != nil {
 		return Renderer{}, fmt.Errorf("could not parse template %s: %s", name, err)
