@@ -177,12 +177,12 @@ type lastCommand struct {
 	Help string
 }
 
-var commandTemplate = `{{with $job := .job}}* *ID* {{ $job.ID }}{{ with $r := $job.Request }}
-* *Command* {{ $r.Command }}
+var commandTemplate = `{{with $job := .job}}{{ with $r := $job.Request }}* *Command* {{ $r.Command }}
 * *Args* {{ Join $r.Args ", " }}
-* *Channel* {{ if $r.IsIM }}IM{{ else }}{{ $r.Channel }}{{end}}
-* *Time* {{ HumanizeTime $job.StartTime }}
 * *Status* {{ $job.Status}}
+* *Where* {{ if $r.IsIM }}IM{{ else }}{{ $r.ChannelLink }}{{end}}
+* *When* {{ HumanizeTime $job.StartTime }}
+* *ID* {{ $job.ID }}
 {{- end }}{{- end }}
 `
 

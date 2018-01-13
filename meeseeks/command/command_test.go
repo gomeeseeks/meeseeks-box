@@ -207,6 +207,6 @@ func Test_LastCommand(t *testing.T) {
 		})
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, "* *ID* 1\n* *Command* command\n* *Args* arg1, arg2\n* *Channel* general\n* *Time* now\n* *Status* Running\n", out)
+		stubs.AssertEquals(t, "* *Command* command\n* *Args* arg1, arg2\n* *Status* Running\n* *Where* <#123>\n* *When* now\n* *ID* 1\n", out)
 	}))
 }
