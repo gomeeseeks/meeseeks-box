@@ -10,6 +10,7 @@ import (
 	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 )
@@ -56,7 +57,7 @@ type versionCommand struct {
 	Help string
 }
 
-func (v versionCommand) Execute(args ...string) (string, error) {
+func (v versionCommand) Execute(req request.Request) (string, error) {
 	return version.Version, nil
 }
 
@@ -67,7 +68,7 @@ type helpCommand struct {
 	Help     string
 }
 
-func (h helpCommand) Execute(args ...string) (string, error) {
+func (h helpCommand) Execute(req request.Request) (string, error) {
 	tmpl, err := template.New("version", dedent.Dedent(
 		`{{ range $name, $cmd := .commands }}
 		- {{ $name }}: {{ $cmd.Help }}
@@ -87,7 +88,7 @@ type groupsCommand struct {
 	Help string
 }
 
-func (g groupsCommand) Execute(args ...string) (string, error) {
+func (g groupsCommand) Execute(req request.Request) (string, error) {
 	tmpl, err := template.New("version", dedent.Dedent(`
 		{{- range $group, $users := .groups }}
 		- {{ $group }}:
@@ -108,10 +109,10 @@ type jobsCommand struct {
 	Help string
 }
 
-func (j jobsCommand) Execute(args ...string) (string, error) {
+func (j jobsCommand) Execute(req request.Request) (string, error) {
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
 	limit := flags.Int("limit", 5, "how many jobs to return")
-	if err := flags.Parse(args); err != nil {
+	if err := flags.Parse(req.Args); err != nil {
 		return "", err
 	}
 

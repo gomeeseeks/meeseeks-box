@@ -43,7 +43,7 @@ func Test_ShellCommand(t *testing.T) {
 	cmd, err := cmds.Find("echo")
 	stubs.Must(t, "find cmd failed", err)
 
-	out, err := cmd.Execute("hello", "meeseeks")
+	out, err := cmd.Execute(request.Request{Args: []string{"hello", "meeseeks"}})
 	stubs.Must(t, "shell echo command erred out", err)
 	stubs.AssertEquals(t, out, "hello meeseeks\n")
 }
@@ -67,7 +67,7 @@ func Test_VersionCommand(t *testing.T) {
 	cmd, err := cmds.Find("version")
 	stubs.Must(t, "failed to get version command", err)
 
-	out, err := cmd.Execute()
+	out, err := cmd.Execute(request.Request{})
 	stubs.Must(t, "failed to execute version command", err)
 
 	stubs.AssertEquals(t, version.Version, out)
@@ -80,7 +80,7 @@ func Test_HelpCommand(t *testing.T) {
 	cmd, err := cmds.Find("help")
 	stubs.Must(t, "failed to get help command", err)
 
-	out, err := cmd.Execute()
+	out, err := cmd.Execute(request.Request{})
 	stubs.Must(t, "failed to execute help command", err)
 
 	stubs.AssertEquals(t, dedent.Dedent(`
@@ -108,7 +108,7 @@ func Test_GroupsCommand(t *testing.T) {
 	stubs.AssertEquals(t, cmd.HasHandshake(), false)
 	stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAllowedGroup)
 
-	out, err := cmd.Execute()
+	out, err := cmd.Execute(request.Request{})
 	stubs.Must(t, "failed to execute help command", err)
 
 	stubs.AssertEquals(t, dedent.Dedent(`
@@ -131,7 +131,7 @@ func Test_JobsCommand(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute()
+		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Successful*\n", out)
@@ -156,7 +156,7 @@ func Test_JobsCommandWithIM(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute()
+		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *DM* - *Running*\n", out)
@@ -175,12 +175,12 @@ func Test_JobsChangeLimit(t *testing.T) {
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
 		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
 
-		out, err := cmd.Execute()
+		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\nnow - *command* by *someone* in *<#123>* - *Running*\n", out)
 
-		out, err = cmd.Execute("-limit=1")
+		out, err = cmd.Execute(request.Request{Args: []string{"-limit=1"}})
 		stubs.Must(t, "failed to execute help command", err)
 
 		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\n", out)
