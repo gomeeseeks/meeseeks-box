@@ -187,21 +187,17 @@ type lastCommand struct {
 	Help string
 }
 
-var commandTemplate = `{{with $job := .job}}{{ with $r := $job.Request }}* *Command* {{ $r.Command }}
-* *Args* {{ Join $r.Args ", " }}
+var jobTemplate = `
+{{- with $job := .job }}{{ with $r := $job.Request }}* *Command* {{ $r.Command }}{{ with $args := $r.Args }}
+* *Args* "{{ Join $args "\" \"" }}" {{ end }}
 * *Status* {{ $job.Status}}
-* *Where* {{ if $r.IsIM }}IM{{ else }}{{ $r.ChannelLink }}{{end}}
+* *Where* {{ if $r.IsIM }}IM{{ else }}{{ $r.ChannelLink }}{{ end }}
 * *When* {{ HumanizeTime $job.StartTime }}
 * *ID* {{ $job.ID }}
 {{- end }}{{- end }}
 `
 
 func (l lastCommand) Execute(req request.Request) (string, error) {
-	tmpl, err := template.New("job", commandTemplate)
-	if err != nil {
-		return "", err
-	}
-
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
 		Match: func(job jobs.Job) bool {
@@ -214,6 +210,10 @@ func (l lastCommand) Execute(req request.Request) (string, error) {
 	}
 	if len(jobs) == 0 {
 		return "", fmt.Errorf("No last command for current user")
+	}
+	tmpl, err := template.New("job", jobTemplate)
+	if err != nil {
+		return "", err
 	}
 	return tmpl.Render(template.Payload{
 		"job": jobs[0],
@@ -249,7 +249,7 @@ func (l findJob) Execute(req request.Request) (string, error) {
 		return "", fmt.Errorf("No last command for current user")
 	}
 
-	tmpl, err := template.New("job", commandTemplate)
+	tmpl, err := template.New("job", jobTemplate)
 	if err != nil {
 		return "", err
 	}
