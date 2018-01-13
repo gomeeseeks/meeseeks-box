@@ -142,7 +142,7 @@ type jobsCommand struct {
 
 var jobsTemplate = strings.Join([]string{
 	"{{- range $job := .jobs }}",
-	"{{ HumanizeTime $job.StartTime }}",
+	"*{{ $job.ID }}* - {{ HumanizeTime $job.StartTime }}",
 	" - *{{ $job.Request.Command }}*",
 	" by *{{ $job.Request.Username }}*",
 	" in *{{ if $job.Request.IsIM }}DM{{ else }}{{ $job.Request.ChannelLink }}{{ end }}*",

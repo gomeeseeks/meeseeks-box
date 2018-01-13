@@ -135,7 +135,7 @@ func Test_JobsCommand(t *testing.T) {
 		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Successful*\n", out)
+		stubs.AssertEquals(t, "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n", out)
 	}))
 }
 
@@ -160,7 +160,7 @@ func Test_JobsCommandWithIM(t *testing.T) {
 		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, "now - *command* by *someone* in *DM* - *Running*\n", out)
+		stubs.AssertEquals(t, "*1* - now - *command* by *someone* in *DM* - *Running*\n", out)
 	}))
 }
 func Test_JobsChangeLimit(t *testing.T) {
@@ -179,12 +179,12 @@ func Test_JobsChangeLimit(t *testing.T) {
 		out, err := cmd.Execute(request.Request{})
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\nnow - *command* by *someone* in *<#123>* - *Running*\n", out)
+		stubs.AssertEquals(t, "*2* - now - *command* by *someone* in *<#123>* - *Running*\n*1* - now - *command* by *someone* in *<#123>* - *Running*\n", out)
 
 		out, err = cmd.Execute(request.Request{Args: []string{"-limit=1"}})
 		stubs.Must(t, "failed to execute help command", err)
 
-		stubs.AssertEquals(t, "now - *command* by *someone* in *<#123>* - *Running*\n", out)
+		stubs.AssertEquals(t, "*2* - now - *command* by *someone* in *<#123>* - *Running*\n", out)
 	}))
 }
 
