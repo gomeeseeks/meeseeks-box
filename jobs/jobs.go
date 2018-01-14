@@ -30,7 +30,6 @@ type Job struct {
 }
 
 var jobsBucketKey = []byte("jobs")
-var usersBucketKey = []byte("users")
 
 // Create registers a new job in running state in the database
 func Create(req request.Request) (Job, error) {
