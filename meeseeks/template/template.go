@@ -34,6 +34,17 @@ var (
 		UnauthorizedKey)
 )
 
+// GetDefaultTemplates returns a map with the default templates
+func GetDefaultTemplates() map[string]string {
+	return map[string]string{
+		HandshakeKey:      DefaultHandshakeTemplate,
+		SuccessKey:        DefaultSuccessTemplate,
+		FailureKey:        DefaultFailureTemplate,
+		UnknownCommandKey: DefaultUnknownCommandTemplate,
+		UnauthorizedKey:   DefaultUnauthorizedTemplate,
+	}
+}
+
 // Default messages
 var (
 	DefaultHandshakeMessages = []string{"I'm Mr Meeseeks! look at me!", "Mr Meeseeks!",
@@ -44,6 +55,17 @@ var (
 	DefaultUnauthorizedMessages   = []string{"Uuuuh, yeah! you are not allowed to do"}
 	DefaultUnknownCommandMessages = []string{"Uuuh! no, I don't know how to do"}
 )
+
+// GetDefaultMessages returns a map with the default messages
+func GetDefaultMessages() map[string][]string {
+	return map[string][]string{
+		HandshakeKey:      DefaultHandshakeMessages,
+		SuccessKey:        DefaultSuccessMessages,
+		FailureKey:        DefaultFailedMessages,
+		UnknownCommandKey: DefaultUnknownCommandMessages,
+		UnauthorizedKey:   DefaultUnauthorizedMessages,
+	}
+}
 
 // Templates is a set of templates for the basic operations
 type Templates struct {
@@ -60,20 +82,8 @@ type TemplatesBuilder struct {
 // NewBuilder creates a new template builder fill with default values
 func NewBuilder() *TemplatesBuilder {
 	return &TemplatesBuilder{
-		templates: map[string]string{
-			HandshakeKey:      DefaultHandshakeTemplate,
-			SuccessKey:        DefaultSuccessTemplate,
-			FailureKey:        DefaultFailureTemplate,
-			UnknownCommandKey: DefaultUnknownCommandTemplate,
-			UnauthorizedKey:   DefaultUnauthorizedTemplate,
-		},
-		messages: map[string][]string{
-			HandshakeKey:      DefaultHandshakeMessages,
-			SuccessKey:        DefaultSuccessMessages,
-			FailureKey:        DefaultFailedMessages,
-			UnknownCommandKey: DefaultUnknownCommandMessages,
-			UnauthorizedKey:   DefaultUnauthorizedMessages,
-		},
+		templates: GetDefaultTemplates(),
+		messages:  GetDefaultMessages(),
 	}
 }
 

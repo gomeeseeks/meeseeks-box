@@ -127,25 +127,27 @@ func Test_BasicReplying(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			go m.Process(stubs.MessageStub{
-				Text:      tc.message,
-				Channel:   tc.channel,
-				ChannelID: tc.channel + "ID",
-				User:      tc.user,
-			})
+			stubs.WithTmpDB(func() {
+				go m.Process(stubs.MessageStub{
+					Text:      tc.message,
+					Channel:   tc.channel,
+					ChannelID: tc.channel + "ID",
+					User:      tc.user,
+				})
 
-			for _, expected := range tc.expected {
-				actual := <-client.Messages
+				for _, expected := range tc.expected {
+					actual := <-client.Messages
 
-				r, err := regexp.Compile(expected.TextMatcher)
-				stubs.Must(t, "could not compile regex", err, expected.TextMatcher)
+					r, err := regexp.Compile(expected.TextMatcher)
+					stubs.Must(t, "could not compile regex", err, expected.TextMatcher)
 
-				if !r.MatchString(actual.Text) {
-					t.Fatalf("Bad message, expected %s; got %s", expected.TextMatcher, actual.Text)
+					if !r.MatchString(actual.Text) {
+						t.Fatalf("Bad message, expected %s; got %s", expected.TextMatcher, actual.Text)
+					}
+					stubs.AssertEquals(t, expected.Channel, actual.Channel)
+					stubs.AssertEquals(t, expected.IsIM, actual.IsIM)
 				}
-				stubs.AssertEquals(t, expected.Channel, actual.Channel)
-				stubs.AssertEquals(t, expected.IsIM, actual.IsIM)
-			}
+			})
 		})
 	}
 

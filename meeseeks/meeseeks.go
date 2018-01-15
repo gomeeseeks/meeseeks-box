@@ -5,8 +5,9 @@ import (
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
+	"gitlab.com/mr-meeseeks/meeseeks-box/command"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/command"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/message"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
@@ -22,13 +23,13 @@ type Client interface {
 type Meeseeks struct {
 	client    Client
 	config    config.Config
-	commands  command.Commands
+	commands  commands.Commands
 	templates *template.TemplatesBuilder
 }
 
 // New creates a new Meeseeks service
 func New(client Client, conf config.Config) Meeseeks {
-	cmds, _ := command.New(conf) // TODO handle the error
+	cmds, _ := commands.New(conf) // TODO handle the error
 	templatesBuilder := template.NewBuilder().WithMessages(conf.Messages)
 	return Meeseeks{
 		client:    client,
@@ -48,37 +49,43 @@ func (m Meeseeks) Process(msg message.Message) {
 	}
 
 	cmd, err := m.commands.Find(req.Command)
-	if err == command.ErrCommandNotFound {
+	if err == commands.ErrCommandNotFound {
 		m.replyWithUnknownCommand(req)
 		return
 	}
-	if err = auth.Check(req.Command, cmd.ConfiguredCommand()); err != nil {
+	if err = auth.Check(req.Command, cmd); err != nil {
 		m.replyWithUnauthorizedCommand(req, cmd)
 		return
 	}
 
 	log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 		req.Command, req.Username, req.Channel, req.Args)
-	j, err := jobs.Create(req)
-	if err != nil {
-		log.Errorf("could not create job: %s", err)
+
+	var j jobs.Job
+	if cmd.Record() {
+		j, err = jobs.Create(req)
+		if err != nil {
+			log.Errorf("could not create job: %s", err)
+		}
+	} else {
+		j = jobs.NullJob(req)
 	}
 
 	m.replyWithHandshake(req, cmd)
 
-	out, err := cmd.Execute(req)
+	out, err := cmd.Execute(j)
 	if err != nil {
 		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 			req.Command, req.Username, err)
 		m.replyWithCommandFailed(req, cmd, err, out)
-		jobs.Finish(j.ID, jobs.FailedStatus)
+		j.Finish(jobs.FailedStatus)
 		return
 	}
 
 	log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 		req.Username)
-	m.replyWithSuccess(req, cmd, out)
-	jobs.Finish(j.ID, jobs.SuccessStatus)
+	m.replyWithSuccess(j.Request, cmd, out)
+	j.Finish(jobs.SuccessStatus)
 }
 
 func (m Meeseeks) replyWithInvalidMessage(msg message.Message, err error) {
@@ -157,5 +164,5 @@ func (m Meeseeks) replyWithSuccess(req request.Request, cmd command.Command, out
 }
 
 func (m Meeseeks) buildTemplatesFor(cmd command.Command) template.Templates {
-	return m.templates.Clone().WithTemplates(cmd.ConfiguredCommand().Templates).Build()
+	return m.templates.Clone().WithTemplates(cmd.Templates()).Build()
 }

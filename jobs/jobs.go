@@ -30,7 +30,16 @@ type Job struct {
 }
 
 var jobsBucketKey = []byte("jobs")
-var usersBucketKey = []byte("users")
+
+// NullJob is used to handle requests that are not recorded
+func NullJob(req request.Request) Job {
+	return Job{
+		ID:        0,
+		Request:   req,
+		StartTime: time.Now().UTC(),
+		Status:    RunningStatus,
+	}
+}
 
 // Create registers a new job in running state in the database
 func Create(req request.Request) (Job, error) {
@@ -65,11 +74,14 @@ func Get(id uint64) (Job, error) {
 // Finish sets the status of a job to whatever end state if it's current status is running
 //
 // It also sets the end time of the job
-func Finish(id uint64, status string) error {
+func (j Job) Finish(status string) error {
+	if j.ID == 0 {
+		return nil
+	}
 	if !(status == SuccessStatus || status == FailedStatus) {
 		return fmt.Errorf("invalid status %s", status)
 	}
-	return change(id, func(job *Job) error {
+	return change(j.ID, func(job *Job) error {
 		if job.Status != RunningStatus {
 			return fmt.Errorf("job is not in running status")
 		}
