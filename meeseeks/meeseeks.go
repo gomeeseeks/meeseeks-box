@@ -60,26 +60,32 @@ func (m Meeseeks) Process(msg message.Message) {
 
 	log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 		req.Command, req.Username, req.Channel, req.Args)
-	j, err := jobs.Create(req)
-	if err != nil {
-		log.Errorf("could not create job: %s", err)
+
+	var j jobs.Job
+	if cmd.Record() {
+		j, err = jobs.Create(req)
+		if err != nil {
+			log.Errorf("could not create job: %s", err)
+		}
+	} else {
+		j = jobs.NullJob(req)
 	}
 
-	m.replyWithHandshake(j.Request, cmd)
+	m.replyWithHandshake(req, cmd)
 
 	out, err := cmd.Execute(j)
 	if err != nil {
 		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 			req.Command, req.Username, err)
-		m.replyWithCommandFailed(j.Request, cmd, err, out)
-		jobs.Finish(j.ID, jobs.FailedStatus)
+		m.replyWithCommandFailed(req, cmd, err, out)
+		j.Finish(jobs.FailedStatus)
 		return
 	}
 
 	log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 		req.Username)
 	m.replyWithSuccess(j.Request, cmd, out)
-	jobs.Finish(j.ID, jobs.SuccessStatus)
+	j.Finish(jobs.SuccessStatus)
 }
 
 func (m Meeseeks) replyWithInvalidMessage(msg message.Message, err error) {

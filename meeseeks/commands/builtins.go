@@ -58,14 +58,6 @@ var builtInCommands = map[string]command.Command{
 	},
 }
 
-type namedCmd struct {
-	name string
-}
-
-func (n namedCmd) Cmd() string {
-	return n.name
-}
-
 type plainTemplates struct{}
 
 func (p plainTemplates) Templates() map[string]string {
@@ -91,6 +83,12 @@ type emptyArgs struct{}
 
 func (b emptyArgs) Args() []string {
 	return []string{}
+}
+
+type noRecord struct{}
+
+func (n noRecord) Record() bool {
+	return false
 }
 
 type allowAll struct{}
@@ -122,6 +120,7 @@ func (b noHandshake) HasHandshake() bool {
 
 type versionCommand struct {
 	noHandshake
+	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
@@ -139,6 +138,7 @@ func (v versionCommand) Execute(job jobs.Job) (string, error) {
 
 type helpCommand struct {
 	noHandshake
+	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
@@ -169,6 +169,7 @@ func (h helpCommand) Execute(job jobs.Job) (string, error) {
 
 type groupsCommand struct {
 	noHandshake
+	noRecord
 	emptyArgs
 	allowAdmins
 	plainTemplates
@@ -199,6 +200,7 @@ func (g groupsCommand) Execute(job jobs.Job) (string, error) {
 
 type jobsCommand struct {
 	noHandshake
+	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
@@ -249,6 +251,7 @@ func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 
 type lastCommand struct {
 	noHandshake
+	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
@@ -296,6 +299,7 @@ func (l lastCommand) Execute(job jobs.Job) (string, error) {
 
 type findJob struct {
 	noHandshake
+	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
@@ -339,6 +343,7 @@ func (l findJob) Execute(job jobs.Job) (string, error) {
 
 type tailCommand struct {
 	noHandshake
+	noRecord
 	allowAll
 	defaultTemplates
 	emptyArgs
@@ -376,6 +381,7 @@ func (t tailCommand) Execute(job jobs.Job) (string, error) {
 
 type logsCommand struct {
 	noHandshake
+	noRecord
 	allowAll
 	defaultTemplates
 	emptyArgs

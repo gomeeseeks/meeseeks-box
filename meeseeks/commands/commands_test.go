@@ -127,7 +127,7 @@ func Test_JobsCommand(t *testing.T) {
 	stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
 		j, err := jobs.Create(req)
 		stubs.Must(t, "could not create job", err)
-		jobs.Finish(j.ID, jobs.SuccessStatus)
+		j.Finish(jobs.SuccessStatus)
 
 		cmds, err := commands.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
@@ -236,7 +236,7 @@ func Test_FindJobCommand(t *testing.T) {
 			Username:    "someone",
 		})
 		stubs.Must(t, "could not create job", err)
-		jobs.Finish(j.ID, jobs.SuccessStatus)
+		j.Finish(jobs.SuccessStatus)
 
 		cmds, err := commands.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)

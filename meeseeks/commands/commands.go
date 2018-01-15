@@ -139,3 +139,7 @@ func (c shellCommand) Cmd() string {
 func (c shellCommand) Help() string {
 	return c.Command.Help
 }
+
+func (c shellCommand) Record() bool {
+	return true
+}
