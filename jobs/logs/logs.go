@@ -2,6 +2,7 @@ package logs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 
 	bolt "github.com/coreos/bbolt"
@@ -10,6 +11,8 @@ import (
 
 var logsBucketKey = []byte("logs")
 var errorKey = []byte("error")
+
+var NoLogsForJob = errors.New("No logs for job")
 
 // JobLog represents all the logging information of a given Job
 type JobLog struct {
@@ -35,7 +38,7 @@ func Append(jobID uint64, content string) error {
 }
 
 // SetError sets the error message for the given Job
-func SetError(jobID uint64, err error) error {
+func SetError(jobID uint64, jobErr error) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		jobBucket, err := getJobBucket(jobID, tx)
 		if err != nil {
@@ -46,7 +49,7 @@ func SetError(jobID uint64, err error) error {
 			return fmt.Errorf("could not get error bucket for job %d: %s", jobID, err)
 		}
 
-		return errorBucket.Put(errorKey, []byte(err.Error()))
+		return errorBucket.Put(errorKey, []byte(jobErr.Error()))
 	})
 }
 
@@ -54,13 +57,19 @@ func SetError(jobID uint64, err error) error {
 func Get(jobID uint64) (JobLog, error) {
 	job := &JobLog{}
 	err := db.View(func(tx *bolt.Tx) error {
-		jobBucket, err := getJobBucket(jobID, tx)
-		if err != nil {
-			return fmt.Errorf("could not get job %d bucket: %s", jobID, err)
+		logsBucket := tx.Bucket(logsBucketKey)
+		if logsBucket == nil {
+			return NoLogsForJob
 		}
-		out := bytes.NewBufferString("")
+
+		jobBucket := logsBucket.Bucket(db.IDToBytes(jobID))
+		if jobBucket == nil {
+			return NoLogsForJob
+		}
+
 		c := jobBucket.Cursor()
 		_, line := c.First()
+		out := bytes.NewBufferString("")
 		for {
 			if line == nil {
 				break
@@ -70,12 +79,10 @@ func Get(jobID uint64) (JobLog, error) {
 		}
 		job.Output = out.String()
 
-		errorBucket, err := jobBucket.CreateBucketIfNotExists(errorKey)
-		if err != nil {
-			return fmt.Errorf("could not get error bucket for job %d: %s", jobID, err)
+		errorBucket := jobBucket.Bucket(errorKey)
+		if errorBucket != nil {
+			job.Error = string(errorBucket.Get(errorKey))
 		}
-		job.Error = string(errorBucket.Get(errorKey))
-
 		return nil
 	})
 	return *job, err
