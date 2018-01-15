@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/sirupsen/logrus"
+	"gitlab.com/mr-meeseeks/meeseeks-box/jobs/logs"
+
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
@@ -92,9 +95,17 @@ func (c shellCommand) Execute(job jobs.Job) (string, error) {
 	defer cancelFunc()
 
 	shellCommand := exec.CommandContext(ctx, cnfCommand.Cmd, cmdArgs...)
-	out, err := shellCommand.CombinedOutput()
+	out, cmdErr := shellCommand.CombinedOutput()
 
-	return string(out), err
+	content := string(out)
+	if e := logs.Append(job.ID, content); e != nil {
+		logrus.Errorf("Could not append to job %d logs: %s", job.ID, e)
+	}
+	if e := logs.SetError(job.ID, cmdErr); e != nil {
+		logrus.Errorf("Could not append to job %d logs: %s", job.ID, e)
+	}
+
+	return content, cmdErr
 }
 
 func (c shellCommand) HasHandshake() bool {

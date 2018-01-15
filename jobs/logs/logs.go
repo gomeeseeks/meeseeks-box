@@ -22,6 +22,9 @@ type JobLog struct {
 
 // Append adds a new line to the logs of the given Job
 func Append(jobID uint64, content string) error {
+	if content == "" {
+		return nil
+	}
 	return db.Update(func(tx *bolt.Tx) error {
 		jobBucket, err := getJobBucket(jobID, tx)
 		if err != nil {
@@ -39,6 +42,9 @@ func Append(jobID uint64, content string) error {
 
 // SetError sets the error message for the given Job
 func SetError(jobID uint64, jobErr error) error {
+	if jobErr == nil {
+		return nil
+	}
 	return db.Update(func(tx *bolt.Tx) error {
 		jobBucket, err := getJobBucket(jobID, tx)
 		if err != nil {
