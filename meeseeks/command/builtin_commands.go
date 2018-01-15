@@ -11,7 +11,6 @@ import (
 	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 )
@@ -89,7 +88,7 @@ type versionCommand struct {
 	Help string
 }
 
-func (v versionCommand) Execute(req request.Request) (string, error) {
+func (v versionCommand) Execute(job jobs.Job) (string, error) {
 	return version.Version, nil
 }
 
@@ -106,7 +105,7 @@ var helpTemplate = dedent.Dedent(
 	{{- end }}
 	`)
 
-func (h helpCommand) Execute(req request.Request) (string, error) {
+func (h helpCommand) Execute(job jobs.Job) (string, error) {
 	tmpl, err := template.New("version", helpTemplate)
 	if err != nil {
 		return "", err
@@ -129,7 +128,7 @@ var groupsTemplate = dedent.Dedent(`
 	{{- end }}
 	`)
 
-func (g groupsCommand) Execute(req request.Request) (string, error) {
+func (g groupsCommand) Execute(job jobs.Job) (string, error) {
 	tmpl, err := template.New("version", groupsTemplate)
 	if err != nil {
 		return "", err
@@ -155,24 +154,25 @@ var jobsTemplate = strings.Join([]string{
 	"{{end}}",
 }, "")
 
-func (j jobsCommand) Execute(req request.Request) (string, error) {
+func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
 	limit := flags.Int("limit", 5, "how many jobs to return")
-	if err := flags.Parse(req.Args); err != nil {
+	if err := flags.Parse(job.Request.Args); err != nil {
 		return "", err
 	}
 
-	tmpl, err := template.New("jobs", jobsTemplate)
+	callingUser := job.Request.Username
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: *limit,
+		Match: func(j jobs.Job) bool {
+			return callingUser == j.Request.Username
+		},
+	})
+
 	if err != nil {
 		return "", err
 	}
-
-	jobs, err := jobs.Find(jobs.JobFilter{
-		Limit: *limit,
-		Match: func(job jobs.Job) bool {
-			return req.Username == job.Request.Username
-		},
-	})
+	tmpl, err := template.New("jobs", jobsTemplate)
 	if err != nil {
 		return "", err
 	}
@@ -197,12 +197,13 @@ var jobTemplate = `
 {{- end }}{{- end }}
 `
 
-func (l lastCommand) Execute(req request.Request) (string, error) {
+func (l lastCommand) Execute(job jobs.Job) (string, error) {
+	callingUser := job.Request.Username
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
-		Match: func(job jobs.Job) bool {
-			return job.Request.Username == req.Username &&
-				job.Request.Command != BuiltinLastCommand
+		Match: func(j jobs.Job) bool {
+			return j.Request.Username == callingUser &&
+				j.Request.Command != BuiltinLastCommand
 		},
 	})
 	if err != nil {
@@ -226,20 +227,21 @@ type findJob struct {
 	Help string
 }
 
-func (l findJob) Execute(req request.Request) (string, error) {
-	if len(req.Args) == 0 {
+func (l findJob) Execute(job jobs.Job) (string, error) {
+	if len(job.Request.Args) == 0 {
 		return "", fmt.Errorf("No job id to search for")
 	}
-	id, err := strconv.ParseUint(req.Args[0], 10, 64)
+	id, err := strconv.ParseUint(job.Request.Args[0], 10, 64)
 	if err != nil {
-		return "", fmt.Errorf("Invalid job ID %s: %s", req.Args[0], err)
+		return "", fmt.Errorf("Invalid job ID %s: %s", job.Request.Args[0], err)
 	}
 
+	callingUser := job.Request.Username
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
-		Match: func(job jobs.Job) bool {
-			return job.Request.Username == req.Username &&
-				job.ID == id
+		Match: func(j jobs.Job) bool {
+			return j.Request.Username == callingUser &&
+				j.ID == id
 		},
 	})
 	if err != nil {

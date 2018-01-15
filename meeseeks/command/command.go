@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
+	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 )
@@ -17,7 +17,7 @@ var (
 
 // Command is the base interface for any command
 type Command interface {
-	Execute(req request.Request) (string, error)
+	Execute(job jobs.Job) (string, error)
 	HasHandshake() bool
 	ConfiguredCommand() config.Command
 }
@@ -84,9 +84,9 @@ func newShellCommand(cmd config.Command) (Command, error) {
 }
 
 // Execute implements Command.Execute for the ShellCommand
-func (c shellCommand) Execute(req request.Request) (string, error) {
+func (c shellCommand) Execute(job jobs.Job) (string, error) {
 	cnfCommand := c.ConfiguredCommand()
-	cmdArgs := append(cnfCommand.Args, req.Args...)
+	cmdArgs := append(cnfCommand.Args, job.Request.Args...)
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), cnfCommand.Timeout)
 	defer cancelFunc()

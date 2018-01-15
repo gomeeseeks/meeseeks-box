@@ -64,20 +64,20 @@ func (m Meeseeks) Process(msg message.Message) {
 		log.Errorf("could not create job: %s", err)
 	}
 
-	m.replyWithHandshake(req, cmd)
+	m.replyWithHandshake(j.Request, cmd)
 
-	out, err := cmd.Execute(req)
+	out, err := cmd.Execute(j)
 	if err != nil {
 		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 			req.Command, req.Username, err)
-		m.replyWithCommandFailed(req, cmd, err, out)
+		m.replyWithCommandFailed(j.Request, cmd, err, out)
 		jobs.Finish(j.ID, jobs.FailedStatus)
 		return
 	}
 
 	log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 		req.Username)
-	m.replyWithSuccess(req, cmd, out)
+	m.replyWithSuccess(j.Request, cmd, out)
 	jobs.Finish(j.ID, jobs.SuccessStatus)
 }
 
