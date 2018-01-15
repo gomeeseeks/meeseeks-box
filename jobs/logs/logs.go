@@ -12,12 +12,21 @@ import (
 var logsBucketKey = []byte("logs")
 var errorKey = []byte("error")
 
-var NoLogsForJob = errors.New("No logs for job")
+// ErrNoLogsForJob is returned when we try to extract the logs of a non existing job
+var ErrNoLogsForJob = errors.New("No logs for job")
 
 // JobLog represents all the logging information of a given Job
 type JobLog struct {
 	Error  string
 	Output string
+}
+
+// GetError returns nil or an error depending on the current JobLog setup
+func (j JobLog) GetError() error {
+	if j.Error == "" {
+		return nil
+	}
+	return errors.New(j.Error)
 }
 
 // Append adds a new line to the logs of the given Job
@@ -65,12 +74,12 @@ func Get(jobID uint64) (JobLog, error) {
 	err := db.View(func(tx *bolt.Tx) error {
 		logsBucket := tx.Bucket(logsBucketKey)
 		if logsBucket == nil {
-			return NoLogsForJob
+			return ErrNoLogsForJob
 		}
 
 		jobBucket := logsBucket.Bucket(db.IDToBytes(jobID))
 		if jobBucket == nil {
-			return NoLogsForJob
+			return ErrNoLogsForJob
 		}
 
 		c := jobBucket.Cursor()

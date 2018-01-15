@@ -1,11 +1,13 @@
-package command
+package commands
 
 import (
 	"context"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/sirupsen/logrus"
+	"gitlab.com/mr-meeseeks/meeseeks-box/command"
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs/logs"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
@@ -15,25 +17,19 @@ import (
 
 // Command Errors
 var (
-	ErrCommandNotFound = fmt.Errorf("Can't find command")
+	ErrCommandNotFound    = fmt.Errorf("Can't find command")
+	ErrUnknownCommandType = fmt.Errorf("Unknown command type")
 )
-
-// Command is the base interface for any command
-type Command interface {
-	Execute(job jobs.Job) (string, error)
-	HasHandshake() bool
-	ConfiguredCommand() config.Command
-}
 
 // Commands holds the final set of configured commands
 type Commands struct {
-	commands map[string]Command
+	commands map[string]command.Command
 }
 
 // New builds a new commands based on a configuration
 func New(cnf config.Config) (Commands, error) {
 	// Add builtin commands
-	commands := make(map[string]Command)
+	commands := make(map[string]command.Command)
 	for name, command := range builtInCommands {
 		commands[name] = command
 	}
@@ -57,7 +53,7 @@ func New(cnf config.Config) (Commands, error) {
 }
 
 // Find looks up a command by name and returns it or an error
-func (c Commands) Find(name string) (Command, error) {
+func (c Commands) Find(name string) (command.Command, error) {
 	cmd, ok := c.commands[name]
 	if !ok {
 		return nil, ErrCommandNotFound
@@ -66,12 +62,12 @@ func (c Commands) Find(name string) (Command, error) {
 }
 
 // buildCommand creates a command instance based on the configuration
-func buildCommand(cmd config.Command) (Command, error) {
+func buildCommand(cmd config.Command) (command.Command, error) {
 	switch cmd.Type {
 	case config.ShellCommandType:
 		return newShellCommand(cmd)
 	}
-	return nil, ErrCommandNotFound
+	return nil, ErrUnknownCommandType
 }
 
 // ShellCommand is a command that will be executed locally through an exec.CommandContext
@@ -80,7 +76,7 @@ type shellCommand struct {
 }
 
 // NewShellCommand returns a new command that is executed inside a shell
-func newShellCommand(cmd config.Command) (Command, error) {
+func newShellCommand(cmd config.Command) (command.Command, error) {
 	return shellCommand{
 		Command: cmd,
 	}, nil
@@ -88,13 +84,12 @@ func newShellCommand(cmd config.Command) (Command, error) {
 
 // Execute implements Command.Execute for the ShellCommand
 func (c shellCommand) Execute(job jobs.Job) (string, error) {
-	cnfCommand := c.ConfiguredCommand()
-	cmdArgs := append(cnfCommand.Args, job.Request.Args...)
+	cmdArgs := append(c.Args(), job.Request.Args...)
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), cnfCommand.Timeout)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), c.Timeout())
 	defer cancelFunc()
 
-	shellCommand := exec.CommandContext(ctx, cnfCommand.Cmd, cmdArgs...)
+	shellCommand := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
 	out, cmdErr := shellCommand.CombinedOutput()
 
 	content := string(out)
@@ -114,6 +109,30 @@ func (c shellCommand) HasHandshake() bool {
 
 func (c shellCommand) ConfiguredCommand() config.Command {
 	return c.Command
+}
+
+func (c shellCommand) Templates() map[string]string {
+	return c.Command.Templates
+}
+
+func (c shellCommand) AuthStrategy() string {
+	return c.Command.AuthStrategy
+}
+
+func (c shellCommand) AllowedGroups() []string {
+	return c.Command.AllowedGroups
+}
+
+func (c shellCommand) Args() []string {
+	return c.Command.Args
+}
+
+func (c shellCommand) Timeout() time.Duration {
+	return c.Command.Timeout
+}
+
+func (c shellCommand) Cmd() string {
+	return c.Command.Cmd
 }
 
 // Help returns the help from the configured command

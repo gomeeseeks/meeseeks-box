@@ -5,8 +5,9 @@ import (
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
+	"gitlab.com/mr-meeseeks/meeseeks-box/command"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/command"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/message"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
@@ -22,13 +23,13 @@ type Client interface {
 type Meeseeks struct {
 	client    Client
 	config    config.Config
-	commands  command.Commands
+	commands  commands.Commands
 	templates *template.TemplatesBuilder
 }
 
 // New creates a new Meeseeks service
 func New(client Client, conf config.Config) Meeseeks {
-	cmds, _ := command.New(conf) // TODO handle the error
+	cmds, _ := commands.New(conf) // TODO handle the error
 	templatesBuilder := template.NewBuilder().WithMessages(conf.Messages)
 	return Meeseeks{
 		client:    client,
@@ -48,11 +49,11 @@ func (m Meeseeks) Process(msg message.Message) {
 	}
 
 	cmd, err := m.commands.Find(req.Command)
-	if err == command.ErrCommandNotFound {
+	if err == commands.ErrCommandNotFound {
 		m.replyWithUnknownCommand(req)
 		return
 	}
-	if err = auth.Check(req.Command, cmd.ConfiguredCommand()); err != nil {
+	if err = auth.Check(req.Command, cmd); err != nil {
 		m.replyWithUnauthorizedCommand(req, cmd)
 		return
 	}
@@ -157,5 +158,5 @@ func (m Meeseeks) replyWithSuccess(req request.Request, cmd command.Command, out
 }
 
 func (m Meeseeks) buildTemplatesFor(cmd command.Command) template.Templates {
-	return m.templates.Clone().WithTemplates(cmd.ConfiguredCommand().Templates).Build()
+	return m.templates.Clone().WithTemplates(cmd.Templates()).Build()
 }

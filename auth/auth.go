@@ -4,12 +4,13 @@ import (
 	"errors"
 
 	log "github.com/sirupsen/logrus"
+	"gitlab.com/mr-meeseeks/meeseeks-box/command"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 )
 
 // Authorizer is the interface used to check if a user is allowed to run a command
 type Authorizer interface {
-	Check(string, config.Command) error
+	Check(string, command.Command) error
 }
 
 // ErrUserNotAllowed is the error returned when the auth check fails
@@ -22,8 +23,8 @@ var authStrategies = map[string]Authorizer{
 }
 
 // Check checks if a user is allowed to run a command given the command authorization strategy
-func Check(username string, cmd config.Command) error {
-	strategy, ok := authStrategies[cmd.AuthStrategy]
+func Check(username string, cmd command.Command) error {
+	strategy, ok := authStrategies[cmd.AuthStrategy()]
 	if !ok {
 		log.Errorf("Command does not have a valid auth strategy, falling back to none: %+v", cmd)
 		strategy = authStrategies[config.AuthStrategyNone]
@@ -35,7 +36,7 @@ type anyUserAllowed struct {
 }
 
 // Check implements Authorizer.Check
-func (a anyUserAllowed) Check(_ string, _ config.Command) error {
+func (a anyUserAllowed) Check(_ string, _ command.Command) error {
 	return nil
 }
 
@@ -43,15 +44,15 @@ type noUserAllowed struct {
 }
 
 // Check implements Authorizer.Check
-func (a noUserAllowed) Check(_ string, _ config.Command) error {
+func (a noUserAllowed) Check(_ string, _ command.Command) error {
 	return ErrUserNotAllowed
 }
 
 type userInGroupAllowed struct {
 }
 
-func (a userInGroupAllowed) Check(username string, cmd config.Command) error {
-	for _, group := range cmd.AllowedGroups {
+func (a userInGroupAllowed) Check(username string, cmd command.Command) error {
+	for _, group := range cmd.AllowedGroups() {
 		err := groups.CheckUserInGroup(username, group)
 		switch err {
 		case nil:

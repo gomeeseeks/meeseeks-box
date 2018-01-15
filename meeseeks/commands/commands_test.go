@@ -1,4 +1,4 @@
-package command_test
+package commands_test
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/command"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
 
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
@@ -37,7 +37,7 @@ var req = request.Request{
 }
 
 func Test_ShellCommand(t *testing.T) {
-	cmds, err := command.New(configWithEcho)
+	cmds, err := commands.New(configWithEcho)
 	stubs.Must(t, "shell command failed to build", err)
 
 	cmd, err := cmds.Find("echo")
@@ -51,19 +51,19 @@ func Test_ShellCommand(t *testing.T) {
 }
 
 func Test_InvalidCommand(t *testing.T) {
-	cmds, err := command.New(
+	cmds, err := commands.New(
 		config.Config{
 			Commands: map[string]config.Command{},
 		})
 	stubs.Must(t, "could not build commands", err)
 	_, err = cmds.Find("non-existing")
-	if err != command.ErrCommandNotFound {
+	if err != commands.ErrCommandNotFound {
 		t.Fatalf("command build should have failed with an error, got %s instead", err)
 	}
 }
 
 func Test_VersionCommand(t *testing.T) {
-	cmds, err := command.New(config.Config{})
+	cmds, err := commands.New(config.Config{})
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("version")
@@ -76,7 +76,7 @@ func Test_VersionCommand(t *testing.T) {
 }
 
 func Test_HelpCommand(t *testing.T) {
-	cmds, err := command.New(configWithEcho)
+	cmds, err := commands.New(configWithEcho)
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("help")
@@ -92,6 +92,7 @@ func Test_HelpCommand(t *testing.T) {
 		- job: find one job
 		- jobs: shows the last executed jobs for the calling user
 		- last: shows the last executed command by the calling user
+		- tail: returns the last command output or error
 		- version: prints the running meeseeks version
 		`), out)
 }
@@ -104,13 +105,13 @@ func Test_GroupsCommand(t *testing.T) {
 		},
 	})
 
-	cmds, err := command.New(configWithEcho)
+	cmds, err := commands.New(configWithEcho)
 	stubs.Must(t, "could not build commands", err)
 
 	cmd, err := cmds.Find("groups")
 	stubs.Must(t, "failed to get help command", err)
 	stubs.AssertEquals(t, cmd.HasHandshake(), false)
-	stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAllowedGroup)
+	stubs.AssertEquals(t, cmd.AuthStrategy(), config.AuthStrategyAllowedGroup)
 
 	out, err := cmd.Execute(jobs.Job{})
 	stubs.Must(t, "failed to execute help command", err)
@@ -127,13 +128,13 @@ func Test_JobsCommand(t *testing.T) {
 		stubs.Must(t, "could not create job", err)
 		jobs.Finish(j.ID, jobs.SuccessStatus)
 
-		cmds, err := command.New(configWithEcho)
+		cmds, err := commands.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
 
 		cmd, err := cmds.Find("jobs")
 		stubs.Must(t, "failed to get jobs command", err)
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
-		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+		stubs.AssertEquals(t, cmd.AuthStrategy(), config.AuthStrategyAny)
 
 		out, err := cmd.Execute(jobs.Job{
 			Request: request.Request{Username: "someone"},
@@ -154,13 +155,13 @@ func Test_JobsCommandWithIM(t *testing.T) {
 			Args:      []string{"arg1", "arg2"},
 			IsIM:      true,
 		})
-		cmds, err := command.New(configWithEcho)
+		cmds, err := commands.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
 
 		cmd, err := cmds.Find("jobs")
 		stubs.Must(t, "failed to get jobs command", err)
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
-		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+		stubs.AssertEquals(t, cmd.AuthStrategy(), config.AuthStrategyAny)
 
 		out, err := cmd.Execute(jobs.Job{
 			Request: request.Request{Username: "someone"},
@@ -175,13 +176,13 @@ func Test_JobsChangeLimit(t *testing.T) {
 		jobs.Create(req)
 		jobs.Create(req)
 
-		cmds, err := command.New(configWithEcho)
+		cmds, err := commands.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
 
 		cmd, err := cmds.Find("jobs")
 		stubs.Must(t, "failed to get jobs command", err)
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
-		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+		stubs.AssertEquals(t, cmd.AuthStrategy(), config.AuthStrategyAny)
 
 		out, err := cmd.Execute(jobs.Job{
 			Request: request.Request{Username: "someone"},
@@ -204,18 +205,18 @@ func Test_LastCommand(t *testing.T) {
 		_, err := jobs.Create(req)
 		stubs.Must(t, "could not create job", err)
 
-		cmds, err := command.New(configWithEcho)
+		cmds, err := commands.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
 
-		cmd, err := cmds.Find(command.BuiltinLastCommand)
+		cmd, err := cmds.Find(commands.BuiltinLastCommand)
 		stubs.Must(t, "failed to get jobs command", err)
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
-		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+		stubs.AssertEquals(t, cmd.AuthStrategy(), config.AuthStrategyAny)
 
 		out, err := cmd.Execute(jobs.Job{
 			Request: request.Request{
 				Username: req.Username,
-				Command:  command.BuiltinLastCommand,
+				Command:  commands.BuiltinLastCommand,
 			},
 		})
 		stubs.Must(t, "failed to execute last command", err)
@@ -236,13 +237,13 @@ func Test_FindJobCommand(t *testing.T) {
 		stubs.Must(t, "could not create job", err)
 		jobs.Finish(j.ID, jobs.SuccessStatus)
 
-		cmds, err := command.New(configWithEcho)
+		cmds, err := commands.New(configWithEcho)
 		stubs.Must(t, "could not build commands", err)
 
-		cmd, err := cmds.Find(command.BuiltinFindJobCommand)
+		cmd, err := cmds.Find(commands.BuiltinFindJobCommand)
 		stubs.Must(t, "failed to get jobs command", err)
 		stubs.AssertEquals(t, cmd.HasHandshake(), false)
-		stubs.AssertEquals(t, cmd.ConfiguredCommand().AuthStrategy, config.AuthStrategyAny)
+		stubs.AssertEquals(t, cmd.AuthStrategy(), config.AuthStrategyAny)
 
 		out, err := cmd.Execute(jobs.Job{
 			Request: request.Request{Username: "someone", Args: []string{"1"}},

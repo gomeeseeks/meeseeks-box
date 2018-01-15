@@ -1,15 +1,19 @@
-package command
+package commands
 
 import (
 	"flag"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
+
+	"gitlab.com/mr-meeseeks/meeseeks-box/jobs/logs"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
 
 	"github.com/renstrom/dedent"
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
+	"gitlab.com/mr-meeseeks/meeseeks-box/command"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
 	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
 	"gitlab.com/mr-meeseeks/meeseeks-box/version"
@@ -23,24 +27,10 @@ const (
 	BuiltinJobsCommand    = "jobs"
 	BuiltinFindJobCommand = "job"
 	BuiltinLastCommand    = "last"
+	BuiltinTailCommand    = "tail"
 )
 
-var builtinTemplates = map[string]string{
-	template.SuccessKey: fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}{{ with $out := .output }}\n{{ $out }}{{ end }}", template.SuccessKey),
-}
-
-var allowAllCommand = config.Command{
-	AuthStrategy: config.AuthStrategyAny,
-	Templates:    builtinTemplates,
-}
-
-var allowAdminsCommand = config.Command{
-	AuthStrategy:  config.AuthStrategyAllowedGroup,
-	Templates:     builtinTemplates,
-	AllowedGroups: []string{config.AdminGroup},
-}
-
-var builtInCommands = map[string]Command{
+var builtInCommands = map[string]command.Command{
 	// The help builtin command needs a pointer to the map of generated commands,
 	// because of this it is added as the last one when building the whole command
 	// map
@@ -59,6 +49,64 @@ var builtInCommands = map[string]Command{
 	BuiltinFindJobCommand: findJob{
 		Help: "find one job",
 	},
+	BuiltinTailCommand: tailCommand{
+		Help: "returns the last command output or error",
+	},
+}
+
+type namedCmd struct {
+	name string
+}
+
+func (n namedCmd) Cmd() string {
+	return n.name
+}
+
+type plainTemplates struct{}
+
+func (p plainTemplates) Templates() map[string]string {
+	return map[string]string{
+		template.SuccessKey: fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}{{ with $out := .output }}\n{{ $out }}{{ end }}", template.SuccessKey),
+	}
+}
+
+type defaultTemplates struct {
+}
+
+func (d defaultTemplates) Templates() map[string]string {
+	return template.GetDefaultTemplates()
+}
+
+type defaultTimeout struct{}
+
+func (d defaultTimeout) Timeout() time.Duration {
+	return config.DefaultCommandTimeout
+}
+
+type emptyArgs struct{}
+
+func (b emptyArgs) Args() []string {
+	return []string{}
+}
+
+type allowAll struct{}
+
+func (a allowAll) AuthStrategy() string {
+	return config.AuthStrategyAny
+}
+
+func (a allowAll) AllowedGroups() []string {
+	return []string{}
+}
+
+type allowAdmins struct{}
+
+func (a allowAdmins) AuthStrategy() string {
+	return config.AuthStrategyAllowedGroup
+}
+
+func (a allowAdmins) AllowedGroups() []string {
+	return []string{config.AdminGroup}
 }
 
 type noHandshake struct {
@@ -68,24 +116,17 @@ func (b noHandshake) HasHandshake() bool {
 	return false
 }
 
-type allowAll struct {
-}
-
-func (a allowAll) ConfiguredCommand() config.Command {
-	return allowAllCommand
-}
-
-type allowAdmins struct {
-}
-
-func (a allowAdmins) ConfiguredCommand() config.Command {
-	return allowAdminsCommand
-}
-
 type versionCommand struct {
 	noHandshake
 	allowAll
+	plainTemplates
+	emptyArgs
+	defaultTimeout
 	Help string
+}
+
+func (v versionCommand) Cmd() string {
+	return BuiltinVersionCommand
 }
 
 func (v versionCommand) Execute(job jobs.Job) (string, error) {
@@ -95,7 +136,10 @@ func (v versionCommand) Execute(job jobs.Job) (string, error) {
 type helpCommand struct {
 	noHandshake
 	allowAll
-	commands *map[string]Command
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+	commands *map[string]command.Command
 	Help     string
 }
 
@@ -104,6 +148,10 @@ var helpTemplate = dedent.Dedent(
 	- {{ $name }}: {{ $cmd.Help }}
 	{{- end }}
 	`)
+
+func (h helpCommand) Cmd() string {
+	return BuiltinHelpCommand
+}
 
 func (h helpCommand) Execute(job jobs.Job) (string, error) {
 	tmpl, err := template.New("version", helpTemplate)
@@ -117,7 +165,10 @@ func (h helpCommand) Execute(job jobs.Job) (string, error) {
 
 type groupsCommand struct {
 	noHandshake
+	emptyArgs
 	allowAdmins
+	plainTemplates
+	defaultTimeout
 	Help string
 }
 
@@ -127,6 +178,10 @@ var groupsTemplate = dedent.Dedent(`
 		{{- range $index, $user := $users }}{{ if ne $index 0 }},{{ end }} {{ $user }}{{ end }}
 	{{- end }}
 	`)
+
+func (g groupsCommand) Cmd() string {
+	return BuiltinGroupsCommand
+}
 
 func (g groupsCommand) Execute(job jobs.Job) (string, error) {
 	tmpl, err := template.New("version", groupsTemplate)
@@ -141,6 +196,9 @@ func (g groupsCommand) Execute(job jobs.Job) (string, error) {
 type jobsCommand struct {
 	noHandshake
 	allowAll
+	plainTemplates
+	emptyArgs
+	defaultTimeout
 	Help string
 }
 
@@ -153,6 +211,10 @@ var jobsTemplate = strings.Join([]string{
 	" - *{{ $job.Status }}*\n",
 	"{{end}}",
 }, "")
+
+func (j jobsCommand) Cmd() string {
+	return BuiltinJobsCommand
+}
 
 func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
@@ -184,6 +246,9 @@ func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 type lastCommand struct {
 	noHandshake
 	allowAll
+	plainTemplates
+	emptyArgs
+	defaultTimeout
 	Help string
 }
 
@@ -196,6 +261,10 @@ var jobTemplate = `
 * *ID* {{ $job.ID }}
 {{- end }}{{- end }}
 `
+
+func (l lastCommand) Cmd() string {
+	return BuiltinLastCommand
+}
 
 func (l lastCommand) Execute(job jobs.Job) (string, error) {
 	callingUser := job.Request.Username
@@ -224,7 +293,14 @@ func (l lastCommand) Execute(job jobs.Job) (string, error) {
 type findJob struct {
 	noHandshake
 	allowAll
+	plainTemplates
+	emptyArgs
+	defaultTimeout
 	Help string
+}
+
+func (l findJob) Cmd() string {
+	return BuiltinFindJobCommand
 }
 
 func (l findJob) Execute(job jobs.Job) (string, error) {
@@ -258,4 +334,41 @@ func (l findJob) Execute(job jobs.Job) (string, error) {
 	return tmpl.Render(template.Payload{
 		"job": jobs[0],
 	})
+}
+
+type tailCommand struct {
+	noHandshake
+	allowAll
+	defaultTemplates
+	emptyArgs
+	defaultTimeout
+	Help string
+}
+
+func (t tailCommand) Cmd() string {
+	return BuiltinTailCommand
+}
+
+func (t tailCommand) Execute(job jobs.Job) (string, error) {
+	callingUser := job.Request.Username
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: 1,
+		Match: func(j jobs.Job) bool {
+			return j.Request.Username == callingUser &&
+				j.Request.Command != BuiltinTailCommand
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get the last job: %s", err)
+	}
+	if len(jobs) == 0 {
+		return "", fmt.Errorf("No last command for current user")
+	}
+	j := jobs[0]
+
+	jobLogs, err := logs.Get(j.ID)
+	if err != nil {
+		return "", err
+	}
+	return jobLogs.Output, jobLogs.GetError()
 }

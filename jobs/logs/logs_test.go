@@ -66,7 +66,7 @@ func Test_Logs(t *testing.T) {
 func Test_GetLoglessJob(t *testing.T) {
 	stubs.WithTmpDB(func() {
 		_, err := logs.Get(1)
-		stubs.AssertEquals(t, logs.NoLogsForJob, err)
+		stubs.AssertEquals(t, logs.ErrNoLogsForJob, err)
 	})
 }
 

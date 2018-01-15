@@ -1,67 +1,83 @@
 package auth_test
 
 import (
+	"fmt"
 	"testing"
 
 	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
 	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
 	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
 )
 
-func Test_Auth(t *testing.T) {
-	auth.Configure(config.Config{
-		Groups: map[string][]string{
-			config.AdminGroup: []string{"admin_user"},
+var authConfig = config.Config{
+	Commands: map[string]config.Command{
+		"any": config.Command{
+			Cmd:          "any",
+			Type:         config.ShellCommandType,
+			AuthStrategy: config.AuthStrategyAny,
 		},
-	})
+		"none": config.Command{
+			Cmd:          "none",
+			Type:         config.ShellCommandType,
+			AuthStrategy: config.AuthStrategyNone,
+		},
+		"admins": config.Command{
+			Cmd:           "none",
+			Type:          config.ShellCommandType,
+			AuthStrategy:  config.AuthStrategyAllowedGroup,
+			AllowedGroups: []string{config.AdminGroup},
+		},
+	},
+	Groups: map[string][]string{
+		config.AdminGroup: []string{"admin_user"},
+	},
+}
+
+func Test_Auth(t *testing.T) {
 	tt := []struct {
 		name     string
 		username string
-		cmd      config.Command
+		cmd      string
 		expected error
 	}{
 		{
 			name:     "any",
 			username: "myself",
-			cmd: config.Command{
-				Cmd:          "echo",
-				AuthStrategy: config.AuthStrategyAny,
-			},
+			cmd:      "any",
 			expected: nil,
 		},
 		{
 			name:     "none",
 			username: "myself",
-			cmd: config.Command{
-				Cmd:          "echo",
-				AuthStrategy: config.AuthStrategyNone,
-			},
+			cmd:      "none",
 			expected: auth.ErrUserNotAllowed,
 		},
 		{
 			name:     "authorized groups",
 			username: "admin_user",
-			cmd: config.Command{
-				Cmd:           "echo",
-				AllowedGroups: []string{config.AdminGroup},
-				AuthStrategy:  config.AuthStrategyAllowedGroup,
-			},
+			cmd:      "admins",
 			expected: nil,
 		},
 		{
 			name:     "authorized groups with unauthorized user",
 			username: "normal_user",
-			cmd: config.Command{
-				Cmd:           "echo",
-				AllowedGroups: []string{config.AdminGroup},
-				AuthStrategy:  config.AuthStrategyAllowedGroup,
-			},
+			cmd:      "admins",
 			expected: auth.ErrUserNotAllowed,
 		},
 	}
+
+	auth.Configure(authConfig)
+
+	cmds, err := commands.New(authConfig)
+
+	stubs.Must(t, "can't create commands from configuration,", err)
+
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			if actual := auth.Check(tc.username, tc.cmd); actual != tc.expected {
+			cmd, err := cmds.Find(tc.cmd)
+			stubs.Must(t, fmt.Sprintf("can't find command %s", tc.cmd), err)
+			if actual := auth.Check(tc.username, cmd); actual != tc.expected {
 				t.Fatalf("Check failed with %s", actual)
 			}
 		})
