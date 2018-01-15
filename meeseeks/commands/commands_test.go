@@ -92,6 +92,7 @@ func Test_HelpCommand(t *testing.T) {
 		- job: find one job
 		- jobs: shows the last executed jobs for the calling user
 		- last: shows the last executed command by the calling user
+		- logs: returns the logs of the command id passed as argument
 		- tail: returns the last command output or error
 		- version: prints the running meeseeks version
 		`), out)

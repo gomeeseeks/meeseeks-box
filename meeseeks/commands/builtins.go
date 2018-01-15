@@ -28,6 +28,7 @@ const (
 	BuiltinFindJobCommand = "job"
 	BuiltinLastCommand    = "last"
 	BuiltinTailCommand    = "tail"
+	BuiltinLogsCommand    = "logs"
 )
 
 var builtInCommands = map[string]command.Command{
@@ -51,6 +52,9 @@ var builtInCommands = map[string]command.Command{
 	},
 	BuiltinTailCommand: tailCommand{
 		Help: "returns the last command output or error",
+	},
+	BuiltinLogsCommand: logsCommand{
+		Help: "returns the logs of the command id passed as argument",
 	},
 }
 
@@ -304,12 +308,9 @@ func (l findJob) Cmd() string {
 }
 
 func (l findJob) Execute(job jobs.Job) (string, error) {
-	if len(job.Request.Args) == 0 {
-		return "", fmt.Errorf("No job id to search for")
-	}
-	id, err := strconv.ParseUint(job.Request.Args[0], 10, 64)
+	id, err := parseJobID(job)
 	if err != nil {
-		return "", fmt.Errorf("Invalid job ID %s: %s", job.Request.Args[0], err)
+		return "", err
 	}
 
 	callingUser := job.Request.Username
@@ -371,4 +372,58 @@ func (t tailCommand) Execute(job jobs.Job) (string, error) {
 		return "", err
 	}
 	return jobLogs.Output, jobLogs.GetError()
+}
+
+type logsCommand struct {
+	noHandshake
+	allowAll
+	defaultTemplates
+	emptyArgs
+	defaultTimeout
+	Help string
+}
+
+func (t logsCommand) Cmd() string {
+	return BuiltinTailCommand
+}
+
+func (t logsCommand) Execute(job jobs.Job) (string, error) {
+	id, err := parseJobID(job)
+	if err != nil {
+		return "", err
+	}
+
+	callingUser := job.Request.Username
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: 1,
+		Match: func(j jobs.Job) bool {
+			return j.Request.Username == callingUser &&
+				j.ID == id
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to find job with id %d: %s", id, err)
+	}
+	if len(jobs) == 0 {
+		return "", fmt.Errorf("No job with id %d for user %s", id, callingUser)
+	}
+	j := jobs[0]
+
+	jobLogs, err := logs.Get(j.ID)
+	if err != nil {
+		return "", err
+	}
+	return jobLogs.Output, jobLogs.GetError()
+}
+
+func parseJobID(job jobs.Job) (uint64, error) {
+	if len(job.Request.Args) == 0 {
+		return 0, fmt.Errorf("no job id passed")
+	}
+	id, err := strconv.ParseUint(job.Request.Args[0], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid job ID %s: %s", job.Request.Args[0], err)
+	}
+
+	return id, nil
 }
