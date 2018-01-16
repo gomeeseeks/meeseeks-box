@@ -14,6 +14,26 @@ var req = request.Request{
 	Channel:  "general",
 }
 
+func Test_GettingAJobWorksWhenEmpty(t *testing.T) {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+		_, err := jobs.Get(1)
+		stub.AssertEquals(t, "no job could be found", err.Error())
+	}))
+}
+
+func Test_GettingJobsWorksWhenEmpty(t *testing.T) {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+		js, err := jobs.Find(jobs.JobFilter{
+			Limit: 10,
+			Match: func(_ jobs.Job) bool {
+				return true
+			},
+		})
+		stub.Must(t, "empty result of jobs find should not return an error", err)
+		stub.AssertEquals(t, 0, len(js))
+	}))
+}
+
 func Test_CreatingAndThenGettingAJob(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
 		expected, err := jobs.Create(req)

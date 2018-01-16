@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +21,11 @@ const (
 	SuccessStatus = "Successful"
 )
 
+var jobsBucketKey = []byte("jobs")
+
+// ErrNoJobWithID is returned when we can't find a job with the proposed id
+var ErrNoJobWithID = errors.New("no job could be found")
+
 // Job represents a single job
 type Job struct {
 	ID        uint64          `json:"ID"`
@@ -28,8 +34,6 @@ type Job struct {
 	EndTime   time.Time       `json:"EndTime"`
 	Status    string          `json:"Status"`
 }
-
-var jobsBucketKey = []byte("jobs")
 
 // NullJob is used to handle requests that are not recorded
 func NullJob(req request.Request) Job {
@@ -65,8 +69,15 @@ func Create(req request.Request) (Job, error) {
 func Get(id uint64) (Job, error) {
 	job := &Job{}
 	err := db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(jobsBucketKey)
-		return json.Unmarshal(bucket.Get(db.IDToBytes(id)), job)
+		jobsBucket := tx.Bucket(jobsBucketKey)
+		if jobsBucket == nil {
+			return ErrNoJobWithID
+		}
+		payload := jobsBucket.Get(db.IDToBytes(id))
+		if payload == nil {
+			return ErrNoJobWithID
+		}
+		return json.Unmarshal(payload, job)
 	})
 	return *job, err
 }
@@ -111,6 +122,9 @@ func Find(filter JobFilter) ([]Job, error) {
 	}
 	err := db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(jobsBucketKey)
+		if bucket == nil {
+			return nil
+		}
 		cur := bucket.Cursor()
 		_, payload := cur.Last()
 		for len(latest) < filter.Limit {
