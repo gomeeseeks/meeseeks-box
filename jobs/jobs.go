@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/db"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
+	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/pcarranza/meeseeks-box/meeseeks/request"
 
 	"encoding/json"
 

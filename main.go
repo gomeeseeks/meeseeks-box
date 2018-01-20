@@ -8,15 +8,15 @@ import (
 	"sync"
 	"syscall"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/db"
+	"github.com/pcarranza/meeseeks-box/db"
 
 	bolt "github.com/coreos/bbolt"
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
-	"gitlab.com/mr-meeseeks/meeseeks-box/slack"
-	"gitlab.com/mr-meeseeks/meeseeks-box/version"
+	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/meeseeks"
+	"github.com/pcarranza/meeseeks-box/slack"
+	"github.com/pcarranza/meeseeks-box/version"
 )
 
 func main() {

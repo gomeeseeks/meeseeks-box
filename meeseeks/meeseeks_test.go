@@ -9,9 +9,9 @@ import (
 
 	"regexp"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
-	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
+	"github.com/pcarranza/meeseeks-box/meeseeks"
+	"github.com/pcarranza/meeseeks-box/meeseeks/template"
+	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
 
 type expectedMessage struct {

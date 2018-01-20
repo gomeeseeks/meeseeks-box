@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs/logs"
+	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
+	"github.com/pcarranza/meeseeks-box/jobs"
 
 	"github.com/renstrom/dedent"
-	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
-	"gitlab.com/mr-meeseeks/meeseeks-box/command"
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
-	"gitlab.com/mr-meeseeks/meeseeks-box/version"
+	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/command"
+	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/meeseeks/template"
+	"github.com/pcarranza/meeseeks-box/version"
 )
 
 // Builtin Commands Names

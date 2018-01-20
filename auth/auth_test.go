@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
-	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
+	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
+	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
 
 var authConfig = config.Config{

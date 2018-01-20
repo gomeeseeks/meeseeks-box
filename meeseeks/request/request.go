@@ -3,8 +3,8 @@ package request
 import (
 	"errors"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/message"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request/parser"
+	"github.com/pcarranza/meeseeks-box/meeseeks/message"
+	"github.com/pcarranza/meeseeks-box/meeseeks/request/parser"
 )
 
 // ErrNoCommandToRun is returned when a request can't identify a command to run

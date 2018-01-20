@@ -3,7 +3,7 @@ package command
 import (
 	"time"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
+	"github.com/pcarranza/meeseeks-box/jobs"
 )
 
 // Command is the base interface for any command

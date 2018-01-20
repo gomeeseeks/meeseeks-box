@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/db"
+	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/db"
 
 	log "github.com/sirupsen/logrus"
 )

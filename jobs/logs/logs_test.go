@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs/logs"
-	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
+	"github.com/pcarranza/meeseeks-box/jobs/logs"
+	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
 
 func Test_Logs(t *testing.T) {
