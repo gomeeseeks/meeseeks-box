@@ -12,7 +12,7 @@ test:
     - PATH=${GOPATH}/bin:${PATH}
     - PROJECT=$(basename ${CI_PROJECT_DIR})
     - GROUP=$(basename $(dirname ${CI_PROJECT_DIR}))
-    - WORKDIR=${GOPATH}/src/gitlab.com/${GROUP}/${PROJECT}
+    - WORKDIR=${GOPATH}/src/github.com/pcarranza/${PROJECT}
     - mkdir -p ${WORKDIR}
     - cp -a * ${WORKDIR}
     - go get -u github.com/golang/dep/cmd/dep

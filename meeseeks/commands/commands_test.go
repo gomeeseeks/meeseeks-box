@@ -3,18 +3,18 @@ package commands_test
 import (
 	"testing"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs/logs"
+	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
 	"github.com/renstrom/dedent"
-	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
-	"gitlab.com/mr-meeseeks/meeseeks-box/version"
+	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/jobs"
+	"github.com/pcarranza/meeseeks-box/version"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
+	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
+	"github.com/pcarranza/meeseeks-box/meeseeks/request"
 
-	stubs "gitlab.com/mr-meeseeks/meeseeks-box/testingstubs"
+	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
 
 var configWithEcho = config.Config{

@@ -2,15 +2,15 @@ package meeseeks
 
 import (
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
+	"github.com/pcarranza/meeseeks-box/jobs"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/auth"
-	"gitlab.com/mr-meeseeks/meeseeks-box/command"
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/commands"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/message"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/request"
-	"gitlab.com/mr-meeseeks/meeseeks-box/meeseeks/template"
+	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/command"
+	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
+	"github.com/pcarranza/meeseeks-box/meeseeks/message"
+	"github.com/pcarranza/meeseeks-box/meeseeks/request"
+	"github.com/pcarranza/meeseeks-box/meeseeks/template"
 )
 
 // Client interface that provides a way of replying to messages on a channel

@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.com/mr-meeseeks/meeseeks-box/command"
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs/logs"
+	"github.com/pcarranza/meeseeks-box/command"
+	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/jobs"
+	"github.com/pcarranza/meeseeks-box/jobs"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/config"
 )
 
 // Command Errors

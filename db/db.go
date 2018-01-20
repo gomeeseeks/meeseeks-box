@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	bolt "github.com/coreos/bbolt"
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/config"
 )
 
 var dbConf config.Database

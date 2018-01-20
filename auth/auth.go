@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	log "github.com/sirupsen/logrus"
-	"gitlab.com/mr-meeseeks/meeseeks-box/command"
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/command"
+	"github.com/pcarranza/meeseeks-box/config"
 )
 
 // Authorizer is the interface used to check if a user is allowed to run a command

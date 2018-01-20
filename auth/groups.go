@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/config"
 )
 
 // Groups is used to keep configured groups

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/renstrom/dedent"
-	"gitlab.com/mr-meeseeks/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/config"
 )
 
 func Test_ConfigurationReading(t *testing.T) {
