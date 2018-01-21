@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/renstrom/dedent"
 	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/renstrom/dedent"
 )
 
 func Test_ConfigurationReading(t *testing.T) {
@@ -74,7 +74,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				  something:
 				    command: "ssh"
 				    authorized: ["someone"]
-				    arguments: ["none"]
+				    args: ["none"]
 				`),
 			config.Config{
 				Commands: map[string]config.Command{
