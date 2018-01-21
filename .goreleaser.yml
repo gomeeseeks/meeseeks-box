@@ -14,7 +14,7 @@ builds:
   goarm:
   - "6"
   main: .
-  ldflags: -s -w -X gitlab.com/mr-meeseeks/meeseeks-box/version.Version={{.Version}} -X gitlab.com/mr-meeseeks/meeseeks-box/version.Commit={{.Commit}} -X gitlab.com/mr-meeseeks/meeseeks-box/version.Date={{.Date}}
+  ldflags: -s -w -X github.com/pcarranza/meeseeks-box/version.Version={{.Version}} -X github.com/pcarranza/meeseeks-box/version.Commit={{.Commit}} -X github.com/pcarranza/meeseeks-box/version.Date={{.Date}}
   binary: meeseeks-box
 archive:
   name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm
