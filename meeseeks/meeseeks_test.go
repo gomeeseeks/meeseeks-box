@@ -49,6 +49,24 @@ func Test_BasicReplying(t *testing.T) {
 			},
 		},
 		{
+			name:    "basic with cmds args",
+			user:    "myuser",
+			message: "args-echo hello!",
+			channel: "general",
+			expected: []expectedMessage{
+				expectedMessage{
+					TextMatcher: handshakeMatcher,
+					Channel:     "generalID",
+					IsIM:        false,
+				},
+				expectedMessage{
+					TextMatcher: "^<@myuser> .*\n```\npre-message hello!\n```$",
+					Channel:     "generalID",
+					IsIM:        false,
+				},
+			},
+		},
+		{
 			name:    "unknown command case",
 			user:    "myuser",
 			message: "unknown-command hello!",
@@ -121,6 +139,11 @@ func Test_BasicReplying(t *testing.T) {
 			  disallowed:
 			    command: false
 			    auth_strategy: none
+			  args-echo:
+			    command: echo
+			    auth_strategy: any
+			    timeout: 5
+			    args: ["pre-message"]
 			`)).Build()
 
 	m := meeseeks.New(client, cnf)

@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
+	"github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/jobs"
 

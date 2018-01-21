@@ -99,7 +99,7 @@ type Config struct {
 // Command is the struct that handles a command configuration
 type Command struct {
 	Cmd           string            `yaml:"command"`
-	Args          []string          `yaml:"arguments"`
+	Args          []string          `yaml:"args"`
 	AllowedGroups []string          `yaml:"allowed_groups"`
 	AuthStrategy  string            `yaml:"auth_strategy"`
 	Timeout       time.Duration     `yaml:"timeout"`
