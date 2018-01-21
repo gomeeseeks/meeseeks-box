@@ -5,11 +5,10 @@ import (
 
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
-	"github.com/renstrom/dedent"
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/pcarranza/meeseeks-box/version"
+	"github.com/renstrom/dedent"
 
 	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
@@ -67,7 +66,7 @@ func Test_Commands(t *testing.T) {
 			name:     "version command",
 			cmd:      commands.BuiltinVersionCommand,
 			job:      jobs.Job{},
-			expected: version.Version,
+			expected: "meeseeks-box version , commit , built at ",
 		},
 		{
 			name: "help command",

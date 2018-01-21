@@ -11,12 +11,12 @@ import (
 
 	"github.com/pcarranza/meeseeks-box/jobs"
 
-	"github.com/renstrom/dedent"
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/meeseeks/template"
 	"github.com/pcarranza/meeseeks-box/version"
+	"github.com/renstrom/dedent"
 )
 
 // Builtin Commands Names
@@ -133,7 +133,8 @@ func (v versionCommand) Cmd() string {
 }
 
 func (v versionCommand) Execute(job jobs.Job) (string, error) {
-	return version.Version, nil
+	return fmt.Sprintf("meeseeks-box version %s, commit %s, built at %s",
+		version.Version, version.Commit, version.Date), nil
 }
 
 type helpCommand struct {
