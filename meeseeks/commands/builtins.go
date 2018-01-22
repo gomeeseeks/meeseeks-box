@@ -21,14 +21,16 @@ import (
 
 // Builtin Commands Names
 const (
-	BuiltinVersionCommand = "version"
-	BuiltinHelpCommand    = "help"
-	BuiltinGroupsCommand  = "groups"
-	BuiltinJobsCommand    = "jobs"
-	BuiltinFindJobCommand = "job"
-	BuiltinLastCommand    = "last"
-	BuiltinTailCommand    = "tail"
-	BuiltinLogsCommand    = "logs"
+	BuiltinVersionCommand  = "version"
+	BuiltinHelpCommand     = "help"
+	BuiltinGroupsCommand   = "groups"
+	BuiltinJobsCommand     = "jobs"
+	BuiltinFindJobCommand  = "job"
+	BuiltinAuditCommand    = "audit"
+	BuiltinAuditJobCommand = "auditjob"
+	BuiltinLastCommand     = "last"
+	BuiltinTailCommand     = "tail"
+	BuiltinLogsCommand     = "logs"
 )
 
 var builtInCommands = map[string]command.Command{
@@ -44,11 +46,17 @@ var builtInCommands = map[string]command.Command{
 	BuiltinJobsCommand: jobsCommand{
 		Help: "shows the last executed jobs for the calling user",
 	},
+	BuiltinAuditCommand: auditCommand{
+		Help: "find all jobs for all users or a specific one (admin only)",
+	},
 	BuiltinLastCommand: lastCommand{
 		Help: "shows the last executed command by the calling user",
 	},
 	BuiltinFindJobCommand: findJob{
 		Help: "find one job",
+	},
+	BuiltinAuditJobCommand: auditJobCommand{
+		Help: "shows a specific command by the specified user (admin only)",
 	},
 	BuiltinTailCommand: tailCommand{
 		Help: "returns the last command output or error",
@@ -148,11 +156,9 @@ type helpCommand struct {
 	Help     string
 }
 
-var helpTemplate = dedent.Dedent(
-	`{{ range $name, $cmd := .commands }}
-	- {{ $name }}: {{ $cmd.Help }}
-	{{- end }}
-	`)
+var helpTemplate = dedent.Dedent(`
+	{{ range $name, $cmd := .commands }}- {{ $name }}: {{ $cmd.Help }}
+	{{ end }}`)
 
 func (h helpCommand) Cmd() string {
 	return BuiltinHelpCommand
@@ -250,6 +256,50 @@ func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 	})
 }
 
+type auditCommand struct {
+	noHandshake
+	noRecord
+	allowAdmins
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+	Help string
+}
+
+func (j auditCommand) Cmd() string {
+	return BuiltinAuditCommand
+}
+
+func (j auditCommand) Execute(job jobs.Job) (string, error) {
+	flags := flag.NewFlagSet("audit", flag.ContinueOnError)
+	limit := flags.Int("limit", 5, "how many jobs to return")
+	user := flags.String("user", "", "the user to audit")
+	if err := flags.Parse(job.Request.Args); err != nil {
+		return "", err
+	}
+
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: *limit,
+		Match: func(j jobs.Job) bool {
+			if *user == "" {
+				return user == user
+			}
+			return true
+		},
+	})
+
+	if err != nil {
+		return "", err
+	}
+	tmpl, err := template.New("jobs", jobsTemplate)
+	if err != nil {
+		return "", err
+	}
+	return tmpl.Render(template.Payload{
+		"jobs": jobs,
+	})
+}
+
 type lastCommand struct {
 	noHandshake
 	noRecord
@@ -323,6 +373,54 @@ func (l findJob) Execute(job jobs.Job) (string, error) {
 		Limit: 1,
 		Match: func(j jobs.Job) bool {
 			return j.Request.Username == callingUser &&
+				j.ID == id
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get the last job: %s", err)
+	}
+	if len(jobs) == 0 {
+		return "", fmt.Errorf("No last command for current user")
+	}
+
+	tmpl, err := template.New("job", jobTemplate)
+	if err != nil {
+		return "", err
+	}
+	return tmpl.Render(template.Payload{
+		"job": jobs[0],
+	})
+}
+
+type auditJobCommand struct {
+	noHandshake
+	noRecord
+	allowAdmins
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+	Help string
+}
+
+func (l auditJobCommand) Cmd() string {
+	return BuiltinAuditJobCommand
+}
+
+func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
+	flags := flag.NewFlagSet("auditjobs", flag.ContinueOnError)
+	user := flags.String("user", "", "the user to audit")
+	if err := flags.Parse(job.Request.Args); err != nil {
+		return "", err
+	}
+	id, err := parseJobID(job)
+	if err != nil {
+		return "", err
+	}
+
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: 1,
+		Match: func(j jobs.Job) bool {
+			return *user == *user &&
 				j.ID == id
 		},
 	})
