@@ -8,10 +8,6 @@ import (
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/jobs"
-<<<<<<< HEAD
-=======
-	"github.com/pcarranza/meeseeks-box/version"
->>>>>>> Implement audit and auditjobs commands
 	"github.com/renstrom/dedent"
 
 	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
