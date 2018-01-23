@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/pcarranza/meeseeks-box/db"
 
 	bolt "github.com/coreos/bbolt"
-	log "github.com/sirupsen/logrus"
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/meeseeks"
 	"github.com/pcarranza/meeseeks-box/slack"
 	"github.com/pcarranza/meeseeks-box/version"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -45,15 +44,14 @@ func main() {
 
 	log.Println("Connected to slack")
 
-	meeseek := meeseeks.New(client, cnf)
-
 	signalCh := make(chan os.Signal)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
-	messages := make(chan slack.Message)
+	meeseek := meeseeks.New(client, cnf)
+	go meeseek.Start()
 
+	messages := make(chan slack.Message)
 	go client.ListenMessages(messages)
-	wg := sync.WaitGroup{}
 
 processing:
 	for {
@@ -61,15 +59,12 @@ processing:
 		case sig := <-signalCh:
 			log.Infof("Got signal %s, trying to gracefully shutdown", sig)
 			close(messages)
-			wg.Wait()
+			meeseek.Shutdown()
 			break processing
 
 		case message := <-messages:
 			go func(message slack.Message) {
-				wg.Add(1)
-				defer wg.Done()
-
-				meeseek.Process(message)
+				meeseek.MessageCh <- message
 			}(message)
 		}
 	}

@@ -34,6 +34,7 @@ func Test_ConfigurationReading(t *testing.T) {
 			config.Config{
 				Colors:   defaultColors,
 				Database: defaultDatabase,
+				Pool:     20,
 			},
 		},
 		{
@@ -48,6 +49,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				},
 				Colors:   defaultColors,
 				Database: defaultDatabase,
+				Pool:     20,
 			},
 		},
 		{
@@ -65,6 +67,7 @@ func Test_ConfigurationReading(t *testing.T) {
 					Error:   "#000000",
 				},
 				Database: defaultDatabase,
+				Pool:     20,
 			},
 		},
 		{
@@ -88,6 +91,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				},
 				Colors:   defaultColors,
 				Database: defaultDatabase,
+				Pool:     20,
 			},
 		},
 	}
