@@ -117,8 +117,6 @@ func (m *Meeseeks) Shutdown() {
 
 func (m *Meeseeks) processJobs() {
 	for t := range m.tasksCh {
-		defer m.wg.Done()
-
 		job := t.job
 		req := job.Request
 		cmd := t.cmd
@@ -131,12 +129,12 @@ func (m *Meeseeks) processJobs() {
 				req.Command, req.Username, err)
 			m.replyWithCommandFailed(req, cmd, err, out)
 			job.Finish(jobs.FailedStatus)
-			continue
+		} else {
+			log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
+				req.Username)
+			m.replyWithSuccess(job.Request, cmd, out)
+			job.Finish(jobs.SuccessStatus)
 		}
-
-		log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
-			req.Username)
-		m.replyWithSuccess(job.Request, cmd, out)
-		job.Finish(jobs.SuccessStatus)
+		m.wg.Done()
 	}
 }
