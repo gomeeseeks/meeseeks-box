@@ -1,8 +1,8 @@
 package meeseeks
 
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/pcarranza/meeseeks-box/jobs"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/command"
@@ -53,7 +53,7 @@ func (m Meeseeks) Process(msg message.Message) {
 		m.replyWithUnknownCommand(req)
 		return
 	}
-	if err = auth.Check(req.Command, cmd); err != nil {
+	if err = auth.Check(req.Username, cmd); err != nil {
 		m.replyWithUnauthorizedCommand(req, cmd)
 		return
 	}

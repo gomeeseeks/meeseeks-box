@@ -3,9 +3,9 @@ package auth
 import (
 	"errors"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/config"
+	log "github.com/sirupsen/logrus"
 )
 
 // Authorizer is the interface used to check if a user is allowed to run a command
@@ -59,7 +59,7 @@ func (a userInGroupAllowed) Check(username string, cmd command.Command) error {
 			log.Debugf("User %s found in group %s", username, group)
 			return nil
 		case ErrUserNotInGroup:
-			log.Debugf("User % is not in group %s", username, group)
+			log.Debugf("User %s is not in group %s", username, group)
 		case ErrGroupNotFound:
 			log.Errorf("Could not found group %s", group)
 		default:
