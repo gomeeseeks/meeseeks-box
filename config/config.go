@@ -73,11 +73,11 @@ func New(r io.Reader) (Config, error) {
 			command.AuthStrategy = AuthStrategyNone
 		}
 		if command.Timeout == 0 {
-			log.Debugf("Applying default Timeout %ds to command %s", DefaultCommandTimeout/time.Second, name)
+			log.Debugf("Applying default Timeout %d sec to command %s", DefaultCommandTimeout/time.Second, name)
 			command.Timeout = DefaultCommandTimeout
 		} else {
 			command.Timeout *= time.Second
-			log.Infof("Command timeout for %s is %d", name, command.Timeout)
+			log.Infof("Command timeout for %s is %d seconds", name, command.Timeout/time.Second)
 		}
 
 		// All configured commands are shell type
