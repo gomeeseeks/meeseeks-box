@@ -282,9 +282,9 @@ func (j auditCommand) Execute(job jobs.Job) (string, error) {
 		Limit: *limit,
 		Match: func(j jobs.Job) bool {
 			if *user == "" {
-				return user == user
+				return true
 			}
-			return true
+			return *user == j.Request.Username
 		},
 	})
 
@@ -408,7 +408,6 @@ func (l auditJobCommand) Cmd() string {
 
 func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("auditjobs", flag.ContinueOnError)
-	user := flags.String("user", "", "the user to audit")
 	if err := flags.Parse(job.Request.Args); err != nil {
 		return "", err
 	}
@@ -420,15 +419,14 @@ func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
 		Match: func(j jobs.Job) bool {
-			return *user == *user &&
-				j.ID == id
+			return j.ID == id
 		},
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to get the last job: %s", err)
+		return "", fmt.Errorf("failed to get job %d: %s", job.ID, err)
 	}
 	if len(jobs) == 0 {
-		return "", fmt.Errorf("No last command for current user")
+		return "", fmt.Errorf("Job not found")
 	}
 
 	tmpl, err := template.New("job", jobTemplate)
