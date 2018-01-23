@@ -73,7 +73,7 @@ func New(r io.Reader) (Config, error) {
 			command.AuthStrategy = AuthStrategyNone
 		}
 		if command.Timeout == 0 {
-			log.Debugf("Applying default Timeout %d to command %s", DefaultCommandTimeout, name)
+			log.Debugf("Applying default Timeout %ds to command %s", DefaultCommandTimeout/time.Second, name)
 			command.Timeout = DefaultCommandTimeout
 		} else {
 			command.Timeout *= time.Second
