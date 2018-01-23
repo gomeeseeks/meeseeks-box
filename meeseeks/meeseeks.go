@@ -117,24 +117,26 @@ func (m *Meeseeks) Shutdown() {
 
 func (m *Meeseeks) processJobs() {
 	for t := range m.tasksCh {
-		job := t.job
-		req := job.Request
-		cmd := t.cmd
+		go func(t task) {
+			job := t.job
+			req := job.Request
+			cmd := t.cmd
 
-		m.replyWithHandshake(req, cmd)
+			m.replyWithHandshake(req, cmd)
 
-		out, err := t.cmd.Execute(t.job)
-		if err != nil {
-			log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
-				req.Command, req.Username, err)
-			m.replyWithCommandFailed(req, cmd, err, out)
-			job.Finish(jobs.FailedStatus)
-		} else {
-			log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
-				req.Username)
-			m.replyWithSuccess(job.Request, cmd, out)
-			job.Finish(jobs.SuccessStatus)
-		}
-		m.wg.Done()
+			out, err := t.cmd.Execute(t.job)
+			if err != nil {
+				log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
+					req.Command, req.Username, err)
+				m.replyWithCommandFailed(req, cmd, err, out)
+				job.Finish(jobs.FailedStatus)
+			} else {
+				log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
+					req.Username)
+				m.replyWithSuccess(job.Request, cmd, out)
+				job.Finish(jobs.SuccessStatus)
+			}
+			m.wg.Done()
+		}(t)
 	}
 }
