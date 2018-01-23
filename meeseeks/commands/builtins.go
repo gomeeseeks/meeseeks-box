@@ -11,12 +11,12 @@ import (
 
 	"github.com/pcarranza/meeseeks-box/jobs"
 
-	"github.com/renstrom/dedent"
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/meeseeks/template"
 	"github.com/pcarranza/meeseeks-box/version"
+	"github.com/renstrom/dedent"
 )
 
 // Builtin Commands Names
