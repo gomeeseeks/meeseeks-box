@@ -256,3 +256,53 @@ func Test_InvalidCommand(t *testing.T) {
 		t.Fatalf("command build should have failed with an error, got %s instead", err)
 	}
 }
+
+func Test_FilterJobsAudit(t *testing.T) {
+	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func() {
+		r1 := request.Request{
+			Command:     "command",
+			Channel:     "general",
+			ChannelID:   "123",
+			ChannelLink: "<#123>",
+			Username:    "someone",
+			Args:        []string{"some", "thing"},
+		}
+		r2 := request.Request{
+			Command:     "command",
+			Channel:     "general",
+			ChannelID:   "123",
+			ChannelLink: "<#123>",
+			Username:    "someoneelse",
+			Args:        []string{"something", "else"},
+		}
+
+		cmds, err := commands.New(configWithEcho)
+		stubs.Must(t, "failed to create commands", err)
+
+		auth.Configure(configWithEcho)
+		jobs.Create(r1)
+		jobs.Create(r2)
+		jobs.Create(r1)
+		jobs.Create(r1)
+		jobs.Create(r2)
+
+		cmd, err := cmds.Find("audit")
+		stubs.Must(t, "cmd failed", err)
+
+		audit, err := cmd.Execute(jobs.Job{
+			Request: request.Request{Args: []string{"-user", "someone"}},
+		})
+		if err != nil {
+			t.Fatalf("Failed to execute audit: %s", err)
+		}
+		stubs.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n*1* - now - *command* by *someone* in *<#123>* - *Running*\n", audit)
+
+		limit, err := cmd.Execute(jobs.Job{
+			Request: request.Request{Args: []string{"-user", "someone", "-limit", "2"}},
+		})
+		if err != nil {
+			t.Fatalf("Failed to execute audit: %s", err)
+		}
+		stubs.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n", limit)
+	}))
+}
