@@ -62,9 +62,9 @@ func Test_Commands(t *testing.T) {
 			name: "shell command",
 			cmd:  "echo",
 			job: jobs.Job{
-				Request: request.Request{Args: []string{"hello", "meeseeks"}},
+				Request: request.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
 			},
-			expected: "hello meeseeks\n",
+			expected: "hello meeseeks\nsecond line\n",
 		},
 		{
 			name:     "version command",
