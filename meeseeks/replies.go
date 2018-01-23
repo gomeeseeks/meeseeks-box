@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (m Meeseeks) replyWithInvalidMessage(msg message.Message, err error) {
+func (m *Meeseeks) replyWithError(msg message.Message, err error) {
 	content, err := m.templates.Build().RenderFailure(msg.GetUsernameID(), err.Error(), "")
 	if err != nil {
 		log.Fatalf("could not render failure template: %s", err)
@@ -19,7 +19,7 @@ func (m Meeseeks) replyWithInvalidMessage(msg message.Message, err error) {
 	}
 }
 
-func (m Meeseeks) replyWithUnknownCommand(req request.Request) {
+func (m *Meeseeks) replyWithUnknownCommand(req request.Request) {
 	log.Debugf("Could not find command '%s' in the command registry", req.Command)
 
 	msg, err := m.templates.Build().RenderUnknownCommand(req.UsernameID, req.Command)
@@ -32,7 +32,7 @@ func (m Meeseeks) replyWithUnknownCommand(req request.Request) {
 	}
 }
 
-func (m Meeseeks) replyWithHandshake(req request.Request, cmd command.Command) {
+func (m *Meeseeks) replyWithHandshake(req request.Request, cmd command.Command) {
 	if !cmd.HasHandshake() {
 		return
 	}
@@ -46,7 +46,7 @@ func (m Meeseeks) replyWithHandshake(req request.Request, cmd command.Command) {
 	}
 }
 
-func (m Meeseeks) replyWithUnauthorizedCommand(req request.Request, cmd command.Command) {
+func (m *Meeseeks) replyWithUnauthorizedCommand(req request.Request, cmd command.Command) {
 	log.Debugf("User %s is not allowed to run command '%s' on channel '%s'", req.Username,
 		req.Command, req.Channel)
 
@@ -60,7 +60,7 @@ func (m Meeseeks) replyWithUnauthorizedCommand(req request.Request, cmd command.
 	}
 }
 
-func (m Meeseeks) replyWithCommandFailed(req request.Request, cmd command.Command, err error, out string) {
+func (m *Meeseeks) replyWithCommandFailed(req request.Request, cmd command.Command, err error, out string) {
 	msg, err := m.buildTemplatesFor(cmd).RenderFailure(req.UsernameID, err.Error(), out)
 	if err != nil {
 		log.Fatalf("could not render failure template %s", err)
@@ -71,7 +71,7 @@ func (m Meeseeks) replyWithCommandFailed(req request.Request, cmd command.Comman
 	}
 }
 
-func (m Meeseeks) replyWithSuccess(req request.Request, cmd command.Command, out string) {
+func (m *Meeseeks) replyWithSuccess(req request.Request, cmd command.Command, out string) {
 	msg, err := m.buildTemplatesFor(cmd).RenderSuccess(req.UsernameID, out)
 
 	if err != nil {
@@ -83,6 +83,6 @@ func (m Meeseeks) replyWithSuccess(req request.Request, cmd command.Command, out
 	}
 }
 
-func (m Meeseeks) buildTemplatesFor(cmd command.Command) template.Templates {
+func (m *Meeseeks) buildTemplatesFor(cmd command.Command) template.Templates {
 	return m.templates.Clone().WithTemplates(cmd.Templates()).Build()
 }

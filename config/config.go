@@ -29,8 +29,9 @@ const (
 // Default colors
 const (
 	DefaultInfoColorMessage    = ""
-	DefaultErrColorMessage     = "#cc3300"
-	DefaultSuccessColorMessage = "#009900"
+	DefaultSuccessColorMessage = "good"
+	DefaultWarningColorMessage = "warning"
+	DefaultErrColorMessage     = "danger"
 )
 
 // Command types
@@ -53,6 +54,7 @@ func New(r io.Reader) (Config, error) {
 			Success: DefaultSuccessColorMessage,
 			Error:   DefaultErrColorMessage,
 		},
+		Pool: 20,
 	}
 
 	b, err := ioutil.ReadAll(r)
@@ -94,6 +96,7 @@ type Config struct {
 	Commands map[string]Command  `yaml:"commands"`
 	Colors   MessageColors       `yaml:"colors"`
 	Groups   map[string][]string `yaml:"groups"`
+	Pool     int                 `yaml:"pool"`
 }
 
 // Command is the struct that handles a command configuration

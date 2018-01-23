@@ -1,6 +1,10 @@
 package meeseeks
 
 import (
+	"fmt"
+	"sync"
+
+	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/jobs"
 	log "github.com/sirupsen/logrus"
 
@@ -24,65 +28,115 @@ type Meeseeks struct {
 	config    config.Config
 	commands  commands.Commands
 	templates *template.TemplatesBuilder
+
+	tasksCh   chan task
+	MessageCh chan message.Message
+	wg        sync.WaitGroup
+}
+
+type task struct {
+	job jobs.Job
+	cmd command.Command
 }
 
 // New creates a new Meeseeks service
-func New(client Client, conf config.Config) Meeseeks {
+func New(client Client, conf config.Config) *Meeseeks {
 	cmds, _ := commands.New(conf) // TODO handle the error
 	templatesBuilder := template.NewBuilder().WithMessages(conf.Messages)
-	return Meeseeks{
+	m := Meeseeks{
 		client:    client,
 		config:    conf,
 		commands:  cmds,
 		templates: templatesBuilder,
+		tasksCh:   make(chan task, 20),
+		MessageCh: make(chan message.Message),
+
+		wg: sync.WaitGroup{},
+	}
+
+	go m.processJobs()
+
+	return &m
+}
+
+// Start launches the meeseeks to read messages from the MessageCh
+func (m *Meeseeks) Start() {
+	for msg := range m.MessageCh {
+		req, err := request.FromMessage(msg)
+		if err != nil {
+			log.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
+			m.replyWithError(msg, err)
+			continue
+		}
+
+		cmd, err := m.commands.Find(req.Command)
+		if err == commands.ErrCommandNotFound {
+			m.replyWithUnknownCommand(req)
+			continue
+		}
+		if err = auth.Check(req.Username, cmd); err != nil {
+			m.replyWithUnauthorizedCommand(req, cmd)
+			continue
+		}
+
+		log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
+			req.Command, req.Username, req.Channel, req.Args)
+
+		t, err := m.createTask(req, cmd)
+		if err != nil {
+			m.replyWithError(msg, fmt.Errorf("could not create job: %s", err))
+			continue
+		}
+
+		m.wg.Add(1)
+		m.tasksCh <- t
 	}
 }
 
-// Process processes a received message
-func (m Meeseeks) Process(msg message.Message) {
-	req, err := request.FromMessage(msg)
-	if err != nil {
-		log.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
-		m.replyWithInvalidMessage(msg, err)
-		return
+func (m *Meeseeks) createTask(req request.Request, cmd command.Command) (task, error) {
+	if !cmd.Record() {
+		return task{job: jobs.NullJob(req), cmd: cmd}, nil
 	}
 
-	cmd, err := m.commands.Find(req.Command)
-	if err == commands.ErrCommandNotFound {
-		m.replyWithUnknownCommand(req)
-		return
-	}
-	if err = auth.Check(req.Username, cmd); err != nil {
-		m.replyWithUnauthorizedCommand(req, cmd)
-		return
-	}
+	j, err := jobs.Create(req)
+	return task{job: j, cmd: cmd}, err
+}
 
-	log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
-		req.Command, req.Username, req.Channel, req.Args)
+// Shutdown initiates a shutdown process by waiting for jobs to finish and then
+// closing the tasks channel
+func (m *Meeseeks) Shutdown() {
+	defer close(m.tasksCh)
 
-	var j jobs.Job
-	if cmd.Record() {
-		j, err = jobs.Create(req)
+	log.Info("Closing meeseeks messages channel")
+	close(m.MessageCh)
+
+	log.Info("Waiting for jobs to finish")
+	m.wg.Wait()
+	log.Info("Done waiting, exiting")
+}
+
+func (m *Meeseeks) processJobs() {
+	for t := range m.tasksCh {
+		defer m.wg.Done()
+
+		job := t.job
+		req := job.Request
+		cmd := t.cmd
+
+		m.replyWithHandshake(req, cmd)
+
+		out, err := t.cmd.Execute(t.job)
 		if err != nil {
-			log.Errorf("could not create job: %s", err)
+			log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
+				req.Command, req.Username, err)
+			m.replyWithCommandFailed(req, cmd, err, out)
+			job.Finish(jobs.FailedStatus)
+			return
 		}
-	} else {
-		j = jobs.NullJob(req)
+
+		log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
+			req.Username)
+		m.replyWithSuccess(job.Request, cmd, out)
+		job.Finish(jobs.SuccessStatus)
 	}
-
-	m.replyWithHandshake(req, cmd)
-
-	out, err := cmd.Execute(j)
-	if err != nil {
-		log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
-			req.Command, req.Username, err)
-		m.replyWithCommandFailed(req, cmd, err, out)
-		j.Finish(jobs.FailedStatus)
-		return
-	}
-
-	log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
-		req.Username)
-	m.replyWithSuccess(j.Request, cmd, out)
-	j.Finish(jobs.SuccessStatus)
 }

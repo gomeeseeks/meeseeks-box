@@ -147,18 +147,22 @@ func Test_BasicReplying(t *testing.T) {
 			`)).Build()
 
 	m := meeseeks.New(client, cnf)
+	go m.Start()
 
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			stubs.WithTmpDB(func() {
-				go m.Process(stubs.MessageStub{
+	stubs.WithTmpDB(func() {
+		for _, tc := range tt {
+			t.Run(tc.name, func(t *testing.T) {
+				t.Logf("starting test %s", tc.name)
+				m.MessageCh <- stubs.MessageStub{
 					Text:      tc.message,
 					Channel:   tc.channel,
 					ChannelID: tc.channel + "ID",
 					User:      tc.user,
-				})
+				}
+				t.Logf("message sent to channel on %s", tc.name)
 
 				for _, expected := range tc.expected {
+					t.Logf("reading replies from client on %s", tc.name)
 					actual := <-client.Messages
 
 					r, err := regexp.Compile(expected.TextMatcher)
@@ -171,7 +175,8 @@ func Test_BasicReplying(t *testing.T) {
 					stubs.AssertEquals(t, expected.IsIM, actual.IsIM)
 				}
 			})
-		})
-	}
+		}
+	})
+	m.Shutdown()
 
 }
