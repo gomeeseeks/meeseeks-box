@@ -131,7 +131,7 @@ func (m *Meeseeks) processJobs() {
 				req.Command, req.Username, err)
 			m.replyWithCommandFailed(req, cmd, err, out)
 			job.Finish(jobs.FailedStatus)
-			return
+			continue
 		}
 
 		log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
