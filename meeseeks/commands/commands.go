@@ -104,8 +104,9 @@ func (c shellCommand) Execute(job jobs.Job) (string, error) {
 	scanner := bufio.NewScanner(teeReader)
 	go func() {
 		for scanner.Scan() {
-			if e := logs.Append(job.ID, scanner.Text()); e != nil {
-				logrus.Errorf("Could not append '%s' to job %d logs: %s", scanner.Text(), job.ID, e)
+			line := fmt.Sprintln(scanner.Text())
+			if e := logs.Append(job.ID, line); e != nil {
+				logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
 			}
 		}
 	}()
