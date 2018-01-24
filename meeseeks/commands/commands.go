@@ -1,8 +1,11 @@
 package commands
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"time"
 
@@ -90,17 +93,37 @@ func (c shellCommand) Execute(job jobs.Job) (string, error) {
 	defer cancelFunc()
 
 	shellCommand := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
-	out, cmdErr := shellCommand.CombinedOutput()
 
-	content := string(out)
-	if e := logs.Append(job.ID, content); e != nil {
-		logrus.Errorf("Could not append to job %d logs: %s", job.ID, e)
-	}
-	if e := logs.SetError(job.ID, cmdErr); e != nil {
-		logrus.Errorf("Could not append to job %d logs: %s", job.ID, e)
+	cmdReader, err := shellCommand.StdoutPipe()
+	if err != nil {
+		return "", err
 	}
 
-	return content, cmdErr
+	buffer := bytes.NewBufferString("")
+	teeReader := io.TeeReader(cmdReader, buffer)
+	scanner := bufio.NewScanner(teeReader)
+	go func() {
+		for scanner.Scan() {
+			line := fmt.Sprintln(scanner.Text())
+			if e := logs.Append(job.ID, line); e != nil {
+				logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
+			}
+		}
+	}()
+
+	err = shellCommand.Start()
+	if e := logs.SetError(job.ID, err); e != nil {
+		logrus.Errorf("Could set error to job %d: %s", job.ID, e)
+		return "", err
+	}
+
+	err = shellCommand.Wait()
+	if e := logs.SetError(job.ID, err); e != nil {
+		logrus.Errorf("Could set error to job %d: %s", job.ID, e)
+		return "", err
+	}
+
+	return buffer.String(), err
 }
 
 func (c shellCommand) HasHandshake() bool {
