@@ -94,28 +94,32 @@ func (c shellCommand) Execute(job jobs.Job) (string, error) {
 
 	shellCommand := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
 
-	reader, err := shellCommand.StdoutPipe()
+	cmdReader, err := shellCommand.StdoutPipe()
 	if err != nil {
 		return "", err
 	}
 
 	buffer := bytes.NewBufferString("")
-	teeReader := io.TeeReader(reader, buffer)
-	go func(r *bufio.Reader) {
-		line, _, err := r.ReadLine()
-		if err == io.EOF {
-			return
+	teeReader := io.TeeReader(cmdReader, buffer)
+	scanner := bufio.NewScanner(teeReader)
+	go func() {
+		for scanner.Scan() {
+			if e := logs.Append(job.ID, scanner.Text()); e != nil {
+				logrus.Errorf("Could not append '%s' to job %d logs: %s", scanner.Text(), job.ID, e)
+			}
 		}
-		if e := logs.Append(job.ID, string(line)); e != nil {
-			logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
-		}
-	}(bufio.NewReader(teeReader))
+	}()
 
-	err = shellCommand.Run()
-	reader.Close()
-
+	err = shellCommand.Start()
 	if e := logs.SetError(job.ID, err); e != nil {
-		logrus.Errorf("Could not append to job %d logs: %s", job.ID, e)
+		logrus.Errorf("Could set error to job %d: %s", job.ID, e)
+		return "", err
+	}
+
+	err = shellCommand.Wait()
+	if e := logs.SetError(job.ID, err); e != nil {
+		logrus.Errorf("Could set error to job %d: %s", job.ID, e)
+		return "", err
 	}
 
 	return buffer.String(), err
