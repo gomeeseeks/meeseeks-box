@@ -311,12 +311,12 @@ type lastCommand struct {
 }
 
 var jobTemplate = `
-{{- with $job := .job }}{{ with $r := $job.Request }}* *Command* {{ $r.Command }}{{ with $args := $r.Args }}
-* *Args* "{{ Join $args "\" \"" }}" {{ end }}
+{{- with $job := .job }}{{ with $r := $job.Request }}* *ID* {{ $job.ID }}
 * *Status* {{ $job.Status}}
+* *Command* {{ $r.Command }}{{ with $args := $r.Args }}
+* *Args* "{{ Join $args "\" \"" }}" {{ end }}
 * *Where* {{ if $r.IsIM }}IM{{ else }}{{ $r.ChannelLink }}{{ end }}
 * *When* {{ HumanizeTime $job.StartTime }}
-* *ID* {{ $job.ID }}
 {{- end }}{{- end }}
 `
 

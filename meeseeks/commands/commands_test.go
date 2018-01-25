@@ -162,7 +162,7 @@ func Test_Commands(t *testing.T) {
 				jobs.Create(req)
 				jobs.Create(req)
 			},
-			expected: "* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Status* Running\n* *Where* <#123>\n* *When* now\n* *ID* 3\n",
+			expected: "* *ID* 3\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
 		},
 		{
 			name: "test find command",
@@ -174,7 +174,7 @@ func Test_Commands(t *testing.T) {
 				jobs.Create(req)
 				jobs.Create(req)
 			},
-			expected: "* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Status* Running\n* *Where* <#123>\n* *When* now\n* *ID* 1\n",
+			expected: "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
 		},
 		{
 			name: "test auditjob command",
@@ -186,7 +186,7 @@ func Test_Commands(t *testing.T) {
 				jobs.Create(req)
 				jobs.Create(req)
 			},
-			expected: "* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Status* Running\n* *Where* <#123>\n* *When* now\n* *ID* 1\n",
+			expected: "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
 		},
 		{
 			name: "test tail command",

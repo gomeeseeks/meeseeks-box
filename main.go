@@ -50,22 +50,20 @@ func main() {
 	meeseek := meeseeks.New(client, cnf)
 	go meeseek.Start()
 
-	messages := make(chan slack.Message)
-	go client.ListenMessages(messages)
+	slackMessages := make(chan slack.Message)
+	go client.ListenMessages(slackMessages)
 
 processing:
 	for {
 		select {
 		case sig := <-signalCh:
 			log.Infof("Got signal %s, trying to gracefully shutdown", sig)
-			close(messages)
+			close(slackMessages)
 			meeseek.Shutdown()
 			break processing
 
-		case message := <-messages:
-			go func(message slack.Message) {
-				meeseek.MessageCh <- message
-			}(message)
+		case message := <-slackMessages:
+			meeseek.MessageCh <- message
 		}
 	}
 	log.Infof("All done, quitting")
