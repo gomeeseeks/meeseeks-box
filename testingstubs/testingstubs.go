@@ -155,12 +155,10 @@ func WithTmpDB(f func()) error {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	db.Configure(config.Config{
-		Database: config.Database{
-			Path:    path.Join(tmpdir, "meeseeks.db"),
-			Mode:    0600,
-			Timeout: time.Second * 1,
-		},
+	db.Configure(db.DatabaseConfig{
+		Path:    path.Join(tmpdir, "meeseeks.db"),
+		Mode:    0600,
+		Timeout: time.Second * 1,
 	})
 	f()
 	return nil

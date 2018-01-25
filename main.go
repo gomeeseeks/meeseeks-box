@@ -2,18 +2,14 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/pcarranza/meeseeks-box/db"
-
-	bolt "github.com/coreos/bbolt"
-	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/messenger"
+
 	"github.com/pcarranza/meeseeks-box/meeseeks"
-	"github.com/pcarranza/meeseeks-box/slack"
 	"github.com/pcarranza/meeseeks-box/version"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,66 +25,36 @@ func main() {
 		log.Printf("Version: %s Commit: %s Date: %s", version.Version, version.Commit, version.Date)
 		os.Exit(0)
 	}
+
 	if *debugMode {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	cnf, err := loadConfiguration(*configFile)
-	must(err)
+	cnf, err := config.Load(*configFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	auth.Configure(cnf)
-	db.Configure(cnf)
+	messaging, err := messenger.Listen(messenger.MessengerOpts{
+		Debug:      *debugMode,
+		SlackToken: os.Getenv("SLACK_TOKEN"),
+	})
+	if err != nil {
+		log.Fatalf("Could not initialize messenger subsystem: %s", err)
+	}
 
-	client, err := slack.Connect(*debugMode)
-	must(err)
-
-	log.Println("Connected to slack")
+	meeseek := meeseeks.New(messaging, cnf)
+	go meeseek.Start(messaging.MessagesCh)
 
 	signalCh := make(chan os.Signal)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
-	meeseek := meeseeks.New(client, cnf)
-	go meeseek.Start()
+	// Listen for a signal forever
+	sig := <-signalCh
+	log.Infof("Got signal %s, trying to gracefully shutdown", sig)
 
-	slackMessages := make(chan slack.Message)
-	go client.ListenMessages(slackMessages)
+	messaging.Shutdown()
+	meeseek.Shutdown()
 
-processing:
-	for {
-		select {
-		case sig := <-signalCh:
-			log.Infof("Got signal %s, trying to gracefully shutdown", sig)
-			close(slackMessages)
-			meeseek.Shutdown()
-			break processing
-
-		case message := <-slackMessages:
-			meeseek.MessageCh <- message
-		}
-	}
 	log.Infof("All done, quitting")
-}
-
-func loadConfiguration(configFile string) (config.Config, error) {
-	f, err := os.Open(configFile)
-	if err != nil {
-		return config.Config{}, fmt.Errorf("could not open configuration file %s: %s", configFile, err)
-	}
-
-	return config.New(f)
-}
-
-func must(err error) {
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
-}
-
-func openDB(cnf config.Config) (*bolt.DB, error) {
-	db, err := bolt.Open(cnf.Database.Path, cnf.Database.Mode, &bolt.Options{
-		Timeout: cnf.Database.Timeout,
-	})
-	db.Close()
-	return db, err
 }

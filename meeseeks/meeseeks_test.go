@@ -10,6 +10,7 @@ import (
 	"regexp"
 
 	"github.com/pcarranza/meeseeks-box/meeseeks"
+	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	"github.com/pcarranza/meeseeks-box/meeseeks/template"
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
@@ -147,13 +148,14 @@ func Test_BasicReplying(t *testing.T) {
 			`)).Build()
 
 	m := meeseeks.New(client, cnf)
-	go m.Start()
+	messageCh := make(chan message.Message)
+	go m.Start(messageCh)
 
 	stubs.WithTmpDB(func() {
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Logf("starting test %s", tc.name)
-				m.MessageCh <- stubs.MessageStub{
+				messageCh <- stubs.MessageStub{
 					Text:      tc.message,
 					Channel:   tc.channel,
 					ChannelID: tc.channel + "ID",

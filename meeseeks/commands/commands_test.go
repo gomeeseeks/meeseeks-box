@@ -45,7 +45,7 @@ func Test_Commands(t *testing.T) {
 	cmds, err := commands.New(configWithEcho)
 	stubs.Must(t, "failed to create commands", err)
 
-	auth.Configure(configWithEcho)
+	auth.Configure(configWithEcho.Groups)
 
 	tt := []struct {
 		name     string
@@ -275,7 +275,7 @@ func Test_FilterJobsAudit(t *testing.T) {
 		cmds, err := commands.New(configWithEcho)
 		stubs.Must(t, "failed to create commands", err)
 
-		auth.Configure(configWithEcho)
+		auth.Configure(configWithEcho.Groups)
 		jobs.Create(r1)
 		jobs.Create(r2)
 		jobs.Create(r1)

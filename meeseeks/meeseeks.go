@@ -29,9 +29,8 @@ type Meeseeks struct {
 	commands  commands.Commands
 	templates *template.TemplatesBuilder
 
-	tasksCh   chan task
-	MessageCh chan message.Message
-	wg        sync.WaitGroup
+	tasksCh chan task
+	wg      sync.WaitGroup
 }
 
 type task struct {
@@ -43,25 +42,25 @@ type task struct {
 func New(client Client, conf config.Config) *Meeseeks {
 	cmds, _ := commands.New(conf) // TODO handle the error
 	templatesBuilder := template.NewBuilder().WithMessages(conf.Messages)
+
 	m := Meeseeks{
 		client:    client,
 		config:    conf,
 		commands:  cmds,
 		templates: templatesBuilder,
 		tasksCh:   make(chan task, 20),
-		MessageCh: make(chan message.Message),
 
 		wg: sync.WaitGroup{},
 	}
 
-	go m.processJobs()
+	go m.jobsLoop()
 
 	return &m
 }
 
 // Start launches the meeseeks to read messages from the MessageCh
-func (m *Meeseeks) Start() {
-	for msg := range m.MessageCh {
+func (m *Meeseeks) Start(messageCh chan message.Message) {
+	for msg := range messageCh {
 		req, err := request.FromMessage(msg)
 		if err != nil {
 			log.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
@@ -107,15 +106,12 @@ func (m *Meeseeks) createTask(req request.Request, cmd command.Command) (task, e
 func (m *Meeseeks) Shutdown() {
 	defer close(m.tasksCh)
 
-	log.Info("Closing meeseeks messages channel")
-	close(m.MessageCh)
-
 	log.Info("Waiting for jobs to finish")
 	m.wg.Wait()
 	log.Info("Done waiting, exiting")
 }
 
-func (m *Meeseeks) processJobs() {
+func (m *Meeseeks) jobsLoop() {
 	for t := range m.tasksCh {
 		go func(t task) {
 			job := t.job

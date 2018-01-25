@@ -7,15 +7,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/db"
+
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
-)
-
-// Authorization Strategies determine who has access to what
-const (
-	AuthStrategyAny          = "any"
-	AuthStrategyAllowedGroup = "group"
-	AuthStrategyNone         = "none"
 )
 
 // AdminGroup is the default admin group used by builtin commands
@@ -41,10 +37,29 @@ const (
 	RemoteCommandType
 )
 
+// Load reads the given filename, builds a configuration object and initializes
+// all the required subsystems
+func Load(filename string) (Config, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return Config{}, fmt.Errorf("could not open configuration file %s: %s", filename, err)
+	}
+
+	cnf, err := New(f)
+	if err != nil {
+		return cnf, fmt.Errorf("configuration is invalid: %s", err)
+	}
+
+	db.Configure(cnf.Database)
+	auth.Configure(cnf.Groups)
+
+	return cnf, nil
+}
+
 // New parses the configuration from a reader into an object and returns it
 func New(r io.Reader) (Config, error) {
 	c := Config{
-		Database: Database{
+		Database: db.DatabaseConfig{
 			Path:    "meeseeks.db",
 			Mode:    0600,
 			Timeout: 2 * time.Second,
@@ -69,8 +84,8 @@ func New(r io.Reader) (Config, error) {
 
 	for name, command := range c.Commands {
 		if command.AuthStrategy == "" {
-			log.Debugf("Applying default AuthStrategy %s to command %s", AuthStrategyNone, name)
-			command.AuthStrategy = AuthStrategyNone
+			log.Debugf("Applying default AuthStrategy %s to command %s", auth.AuthStrategyNone, name)
+			command.AuthStrategy = auth.AuthStrategyNone
 		}
 		if command.Timeout == 0 {
 			log.Debugf("Applying default Timeout %d sec to command %s", DefaultCommandTimeout/time.Second, name)
@@ -91,7 +106,7 @@ func New(r io.Reader) (Config, error) {
 
 // Config is the struct used to load MrMeeseeks configuration yaml
 type Config struct {
-	Database Database            `yaml:"database"`
+	Database db.DatabaseConfig   `yaml:"database"`
 	Messages map[string][]string `yaml:"messages"`
 	Commands map[string]Command  `yaml:"commands"`
 	Colors   MessageColors       `yaml:"colors"`
@@ -116,11 +131,4 @@ type MessageColors struct {
 	Info    string `yaml:"info"`
 	Success string `yaml:"success"`
 	Error   string `yaml:"error"`
-}
-
-// Database holds the configuration for the BoltDB database
-type Database struct {
-	Path    string        `yaml:"path"`
-	Timeout time.Duration `yaml:"timeout"`
-	Mode    os.FileMode   `yaml:"file_mode"`
 }

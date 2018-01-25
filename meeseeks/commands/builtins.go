@@ -102,7 +102,7 @@ func (n noRecord) Record() bool {
 type allowAll struct{}
 
 func (a allowAll) AuthStrategy() string {
-	return config.AuthStrategyAny
+	return auth.AuthStrategyAny
 }
 
 func (a allowAll) AllowedGroups() []string {
@@ -112,7 +112,7 @@ func (a allowAll) AllowedGroups() []string {
 type allowAdmins struct{}
 
 func (a allowAdmins) AuthStrategy() string {
-	return config.AuthStrategyAllowedGroup
+	return auth.AuthStrategyAllowedGroup
 }
 
 func (a allowAdmins) AllowedGroups() []string {

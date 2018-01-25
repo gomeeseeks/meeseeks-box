@@ -15,17 +15,17 @@ var authConfig = config.Config{
 		"any": config.Command{
 			Cmd:          "any",
 			Type:         config.ShellCommandType,
-			AuthStrategy: config.AuthStrategyAny,
+			AuthStrategy: auth.AuthStrategyAny,
 		},
 		"none": config.Command{
 			Cmd:          "none",
 			Type:         config.ShellCommandType,
-			AuthStrategy: config.AuthStrategyNone,
+			AuthStrategy: auth.AuthStrategyNone,
 		},
 		"admins": config.Command{
 			Cmd:           "none",
 			Type:          config.ShellCommandType,
-			AuthStrategy:  config.AuthStrategyAllowedGroup,
+			AuthStrategy:  auth.AuthStrategyAllowedGroup,
 			AllowedGroups: []string{config.AdminGroup},
 		},
 	},
@@ -67,7 +67,7 @@ func Test_Auth(t *testing.T) {
 		},
 	}
 
-	auth.Configure(authConfig)
+	auth.Configure(authConfig.Groups)
 
 	cmds, err := commands.New(authConfig)
 
@@ -86,11 +86,9 @@ func Test_Auth(t *testing.T) {
 
 func Test_Groups(t *testing.T) {
 	auth.Configure(
-		config.Config{
-			Groups: map[string][]string{
-				config.AdminGroup: []string{"user1", "user2"},
-				"developer":       []string{"user1"},
-			},
+		map[string][]string{
+			config.AdminGroup: []string{"user1", "user2"},
+			"developer":       []string{"user1"},
 		},
 	)
 	stubs.AssertEquals(t,
