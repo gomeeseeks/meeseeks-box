@@ -30,10 +30,11 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	cnf, err := config.Load(*configFile)
+	cnf, err := config.LoadFile(*configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
+	config.LoadConfig(cnf)
 
 	messaging, err := messenger.Listen(messenger.MessengerOpts{
 		Debug:      *debugMode,

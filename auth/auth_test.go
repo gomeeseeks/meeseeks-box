@@ -1,40 +1,32 @@
 package auth_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
+	"github.com/pcarranza/meeseeks-box/commands"
+	"github.com/pcarranza/meeseeks-box/commands/shell"
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
 
-var authConfig = config.Config{
-	Commands: map[string]config.Command{
-		"any": config.Command{
-			Cmd:          "any",
-			Type:         config.ShellCommandType,
-			AuthStrategy: auth.AuthStrategyAny,
-		},
-		"none": config.Command{
-			Cmd:          "none",
-			Type:         config.ShellCommandType,
-			AuthStrategy: auth.AuthStrategyNone,
-		},
-		"admins": config.Command{
-			Cmd:           "none",
-			Type:          config.ShellCommandType,
-			AuthStrategy:  auth.AuthStrategyAllowedGroup,
-			AllowedGroups: []string{config.AdminGroup},
-		},
-	},
-	Groups: map[string][]string{
-		config.AdminGroup: []string{"admin_user"},
-	},
-}
-
 func Test_Auth(t *testing.T) {
+	auth.Configure(map[string][]string{
+		auth.AdminGroup: []string{"admin_user"},
+	})
+	commands.Add("any", shell.New(shell.CommandOpts{
+		Cmd:          "any",
+		AuthStrategy: auth.AuthStrategyAny,
+	}))
+	commands.Add("none", shell.New(shell.CommandOpts{
+		Cmd:          "none",
+		AuthStrategy: auth.AuthStrategyNone,
+	}))
+	commands.Add("admins", shell.New(shell.CommandOpts{
+		Cmd:           "none",
+		AuthStrategy:  auth.AuthStrategyAllowedGroup,
+		AllowedGroups: []string{auth.AdminGroup},
+	}))
+
 	tt := []struct {
 		name     string
 		username string
@@ -67,16 +59,10 @@ func Test_Auth(t *testing.T) {
 		},
 	}
 
-	auth.Configure(authConfig.Groups)
-
-	cmds, err := commands.New(authConfig)
-
-	stubs.Must(t, "can't create commands from configuration,", err)
-
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			cmd, err := cmds.Find(tc.cmd)
-			stubs.Must(t, fmt.Sprintf("can't find command %s", tc.cmd), err)
+			cmd, ok := commands.Find(tc.cmd)
+			stubs.AssertEquals(t, true, ok)
 			if actual := auth.Check(tc.username, cmd); actual != tc.expected {
 				t.Fatalf("Check failed with %s", actual)
 			}
@@ -87,14 +73,14 @@ func Test_Auth(t *testing.T) {
 func Test_Groups(t *testing.T) {
 	auth.Configure(
 		map[string][]string{
-			config.AdminGroup: []string{"user1", "user2"},
-			"developer":       []string{"user1"},
+			auth.AdminGroup: []string{"user1", "user2"},
+			"developer":     []string{"user1"},
 		},
 	)
 	stubs.AssertEquals(t,
 		map[string][]string{
-			"developer":       []string{"user1"},
-			config.AdminGroup: []string{"user1", "user2"},
+			"developer":     []string{"user1"},
+			auth.AdminGroup: []string{"user1", "user2"},
 		},
 		auth.GetGroups())
 }

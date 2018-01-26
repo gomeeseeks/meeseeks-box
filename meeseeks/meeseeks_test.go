@@ -9,6 +9,7 @@ import (
 
 	"regexp"
 
+	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/meeseeks"
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	"github.com/pcarranza/meeseeks-box/template"
@@ -146,6 +147,8 @@ func Test_BasicReplying(t *testing.T) {
 			    timeout: 5
 			    args: ["pre-message"]
 			`)).Build()
+
+	config.LoadConfig(cnf)
 
 	m := meeseeks.New(client, cnf)
 	messageCh := make(chan message.Message)

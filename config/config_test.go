@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/db"
 	"github.com/renstrom/dedent"
@@ -85,11 +83,8 @@ func Test_ConfigurationReading(t *testing.T) {
 			config.Config{
 				Commands: map[string]config.Command{
 					"something": config.Command{
-						Cmd:          "ssh",
-						Args:         []string{"none"},
-						Timeout:      command.DefaultCommandTimeout,
-						Type:         config.ShellCommandType,
-						AuthStrategy: auth.AuthStrategyNone,
+						Cmd:  "ssh",
+						Args: []string{"none"},
 					},
 				},
 				Colors:   defaultColors,

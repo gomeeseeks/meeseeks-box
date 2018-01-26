@@ -1,4 +1,4 @@
-package commands
+package builtins
 
 import (
 	"flag"
@@ -32,37 +32,46 @@ const (
 	BuiltinLogsCommand     = "logs"
 )
 
-var builtInCommands = map[string]command.Command{
+// Commands is the basic set of builtin commands
+var Commands = map[string]command.Command{
 	// The help builtin command needs a pointer to the map of generated commands,
 	// because of this it is added as the last one when building the whole command
 	// map
 	BuiltinVersionCommand: versionCommand{
-		Help: "prints the running meeseeks version",
+		help: help{"prints the running meeseeks version"},
 	},
 	BuiltinGroupsCommand: groupsCommand{
-		Help: "prints the configured groups",
+		help: help{"prints the configured groups"},
 	},
 	BuiltinJobsCommand: jobsCommand{
-		Help: "shows the last executed jobs for the calling user",
+		help: help{"shows the last executed jobs for the calling user"},
 	},
 	BuiltinAuditCommand: auditCommand{
-		Help: "find all jobs for all users or a specific one (admin only)",
+		help: help{"find all jobs for all users or a specific one (admin only)"},
 	},
 	BuiltinLastCommand: lastCommand{
-		Help: "shows the last executed command by the calling user",
+		help: help{"shows the last executed command by the calling user"},
 	},
 	BuiltinFindJobCommand: findJob{
-		Help: "find one job",
+		help: help{"find one job"},
 	},
 	BuiltinAuditJobCommand: auditJobCommand{
-		Help: "shows a specific command by the specified user (admin only)",
+		help: help{"shows a specific command by the specified user (admin only)"},
 	},
 	BuiltinTailCommand: tailCommand{
-		Help: "returns the last command output or error",
+		help: help{"returns the last command output or error"},
 	},
 	BuiltinLogsCommand: logsCommand{
-		Help: "returns the logs of the command id passed as argument",
+		help: help{"returns the logs of the command id passed as argument"},
 	},
+}
+
+// AddHelpCommand creates a new help command and adds it to the map
+func AddHelpCommand(c map[string]command.Command) {
+	c[BuiltinHelpCommand] = helpCommand{
+		commands: c,
+		help:     help{"prints all the kwnown commands and its associated help"},
+	}
 }
 
 type plainTemplates struct{}
@@ -125,14 +134,22 @@ func (b noHandshake) HasHandshake() bool {
 	return false
 }
 
+type help struct {
+	help string
+}
+
+func (h help) Help() string {
+	return h.help
+}
+
 type versionCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (v versionCommand) Cmd() string {
@@ -145,14 +162,14 @@ func (v versionCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type helpCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Commands map[string]command.Command
-	Help     string
+	commands map[string]command.Command
 }
 
 var helpTemplate = dedent.Dedent(`
@@ -164,23 +181,23 @@ func (h helpCommand) Cmd() string {
 }
 
 func (h helpCommand) Execute(job jobs.Job) (string, error) {
-	tmpl, err := template.New("version", helpTemplate)
+	tmpl, err := template.New("help", helpTemplate)
 	if err != nil {
 		return "", err
 	}
 	return tmpl.Render(template.Payload{
-		"commands": h.Commands,
+		"commands": h.commands,
 	})
 }
 
 type groupsCommand struct {
+	help
 	noHandshake
 	noRecord
 	emptyArgs
 	allowAdmins
 	plainTemplates
 	defaultTimeout
-	Help string
 }
 
 var groupsTemplate = dedent.Dedent(`
@@ -205,13 +222,13 @@ func (g groupsCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type jobsCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 var jobsTemplate = strings.Join([]string{
@@ -256,13 +273,13 @@ func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type auditCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAdmins
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (j auditCommand) Cmd() string {
@@ -300,13 +317,13 @@ func (j auditCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type lastCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 var jobTemplate = `
@@ -348,13 +365,13 @@ func (l lastCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type findJob struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (l findJob) Cmd() string {
@@ -392,13 +409,13 @@ func (l findJob) Execute(job jobs.Job) (string, error) {
 }
 
 type auditJobCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAdmins
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (l auditJobCommand) Cmd() string {
@@ -438,13 +455,13 @@ func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type tailCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (t tailCommand) Cmd() string {
@@ -476,13 +493,13 @@ func (t tailCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type logsCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (t logsCommand) Cmd() string {

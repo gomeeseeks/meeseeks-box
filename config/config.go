@@ -7,16 +7,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/pcarranza/meeseeks-box/commands"
+	"github.com/pcarranza/meeseeks-box/commands/shell"
+
 	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/db"
 
-	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
-
-// AdminGroup is the default admin group used by builtin commands
-const AdminGroup = "admin"
 
 // Default colors
 const (
@@ -26,16 +24,9 @@ const (
 	DefaultErrColorMessage     = "danger"
 )
 
-// Command types
-const (
-	BuiltinCommandType = iota
-	ShellCommandType
-	RemoteCommandType
-)
-
-// Load reads the given filename, builds a configuration object and initializes
+// LoadFile reads the given filename, builds a configuration object and initializes
 // all the required subsystems
-func Load(filename string) (Config, error) {
+func LoadFile(filename string) (Config, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return Config{}, fmt.Errorf("could not open configuration file %s: %s", filename, err)
@@ -45,11 +36,25 @@ func Load(filename string) (Config, error) {
 	if err != nil {
 		return cnf, fmt.Errorf("configuration is invalid: %s", err)
 	}
+	return cnf, nil
+}
 
+// LoadConfig loads the configuration in all the dependent subsystems
+func LoadConfig(cnf Config) {
 	db.Configure(cnf.Database)
 	auth.Configure(cnf.Groups)
 
-	return cnf, nil
+	for name, cmd := range cnf.Commands {
+		commands.Add(name, shell.New(shell.CommandOpts{
+			AllowedGroups: cmd.AllowedGroups,
+			Args:          cmd.Args,
+			AuthStrategy:  cmd.AuthStrategy,
+			Cmd:           cmd.Cmd,
+			Help:          cmd.Help,
+			Templates:     cmd.Templates,
+			Timeout:       cmd.Timeout * time.Second,
+		}))
+	}
 }
 
 // New parses the configuration from a reader into an object and returns it
@@ -76,25 +81,6 @@ func New(r io.Reader) (Config, error) {
 	err = yaml.Unmarshal(b, &c)
 	if err != nil {
 		return c, fmt.Errorf("could not parse configuration: %s", err)
-	}
-
-	for name, cmd := range c.Commands {
-		if cmd.AuthStrategy == "" {
-			log.Debugf("Applying default AuthStrategy %s to command %s", auth.AuthStrategyNone, name)
-			cmd.AuthStrategy = auth.AuthStrategyNone
-		}
-		if cmd.Timeout == 0 {
-			log.Debugf("Applying default Timeout %d sec to command %s", command.DefaultCommandTimeout/time.Second, name)
-			cmd.Timeout = command.DefaultCommandTimeout
-		} else {
-			cmd.Timeout *= time.Second
-			log.Infof("Command timeout for %s is %d seconds", name, cmd.Timeout/time.Second)
-		}
-
-		// All configured commands are shell type
-		cmd.Type = ShellCommandType
-
-		c.Commands[name] = cmd // Re-set the command
 	}
 
 	return c, nil

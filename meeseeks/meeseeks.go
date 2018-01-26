@@ -9,8 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/commands"
 	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
 	"github.com/pcarranza/meeseeks-box/template"
@@ -26,7 +26,6 @@ type Client interface {
 type Meeseeks struct {
 	client    Client
 	config    config.Config
-	commands  commands.Commands
 	templates *template.TemplatesBuilder
 
 	tasksCh chan task
@@ -40,13 +39,11 @@ type task struct {
 
 // New creates a new Meeseeks service
 func New(client Client, conf config.Config) *Meeseeks {
-	cmds, _ := commands.New(conf) // TODO handle the error
 	templatesBuilder := template.NewBuilder().WithMessages(conf.Messages)
 
 	m := Meeseeks{
 		client:    client,
 		config:    conf,
-		commands:  cmds,
 		templates: templatesBuilder,
 		tasksCh:   make(chan task, 20),
 
@@ -68,8 +65,8 @@ func (m *Meeseeks) Start(messageCh chan message.Message) {
 			continue
 		}
 
-		cmd, err := m.commands.Find(req.Command)
-		if err == commands.ErrCommandNotFound {
+		cmd, ok := commands.Find(req.Command)
+		if !ok {
 			m.replyWithUnknownCommand(req)
 			continue
 		}

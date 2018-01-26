@@ -21,5 +21,6 @@ type Command interface {
 	AllowedGroups() []string
 	Args() []string
 	Timeout() time.Duration
+	Help() string
 	Record() bool
 }
