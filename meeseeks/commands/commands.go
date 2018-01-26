@@ -130,10 +130,6 @@ func (c shellCommand) HasHandshake() bool {
 	return true
 }
 
-func (c shellCommand) ConfiguredCommand() config.Command {
-	return c.Command
-}
-
 func (c shellCommand) Templates() map[string]string {
 	return c.Command.Templates
 }
