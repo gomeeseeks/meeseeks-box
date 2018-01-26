@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/commands"
+	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/db"
 
 	log "github.com/sirupsen/logrus"
@@ -78,23 +78,23 @@ func New(r io.Reader) (Config, error) {
 		return c, fmt.Errorf("could not parse configuration: %s", err)
 	}
 
-	for name, command := range c.Commands {
-		if command.AuthStrategy == "" {
+	for name, cmd := range c.Commands {
+		if cmd.AuthStrategy == "" {
 			log.Debugf("Applying default AuthStrategy %s to command %s", auth.AuthStrategyNone, name)
-			command.AuthStrategy = auth.AuthStrategyNone
+			cmd.AuthStrategy = auth.AuthStrategyNone
 		}
-		if command.Timeout == 0 {
-			log.Debugf("Applying default Timeout %d sec to command %s", commands.DefaultCommandTimeout/time.Second, name)
-			command.Timeout = commands.DefaultCommandTimeout
+		if cmd.Timeout == 0 {
+			log.Debugf("Applying default Timeout %d sec to command %s", command.DefaultCommandTimeout/time.Second, name)
+			cmd.Timeout = command.DefaultCommandTimeout
 		} else {
-			command.Timeout *= time.Second
-			log.Infof("Command timeout for %s is %d seconds", name, command.Timeout/time.Second)
+			cmd.Timeout *= time.Second
+			log.Infof("Command timeout for %s is %d seconds", name, cmd.Timeout/time.Second)
 		}
 
 		// All configured commands are shell type
-		command.Type = ShellCommandType
+		cmd.Type = ShellCommandType
 
-		c.Commands[name] = command // Re-set the command
+		c.Commands[name] = cmd // Re-set the command
 	}
 
 	return c, nil

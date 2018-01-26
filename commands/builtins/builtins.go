@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/commands"
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
 	"github.com/pcarranza/meeseeks-box/jobs"
@@ -84,7 +83,7 @@ func (d defaultTemplates) Templates() map[string]string {
 type defaultTimeout struct{}
 
 func (d defaultTimeout) Timeout() time.Duration {
-	return commands.DefaultCommandTimeout
+	return command.DefaultCommandTimeout
 }
 
 type emptyArgs struct{}
@@ -152,7 +151,7 @@ type helpCommand struct {
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	commands *map[string]command.Command
+	Commands map[string]command.Command
 	Help     string
 }
 
@@ -170,7 +169,7 @@ func (h helpCommand) Execute(job jobs.Job) (string, error) {
 		return "", err
 	}
 	return tmpl.Render(template.Payload{
-		"commands": h.commands,
+		"commands": h.Commands,
 	})
 }
 
