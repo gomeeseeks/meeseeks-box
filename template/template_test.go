@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pcarranza/meeseeks-box/meeseeks/template"
+	"github.com/pcarranza/meeseeks-box/template"
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
 

@@ -6,6 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const AdminGroup = "admin"
+
 type CommandAuthorization interface {
 	AuthStrategy() string
 	AllowedGroups() []string

@@ -4,7 +4,7 @@ import (
 	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
-	"github.com/pcarranza/meeseeks-box/meeseeks/template"
+	"github.com/pcarranza/meeseeks-box/template"
 	log "github.com/sirupsen/logrus"
 )
 

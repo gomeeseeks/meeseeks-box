@@ -11,7 +11,7 @@ import (
 
 	"github.com/pcarranza/meeseeks-box/meeseeks"
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
-	"github.com/pcarranza/meeseeks-box/meeseeks/template"
+	"github.com/pcarranza/meeseeks-box/template"
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
 

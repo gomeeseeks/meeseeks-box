@@ -13,7 +13,7 @@ import (
 	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
-	"github.com/pcarranza/meeseeks-box/meeseeks/template"
+	"github.com/pcarranza/meeseeks-box/template"
 )
 
 // Client interface that provides a way of replying to messages on a channel
