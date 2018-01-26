@@ -10,6 +10,7 @@ import (
 	"github.com/pcarranza/meeseeks-box/jobs"
 	"github.com/renstrom/dedent"
 
+	cmds "github.com/pcarranza/meeseeks-box/commands"
 	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
 
@@ -21,7 +22,7 @@ var configWithEcho = config.Config{
 		"echo": config.Command{
 			Cmd:     "echo",
 			Args:    []string{},
-			Timeout: config.DefaultCommandTimeout,
+			Timeout: cmds.DefaultCommandTimeout,
 			Type:    config.ShellCommandType,
 			Help:    "command that prints back the arguments passed",
 		},

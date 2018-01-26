@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/commands"
 	"github.com/pcarranza/meeseeks-box/db"
 
 	log "github.com/sirupsen/logrus"
@@ -16,11 +17,6 @@ import (
 
 // AdminGroup is the default admin group used by builtin commands
 const AdminGroup = "admin"
-
-// Defaults for commands
-const (
-	DefaultCommandTimeout = 60 * time.Second
-)
 
 // Default colors
 const (
@@ -88,8 +84,8 @@ func New(r io.Reader) (Config, error) {
 			command.AuthStrategy = auth.AuthStrategyNone
 		}
 		if command.Timeout == 0 {
-			log.Debugf("Applying default Timeout %d sec to command %s", DefaultCommandTimeout/time.Second, name)
-			command.Timeout = DefaultCommandTimeout
+			log.Debugf("Applying default Timeout %d sec to command %s", commands.DefaultCommandTimeout/time.Second, name)
+			command.Timeout = commands.DefaultCommandTimeout
 		} else {
 			command.Timeout *= time.Second
 			log.Infof("Command timeout for %s is %d seconds", name, command.Timeout/time.Second)
@@ -114,7 +110,7 @@ type Config struct {
 	Pool     int                 `yaml:"pool"`
 }
 
-// Command is the struct that handles a command configuration
+// CommandConfig is the struct that handles a command configuration
 type Command struct {
 	Cmd           string            `yaml:"command"`
 	Args          []string          `yaml:"args"`

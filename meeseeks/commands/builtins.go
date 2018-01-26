@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pcarranza/meeseeks-box/commands"
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
 	"github.com/pcarranza/meeseeks-box/jobs"
@@ -84,7 +85,7 @@ func (d defaultTemplates) Templates() map[string]string {
 type defaultTimeout struct{}
 
 func (d defaultTimeout) Timeout() time.Duration {
-	return config.DefaultCommandTimeout
+	return commands.DefaultCommandTimeout
 }
 
 type emptyArgs struct{}
