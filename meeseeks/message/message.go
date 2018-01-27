@@ -6,9 +6,9 @@ type Message interface {
 	GetText() string
 	// The friendly name of the channel in which the message was issued
 	GetChannel() string
-	// The channel id used in replies so they are hyperlinks
+	// The channel id used to build the channel link
 	GetChannelID() string
-	// The channel link? Doesn't seem to be in use anymore
+	// The channel link is used in replies to show an hyperlink to the channel
 	GetChannelLink() string
 	// The friendly name of the user that has sent the message, used internally to match with groups and such
 	GetUsername() string
