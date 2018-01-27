@@ -3,22 +3,30 @@ package db
 import (
 	"encoding/binary"
 	"fmt"
+	"os"
+	"time"
 
 	bolt "github.com/coreos/bbolt"
-	"github.com/pcarranza/meeseeks-box/config"
 )
 
-var dbConf config.Database
+var databaseConfig DatabaseConfig
+
+// Database holds the configuration for the BoltDB database
+type DatabaseConfig struct {
+	Path    string        `yaml:"path"`
+	Timeout time.Duration `yaml:"timeout"`
+	Mode    os.FileMode   `yaml:"file_mode"`
+}
 
 // Configure loads the required configuration to be able of connecting to a database
-func Configure(cnf config.Config) {
-	dbConf = cnf.Database
+func Configure(cnf DatabaseConfig) {
+	databaseConfig = cnf
 }
 
 // Open opens a new connection to the database
 func open() (*bolt.DB, error) {
-	return bolt.Open(dbConf.Path, dbConf.Mode, &bolt.Options{
-		Timeout: dbConf.Timeout,
+	return bolt.Open(databaseConfig.Path, databaseConfig.Mode, &bolt.Options{
+		Timeout: databaseConfig.Timeout,
 	})
 }
 

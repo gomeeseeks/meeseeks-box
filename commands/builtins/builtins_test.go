@@ -1,35 +1,21 @@
-package commands_test
+package builtins_test
 
 import (
 	"testing"
 
-	"github.com/pcarranza/meeseeks-box/jobs/logs"
-
 	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/commands"
+	"github.com/pcarranza/meeseeks-box/commands/builtins"
 	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/renstrom/dedent"
-
-	"github.com/pcarranza/meeseeks-box/meeseeks/commands"
+	"github.com/pcarranza/meeseeks-box/jobs/logs"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
-
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
+	"github.com/renstrom/dedent"
 )
 
-var configWithEcho = config.Config{
-	Commands: map[string]config.Command{
-		"echo": config.Command{
-			Cmd:     "echo",
-			Args:    []string{},
-			Timeout: config.DefaultCommandTimeout,
-			Type:    config.ShellCommandType,
-			Help:    "command that prints back the arguments passed",
-		},
-	},
-	Groups: map[string][]string{
-		"admins": []string{"admin_user"},
-		"other":  []string{"user_one", "user_two"},
-	},
+var basicGroups = map[string][]string{
+	"admins": []string{"admin_user"},
+	"other":  []string{"user_one", "user_two"},
 }
 
 var req = request.Request{
@@ -41,11 +27,8 @@ var req = request.Request{
 	Args:        []string{"arg1", "arg2"},
 }
 
-func Test_Commands(t *testing.T) {
-	cmds, err := commands.New(configWithEcho)
-	stubs.Must(t, "failed to create commands", err)
-
-	auth.Configure(configWithEcho)
+func Test_BuiltinCommands(t *testing.T) {
+	auth.Configure(basicGroups)
 
 	tt := []struct {
 		name     string
@@ -55,31 +38,23 @@ func Test_Commands(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "shell command",
-			cmd:  "echo",
-			job: jobs.Job{
-				Request: request.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
-			},
-			expected: "hello meeseeks\nsecond line\n",
-		},
-		{
 			name:     "version command",
-			cmd:      commands.BuiltinVersionCommand,
+			cmd:      builtins.BuiltinVersionCommand,
 			job:      jobs.Job{},
 			expected: "meeseeks-box version , commit , built at ",
 		},
 		{
 			name: "help command",
-			cmd:  commands.BuiltinHelpCommand,
+			cmd:  builtins.BuiltinHelpCommand,
 			job:  jobs.Job{},
 			expected: dedent.Dedent(`
-				- audit: find all jobs for all users or a specific one (admin only)
-				- auditjob: shows a specific command by the specified user (admin only)
-				- echo: command that prints back the arguments passed
+				- audit: lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter.
+				- auditjob: shows a command metadata by job ID from any user (admin only)
+				- auditlogs: shows the logs of any command by job ID (admin only)
 				- groups: prints the configured groups
 				- help: prints all the kwnown commands and its associated help
-				- job: find one job
-				- jobs: shows the last executed jobs for the calling user
+				- job: find one job by id
+				- jobs: shows the last executed jobs for the calling user, accepts -limit
 				- last: shows the last executed command by the calling user
 				- logs: returns the logs of the command id passed as argument
 				- tail: returns the last command output or error
@@ -88,7 +63,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "groups command",
-			cmd:  commands.BuiltinGroupsCommand,
+			cmd:  builtins.BuiltinGroupsCommand,
 			job:  jobs.Job{},
 			expected: dedent.Dedent(`
 					- admins: admin_user
@@ -97,7 +72,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test jobs command",
-			cmd:  commands.BuiltinJobsCommand,
+			cmd:  builtins.BuiltinJobsCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone"},
 			},
@@ -110,7 +85,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test audit command",
-			cmd:  commands.BuiltinAuditCommand,
+			cmd:  builtins.BuiltinAuditCommand,
 			job: jobs.Job{
 				Request: request.Request{},
 			},
@@ -123,7 +98,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test jobs command with limit",
-			cmd:  commands.BuiltinJobsCommand,
+			cmd:  builtins.BuiltinJobsCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"-limit=1"}},
 			},
@@ -135,7 +110,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test jobs command on IM",
-			cmd:  commands.BuiltinJobsCommand,
+			cmd:  builtins.BuiltinJobsCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone"},
 			},
@@ -153,7 +128,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test last command",
-			cmd:  commands.BuiltinLastCommand,
+			cmd:  builtins.BuiltinLastCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone"},
 			},
@@ -166,7 +141,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test find command",
-			cmd:  commands.BuiltinFindJobCommand,
+			cmd:  builtins.BuiltinFindJobCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"1"}},
 			},
@@ -178,7 +153,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test auditjob command",
-			cmd:  commands.BuiltinAuditJobCommand,
+			cmd:  builtins.BuiltinAuditJobCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"1"}},
 			},
@@ -190,7 +165,7 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test tail command",
-			cmd:  commands.BuiltinTailCommand,
+			cmd:  builtins.BuiltinTailCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone"},
 			},
@@ -207,9 +182,26 @@ func Test_Commands(t *testing.T) {
 		},
 		{
 			name: "test logs command",
-			cmd:  commands.BuiltinLogsCommand,
+			cmd:  builtins.BuiltinLogsCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"1"}},
+			},
+			setup: func() {
+				j, err := jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "something to say 1")
+
+				j, err = jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "something to say 2")
+			},
+			expected: "something to say 1",
+		},
+		{
+			name: "test auditlogs command",
+			cmd:  builtins.BuiltinAuditLogsCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "admin_user", Args: []string{"1"}},
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
@@ -230,26 +222,16 @@ func Test_Commands(t *testing.T) {
 				if tc.setup != nil {
 					tc.setup()
 				}
-				cmd, err := cmds.Find(tc.cmd)
-				stubs.Must(t, "cmd failed", err)
+				cmd, ok := commands.Find(tc.cmd)
+				if !ok {
+					t.Fatalf("could not find command %s", tc.cmd)
+				}
 
 				out, err := cmd.Execute(tc.job)
 				stubs.Must(t, "cmd erred out", err)
 				stubs.AssertEquals(t, tc.expected, out)
 			}))
 		})
-	}
-}
-
-func Test_InvalidCommand(t *testing.T) {
-	cmds, err := commands.New(
-		config.Config{
-			Commands: map[string]config.Command{},
-		})
-	stubs.Must(t, "could not build commands", err)
-	_, err = cmds.Find("non-existing")
-	if err != commands.ErrCommandNotFound {
-		t.Fatalf("command build should have failed with an error, got %s instead", err)
 	}
 }
 
@@ -272,18 +254,17 @@ func Test_FilterJobsAudit(t *testing.T) {
 			Args:        []string{"something", "else"},
 		}
 
-		cmds, err := commands.New(configWithEcho)
-		stubs.Must(t, "failed to create commands", err)
-
-		auth.Configure(configWithEcho)
+		auth.Configure(basicGroups)
 		jobs.Create(r1)
 		jobs.Create(r2)
 		jobs.Create(r1)
 		jobs.Create(r1)
 		jobs.Create(r2)
 
-		cmd, err := cmds.Find("audit")
-		stubs.Must(t, "cmd failed", err)
+		cmd, ok := commands.Find("audit")
+		if !ok {
+			t.Fatalf("could not find command %s", "audit")
+		}
 
 		audit, err := cmd.Execute(jobs.Job{
 			Request: request.Request{Args: []string{"-user", "someone"}},

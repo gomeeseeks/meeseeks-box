@@ -3,10 +3,10 @@ package slack
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/nlopes/slack"
@@ -20,8 +20,7 @@ type Client struct {
 }
 
 // Connect builds a new chat client
-func Connect(debug bool) (*Client, error) {
-	token := os.Getenv("SLACK_TOKEN")
+func Connect(debug bool, token string) (*Client, error) {
 	if token == "" {
 		return nil, fmt.Errorf("could not connect to slack: SLACK_TOKEN env var is empty")
 	}
@@ -119,7 +118,7 @@ func (m messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) {
 }
 
 // ListenMessages listens to messages and sends the matching ones through the channel
-func (c *Client) ListenMessages(ch chan<- Message) {
+func (c *Client) ListenMessages(ch chan<- message.Message) {
 	log.Infof("Listening messages")
 
 	for msg := range c.rtm.IncomingEvents {

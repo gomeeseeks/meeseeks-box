@@ -7,23 +7,13 @@ import (
 	"os"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/pcarranza/meeseeks-box/commands"
+	"github.com/pcarranza/meeseeks-box/commands/shell"
+
+	"github.com/pcarranza/meeseeks-box/auth"
+	"github.com/pcarranza/meeseeks-box/db"
+
 	yaml "gopkg.in/yaml.v2"
-)
-
-// Authorization Strategies determine who has access to what
-const (
-	AuthStrategyAny          = "any"
-	AuthStrategyAllowedGroup = "group"
-	AuthStrategyNone         = "none"
-)
-
-// AdminGroup is the default admin group used by builtin commands
-const AdminGroup = "admin"
-
-// Defaults for commands
-const (
-	DefaultCommandTimeout = 60 * time.Second
 )
 
 // Default colors
@@ -34,17 +24,43 @@ const (
 	DefaultErrColorMessage     = "danger"
 )
 
-// Command types
-const (
-	BuiltinCommandType = iota
-	ShellCommandType
-	RemoteCommandType
-)
+// LoadFile reads the given filename, builds a configuration object and initializes
+// all the required subsystems
+func LoadFile(filename string) (Config, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return Config{}, fmt.Errorf("could not open configuration file %s: %s", filename, err)
+	}
+
+	cnf, err := New(f)
+	if err != nil {
+		return cnf, fmt.Errorf("configuration is invalid: %s", err)
+	}
+	return cnf, nil
+}
+
+// LoadConfig loads the configuration in all the dependent subsystems
+func LoadConfig(cnf Config) {
+	db.Configure(cnf.Database)
+	auth.Configure(cnf.Groups)
+
+	for name, cmd := range cnf.Commands {
+		commands.Add(name, shell.New(shell.CommandOpts{
+			AllowedGroups: cmd.AllowedGroups,
+			Args:          cmd.Args,
+			AuthStrategy:  cmd.AuthStrategy,
+			Cmd:           cmd.Cmd,
+			Help:          cmd.Help,
+			Templates:     cmd.Templates,
+			Timeout:       cmd.Timeout * time.Second,
+		}))
+	}
+}
 
 // New parses the configuration from a reader into an object and returns it
 func New(r io.Reader) (Config, error) {
 	c := Config{
-		Database: Database{
+		Database: db.DatabaseConfig{
 			Path:    "meeseeks.db",
 			Mode:    0600,
 			Timeout: 2 * time.Second,
@@ -67,31 +83,12 @@ func New(r io.Reader) (Config, error) {
 		return c, fmt.Errorf("could not parse configuration: %s", err)
 	}
 
-	for name, command := range c.Commands {
-		if command.AuthStrategy == "" {
-			log.Debugf("Applying default AuthStrategy %s to command %s", AuthStrategyNone, name)
-			command.AuthStrategy = AuthStrategyNone
-		}
-		if command.Timeout == 0 {
-			log.Debugf("Applying default Timeout %d sec to command %s", DefaultCommandTimeout/time.Second, name)
-			command.Timeout = DefaultCommandTimeout
-		} else {
-			command.Timeout *= time.Second
-			log.Infof("Command timeout for %s is %d seconds", name, command.Timeout/time.Second)
-		}
-
-		// All configured commands are shell type
-		command.Type = ShellCommandType
-
-		c.Commands[name] = command // Re-set the command
-	}
-
 	return c, nil
 }
 
 // Config is the struct used to load MrMeeseeks configuration yaml
 type Config struct {
-	Database Database            `yaml:"database"`
+	Database db.DatabaseConfig   `yaml:"database"`
 	Messages map[string][]string `yaml:"messages"`
 	Commands map[string]Command  `yaml:"commands"`
 	Colors   MessageColors       `yaml:"colors"`
@@ -99,7 +96,7 @@ type Config struct {
 	Pool     int                 `yaml:"pool"`
 }
 
-// Command is the struct that handles a command configuration
+// CommandConfig is the struct that handles a command configuration
 type Command struct {
 	Cmd           string            `yaml:"command"`
 	Args          []string          `yaml:"args"`
@@ -116,11 +113,4 @@ type MessageColors struct {
 	Info    string `yaml:"info"`
 	Success string `yaml:"success"`
 	Error   string `yaml:"error"`
-}
-
-// Database holds the configuration for the BoltDB database
-type Database struct {
-	Path    string        `yaml:"path"`
-	Timeout time.Duration `yaml:"timeout"`
-	Mode    os.FileMode   `yaml:"file_mode"`
 }

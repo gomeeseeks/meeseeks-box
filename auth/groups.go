@@ -3,8 +3,6 @@ package auth
 import (
 	"fmt"
 	"sort"
-
-	"github.com/pcarranza/meeseeks-box/config"
 )
 
 // Groups is used to keep configured groups
@@ -23,12 +21,12 @@ var (
 // Configure loads all the configured groups
 //
 // This should go away the moment we start storing groups in some storage
-func Configure(cnf config.Config) {
+func Configure(configuredGroups map[string][]string) {
 	g := Groups{
 		groups: map[string]map[string]bool{},
 	}
 
-	for name, users := range cnf.Groups {
+	for name, users := range configuredGroups {
 		group := make(map[string]bool)
 		for _, user := range users {
 			group[user] = true

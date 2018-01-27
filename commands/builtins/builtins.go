@@ -1,4 +1,4 @@
-package commands
+package builtins
 
 import (
 	"flag"
@@ -13,57 +13,69 @@ import (
 
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/command"
-	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/meeseeks/template"
+	"github.com/pcarranza/meeseeks-box/template"
 	"github.com/pcarranza/meeseeks-box/version"
 	"github.com/renstrom/dedent"
 )
 
 // Builtin Commands Names
 const (
-	BuiltinVersionCommand  = "version"
-	BuiltinHelpCommand     = "help"
-	BuiltinGroupsCommand   = "groups"
-	BuiltinJobsCommand     = "jobs"
-	BuiltinFindJobCommand  = "job"
-	BuiltinAuditCommand    = "audit"
-	BuiltinAuditJobCommand = "auditjob"
-	BuiltinLastCommand     = "last"
-	BuiltinTailCommand     = "tail"
-	BuiltinLogsCommand     = "logs"
+	BuiltinVersionCommand   = "version"
+	BuiltinHelpCommand      = "help"
+	BuiltinGroupsCommand    = "groups"
+	BuiltinJobsCommand      = "jobs"
+	BuiltinFindJobCommand   = "job"
+	BuiltinAuditCommand     = "audit"
+	BuiltinAuditJobCommand  = "auditjob"
+	BuiltinAuditLogsCommand = "auditlogs"
+	BuiltinLastCommand      = "last"
+	BuiltinTailCommand      = "tail"
+	BuiltinLogsCommand      = "logs"
 )
 
-var builtInCommands = map[string]command.Command{
+// Commands is the basic set of builtin commands
+var Commands = map[string]command.Command{
 	// The help builtin command needs a pointer to the map of generated commands,
 	// because of this it is added as the last one when building the whole command
 	// map
 	BuiltinVersionCommand: versionCommand{
-		Help: "prints the running meeseeks version",
+		help: help{"prints the running meeseeks version"},
 	},
 	BuiltinGroupsCommand: groupsCommand{
-		Help: "prints the configured groups",
+		help: help{"prints the configured groups"},
 	},
 	BuiltinJobsCommand: jobsCommand{
-		Help: "shows the last executed jobs for the calling user",
+		help: help{"shows the last executed jobs for the calling user, accepts -limit"},
 	},
 	BuiltinAuditCommand: auditCommand{
-		Help: "find all jobs for all users or a specific one (admin only)",
-	},
-	BuiltinLastCommand: lastCommand{
-		Help: "shows the last executed command by the calling user",
-	},
-	BuiltinFindJobCommand: findJob{
-		Help: "find one job",
+		help: help{"lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter."},
 	},
 	BuiltinAuditJobCommand: auditJobCommand{
-		Help: "shows a specific command by the specified user (admin only)",
+		help: help{"shows a command metadata by job ID from any user (admin only)"},
+	},
+	BuiltinAuditLogsCommand: auditLogsCommand{
+		help: help{"shows the logs of any command by job ID (admin only)"},
+	},
+	BuiltinLastCommand: lastCommand{
+		help: help{"shows the last executed command by the calling user"},
+	},
+	BuiltinFindJobCommand: findJobCommand{
+		help: help{"find one job by id"},
 	},
 	BuiltinTailCommand: tailCommand{
-		Help: "returns the last command output or error",
+		help: help{"returns the last command output or error"},
 	},
 	BuiltinLogsCommand: logsCommand{
-		Help: "returns the logs of the command id passed as argument",
+		help: help{"returns the logs of the command id passed as argument"},
 	},
+}
+
+// AddHelpCommand creates a new help command and adds it to the map
+func AddHelpCommand(c map[string]command.Command) {
+	c[BuiltinHelpCommand] = helpCommand{
+		commands: c,
+		help:     help{"prints all the kwnown commands and its associated help"},
+	}
 }
 
 type plainTemplates struct{}
@@ -84,7 +96,7 @@ func (d defaultTemplates) Templates() map[string]string {
 type defaultTimeout struct{}
 
 func (d defaultTimeout) Timeout() time.Duration {
-	return config.DefaultCommandTimeout
+	return command.DefaultCommandTimeout
 }
 
 type emptyArgs struct{}
@@ -102,7 +114,7 @@ func (n noRecord) Record() bool {
 type allowAll struct{}
 
 func (a allowAll) AuthStrategy() string {
-	return config.AuthStrategyAny
+	return auth.AuthStrategyAny
 }
 
 func (a allowAll) AllowedGroups() []string {
@@ -112,11 +124,11 @@ func (a allowAll) AllowedGroups() []string {
 type allowAdmins struct{}
 
 func (a allowAdmins) AuthStrategy() string {
-	return config.AuthStrategyAllowedGroup
+	return auth.AuthStrategyAllowedGroup
 }
 
 func (a allowAdmins) AllowedGroups() []string {
-	return []string{config.AdminGroup}
+	return []string{auth.AdminGroup}
 }
 
 type noHandshake struct {
@@ -126,14 +138,22 @@ func (b noHandshake) HasHandshake() bool {
 	return false
 }
 
+type help struct {
+	help string
+}
+
+func (h help) Help() string {
+	return h.help
+}
+
 type versionCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (v versionCommand) Cmd() string {
@@ -146,14 +166,14 @@ func (v versionCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type helpCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	commands *map[string]command.Command
-	Help     string
+	commands map[string]command.Command
 }
 
 var helpTemplate = dedent.Dedent(`
@@ -165,7 +185,7 @@ func (h helpCommand) Cmd() string {
 }
 
 func (h helpCommand) Execute(job jobs.Job) (string, error) {
-	tmpl, err := template.New("version", helpTemplate)
+	tmpl, err := template.New("help", helpTemplate)
 	if err != nil {
 		return "", err
 	}
@@ -175,13 +195,13 @@ func (h helpCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type groupsCommand struct {
+	help
 	noHandshake
 	noRecord
 	emptyArgs
 	allowAdmins
 	plainTemplates
 	defaultTimeout
-	Help string
 }
 
 var groupsTemplate = dedent.Dedent(`
@@ -206,13 +226,13 @@ func (g groupsCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type jobsCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 var jobsTemplate = strings.Join([]string{
@@ -257,13 +277,13 @@ func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type auditCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAdmins
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (j auditCommand) Cmd() string {
@@ -301,13 +321,13 @@ func (j auditCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type lastCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 var jobTemplate = `
@@ -348,21 +368,21 @@ func (l lastCommand) Execute(job jobs.Job) (string, error) {
 	})
 }
 
-type findJob struct {
+type findJobCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
-func (l findJob) Cmd() string {
+func (l findJobCommand) Cmd() string {
 	return BuiltinFindJobCommand
 }
 
-func (l findJob) Execute(job jobs.Job) (string, error) {
+func (l findJobCommand) Execute(job jobs.Job) (string, error) {
 	id, err := parseJobID(job)
 	if err != nil {
 		return "", err
@@ -393,13 +413,13 @@ func (l findJob) Execute(job jobs.Job) (string, error) {
 }
 
 type auditJobCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAdmins
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (l auditJobCommand) Cmd() string {
@@ -407,10 +427,6 @@ func (l auditJobCommand) Cmd() string {
 }
 
 func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
-	flags := flag.NewFlagSet("auditjobs", flag.ContinueOnError)
-	if err := flags.Parse(job.Request.Args); err != nil {
-		return "", err
-	}
 	id, err := parseJobID(job)
 	if err != nil {
 		return "", err
@@ -438,14 +454,56 @@ func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
 	})
 }
 
-type tailCommand struct {
+type auditLogsCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
+}
+
+func (t auditLogsCommand) Cmd() string {
+	return BuiltinAuditLogsCommand
+}
+
+func (t auditLogsCommand) Execute(job jobs.Job) (string, error) {
+	id, err := parseJobID(job)
+	if err != nil {
+		return "", err
+	}
+
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: 1,
+		Match: func(j jobs.Job) bool {
+			return j.ID == id
+		},
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to find job with id %d: %s", id, err)
+	}
+	if len(jobs) == 0 {
+		return "", fmt.Errorf("there is no job %d", id)
+	}
+	j := jobs[0]
+
+	jobLogs, err := logs.Get(j.ID)
+	if err != nil {
+		return "", err
+	}
+	return jobLogs.Output, jobLogs.GetError()
+}
+
+type tailCommand struct {
+	help
+	noHandshake
+	noRecord
+	allowAll
+	defaultTemplates
+	emptyArgs
+	defaultTimeout
 }
 
 func (t tailCommand) Cmd() string {
@@ -477,17 +535,17 @@ func (t tailCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type logsCommand struct {
+	help
 	noHandshake
 	noRecord
 	allowAll
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
-	Help string
 }
 
 func (t logsCommand) Cmd() string {
-	return BuiltinTailCommand
+	return BuiltinLogsCommand
 }
 
 func (t logsCommand) Execute(job jobs.Job) (string, error) {

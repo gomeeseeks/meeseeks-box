@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pcarranza/meeseeks-box/config"
+	"github.com/pcarranza/meeseeks-box/db"
 	"github.com/renstrom/dedent"
 )
 
@@ -18,7 +19,7 @@ func Test_ConfigurationReading(t *testing.T) {
 		Error:   config.DefaultErrColorMessage,
 		Success: config.DefaultSuccessColorMessage,
 	}
-	defaultDatabase := config.Database{
+	defaultDatabase := db.DatabaseConfig{
 		Path:    "meeseeks.db",
 		Mode:    0600,
 		Timeout: 2 * time.Second,
@@ -82,11 +83,8 @@ func Test_ConfigurationReading(t *testing.T) {
 			config.Config{
 				Commands: map[string]config.Command{
 					"something": config.Command{
-						Cmd:          "ssh",
-						Args:         []string{"none"},
-						Timeout:      config.DefaultCommandTimeout,
-						Type:         config.ShellCommandType,
-						AuthStrategy: config.AuthStrategyNone,
+						Cmd:  "ssh",
+						Args: []string{"none"},
 					},
 				},
 				Colors:   defaultColors,

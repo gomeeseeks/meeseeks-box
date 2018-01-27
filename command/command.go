@@ -6,6 +6,11 @@ import (
 	"github.com/pcarranza/meeseeks-box/jobs"
 )
 
+// Defaults for commands
+const (
+	DefaultCommandTimeout = 60 * time.Second
+)
+
 // Command is the base interface for any command
 type Command interface {
 	Execute(job jobs.Job) (string, error)
@@ -16,5 +21,6 @@ type Command interface {
 	AllowedGroups() []string
 	Args() []string
 	Timeout() time.Duration
+	Help() string
 	Record() bool
 }
