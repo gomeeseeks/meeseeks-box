@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"sync"
 	"time"
 
 	"github.com/pcarranza/meeseeks-box/command"
@@ -46,39 +47,63 @@ func (c shellCommand) Execute(job jobs.Job) (string, error) {
 
 	cmd := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
 
-	cmdReader, err := cmd.StdoutPipe()
+	var wg sync.WaitGroup
+	wg.Add(2) // stdout and stderr
+
+	outReader, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", err
+	}
+	errReader, err := cmd.StderrPipe()
 	if err != nil {
 		return "", err
 	}
 
-	buffer := bytes.NewBufferString("")
-	teeReader := io.TeeReader(cmdReader, buffer)
-	scanner := bufio.NewScanner(teeReader)
-	go func() {
-		for scanner.Scan() {
-			line := fmt.Sprintln(scanner.Text())
-			if e := logs.Append(job.ID, line); e != nil {
-				logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
-			}
+	AppendLogs := func(line string) {
+		if e := logs.Append(job.ID, line); e != nil {
+			logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
 		}
+	}
+	SetError := func(err error) error {
+		if e := logs.SetError(job.ID, err); e != nil {
+			logrus.Errorf("Could set error to job %d: %s", job.ID, e)
+		}
+		return err
+	}
+
+	buffer := bytes.NewBufferString("")
+	outTeeReader := io.TeeReader(outReader, buffer)
+	outScanner := bufio.NewScanner(outTeeReader)
+
+	go func() {
+		for outScanner.Scan() {
+			line := fmt.Sprintln(outScanner.Text())
+			AppendLogs(line)
+		}
+		wg.Done()
+	}()
+
+	errScanner := bufio.NewScanner(errReader)
+	go func() {
+		for errScanner.Scan() {
+			line := fmt.Sprintln(errScanner.Text())
+			AppendLogs(line)
+		}
+		wg.Done()
 	}()
 
 	err = cmd.Start()
 	if err != nil {
 		logrus.Errorf("Command failed to start: %s", err)
-		if e := logs.SetError(job.ID, err); e != nil {
-			logrus.Errorf("Could set error to job %d: %s", job.ID, e)
-			return "", err
-		}
+		return "", SetError(err)
 	}
 
 	err = cmd.Wait()
+	wg.Wait()
+
 	if err != nil {
 		logrus.Errorf("Command failed to execute: %s", err)
-		if e := logs.SetError(job.ID, err); e != nil {
-			logrus.Errorf("Could set error to job %d: %s", job.ID, e)
-			return "", err
-		}
+		return "", SetError(err)
 	}
 
 	return buffer.String(), err
