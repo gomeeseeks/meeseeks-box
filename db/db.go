@@ -10,8 +10,9 @@ import (
 )
 
 var databaseConfig DatabaseConfig
+var database *bolt.DB
 
-// Database holds the configuration for the BoltDB database
+// DatabaseConfig holds the configuration for the BoltDB database
 type DatabaseConfig struct {
 	Path    string        `yaml:"path"`
 	Timeout time.Duration `yaml:"timeout"`
@@ -19,8 +20,14 @@ type DatabaseConfig struct {
 }
 
 // Configure loads the required configuration to be able of connecting to a database
-func Configure(cnf DatabaseConfig) {
+func Configure(cnf DatabaseConfig) error {
 	databaseConfig = cnf
+	db, err := open()
+	if err != nil {
+		return err
+	}
+	database = db
+	return nil
 }
 
 // Open opens a new connection to the database
@@ -44,12 +51,7 @@ func IDFromBytes(ID []byte) uint64 {
 
 // WithDB invokes the passed function with a valid DB object
 func WithDB(f func(db *bolt.DB) error) error {
-	db, err := open()
-	if err != nil {
-		return fmt.Errorf("could not open the database: %s", err)
-	}
-	defer db.Close()
-	return f(db)
+	return f(database)
 }
 
 // Update invokes the passed function with a valid open read-write transaction

@@ -40,8 +40,10 @@ func LoadFile(filename string) (Config, error) {
 }
 
 // LoadConfig loads the configuration in all the dependent subsystems
-func LoadConfig(cnf Config) {
-	db.Configure(cnf.Database)
+func LoadConfig(cnf Config) error {
+	if err := db.Configure(cnf.Database); err != nil {
+		return err
+	}
 	auth.Configure(cnf.Groups)
 
 	for name, cmd := range cnf.Commands {
@@ -55,6 +57,7 @@ func LoadConfig(cnf Config) {
 			Timeout:       cmd.Timeout * time.Second,
 		}))
 	}
+	return nil
 }
 
 // New parses the configuration from a reader into an object and returns it

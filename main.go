@@ -34,7 +34,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	config.LoadConfig(cnf)
+	if err := config.LoadConfig(cnf); err != nil {
+		log.Fatalf("Could not load configuration: %s", err)
+	}
 
 	messaging, err := messenger.Listen(messenger.MessengerOpts{
 		Debug:      *debugMode,
