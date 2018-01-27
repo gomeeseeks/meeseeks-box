@@ -20,16 +20,17 @@ import (
 
 // Builtin Commands Names
 const (
-	BuiltinVersionCommand  = "version"
-	BuiltinHelpCommand     = "help"
-	BuiltinGroupsCommand   = "groups"
-	BuiltinJobsCommand     = "jobs"
-	BuiltinFindJobCommand  = "job"
-	BuiltinAuditCommand    = "audit"
-	BuiltinAuditJobCommand = "auditjob"
-	BuiltinLastCommand     = "last"
-	BuiltinTailCommand     = "tail"
-	BuiltinLogsCommand     = "logs"
+	BuiltinVersionCommand   = "version"
+	BuiltinHelpCommand      = "help"
+	BuiltinGroupsCommand    = "groups"
+	BuiltinJobsCommand      = "jobs"
+	BuiltinFindJobCommand   = "job"
+	BuiltinAuditCommand     = "audit"
+	BuiltinAuditJobCommand  = "auditjob"
+	BuiltinAuditLogsCommand = "auditlogs"
+	BuiltinLastCommand      = "last"
+	BuiltinTailCommand      = "tail"
+	BuiltinLogsCommand      = "logs"
 )
 
 // Commands is the basic set of builtin commands
@@ -44,19 +45,22 @@ var Commands = map[string]command.Command{
 		help: help{"prints the configured groups"},
 	},
 	BuiltinJobsCommand: jobsCommand{
-		help: help{"shows the last executed jobs for the calling user"},
+		help: help{"shows the last executed jobs for the calling user, accepts -limit"},
 	},
 	BuiltinAuditCommand: auditCommand{
-		help: help{"find all jobs for all users or a specific one (admin only)"},
+		help: help{"lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter."},
+	},
+	BuiltinAuditJobCommand: auditJobCommand{
+		help: help{"shows a command metadata by job ID from any user (admin only)"},
+	},
+	BuiltinAuditLogsCommand: auditLogsCommand{
+		help: help{"shows the logs of any command by job ID (admin only)"},
 	},
 	BuiltinLastCommand: lastCommand{
 		help: help{"shows the last executed command by the calling user"},
 	},
-	BuiltinFindJobCommand: findJob{
-		help: help{"find one job"},
-	},
-	BuiltinAuditJobCommand: auditJobCommand{
-		help: help{"shows a specific command by the specified user (admin only)"},
+	BuiltinFindJobCommand: findJobCommand{
+		help: help{"find one job by id"},
 	},
 	BuiltinTailCommand: tailCommand{
 		help: help{"returns the last command output or error"},
@@ -364,7 +368,7 @@ func (l lastCommand) Execute(job jobs.Job) (string, error) {
 	})
 }
 
-type findJob struct {
+type findJobCommand struct {
 	help
 	noHandshake
 	noRecord
@@ -374,11 +378,11 @@ type findJob struct {
 	defaultTimeout
 }
 
-func (l findJob) Cmd() string {
+func (l findJobCommand) Cmd() string {
 	return BuiltinFindJobCommand
 }
 
-func (l findJob) Execute(job jobs.Job) (string, error) {
+func (l findJobCommand) Execute(job jobs.Job) (string, error) {
 	id, err := parseJobID(job)
 	if err != nil {
 		return "", err
@@ -423,10 +427,6 @@ func (l auditJobCommand) Cmd() string {
 }
 
 func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
-	flags := flag.NewFlagSet("auditjobs", flag.ContinueOnError)
-	if err := flags.Parse(job.Request.Args); err != nil {
-		return "", err
-	}
 	id, err := parseJobID(job)
 	if err != nil {
 		return "", err
@@ -452,6 +452,48 @@ func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
 	return tmpl.Render(template.Payload{
 		"job": jobs[0],
 	})
+}
+
+type auditLogsCommand struct {
+	help
+	noHandshake
+	noRecord
+	allowAll
+	defaultTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+func (t auditLogsCommand) Cmd() string {
+	return BuiltinAuditLogsCommand
+}
+
+func (t auditLogsCommand) Execute(job jobs.Job) (string, error) {
+	id, err := parseJobID(job)
+	if err != nil {
+		return "", err
+	}
+
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: 1,
+		Match: func(j jobs.Job) bool {
+			return j.ID == id
+		},
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to find job with id %d: %s", id, err)
+	}
+	if len(jobs) == 0 {
+		return "", fmt.Errorf("there is no job %d", id)
+	}
+	j := jobs[0]
+
+	jobLogs, err := logs.Get(j.ID)
+	if err != nil {
+		return "", err
+	}
+	return jobLogs.Output, jobLogs.GetError()
 }
 
 type tailCommand struct {
@@ -503,7 +545,7 @@ type logsCommand struct {
 }
 
 func (t logsCommand) Cmd() string {
-	return BuiltinTailCommand
+	return BuiltinLogsCommand
 }
 
 func (t logsCommand) Execute(job jobs.Job) (string, error) {

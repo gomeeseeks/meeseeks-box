@@ -48,12 +48,13 @@ func Test_BuiltinCommands(t *testing.T) {
 			cmd:  builtins.BuiltinHelpCommand,
 			job:  jobs.Job{},
 			expected: dedent.Dedent(`
-				- audit: find all jobs for all users or a specific one (admin only)
-				- auditjob: shows a specific command by the specified user (admin only)
+				- audit: lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter.
+				- auditjob: shows a command metadata by job ID from any user (admin only)
+				- auditlogs: shows the logs of any command by job ID (admin only)
 				- groups: prints the configured groups
 				- help: prints all the kwnown commands and its associated help
-				- job: find one job
-				- jobs: shows the last executed jobs for the calling user
+				- job: find one job by id
+				- jobs: shows the last executed jobs for the calling user, accepts -limit
 				- last: shows the last executed command by the calling user
 				- logs: returns the logs of the command id passed as argument
 				- tail: returns the last command output or error
@@ -184,6 +185,23 @@ func Test_BuiltinCommands(t *testing.T) {
 			cmd:  builtins.BuiltinLogsCommand,
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"1"}},
+			},
+			setup: func() {
+				j, err := jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "something to say 1")
+
+				j, err = jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "something to say 2")
+			},
+			expected: "something to say 1",
+		},
+		{
+			name: "test auditlogs command",
+			cmd:  builtins.BuiltinAuditLogsCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "admin_user", Args: []string{"1"}},
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
