@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"sync"
 	"time"
 
 	"github.com/pcarranza/meeseeks-box/command"
@@ -45,20 +44,6 @@ func (c shellCommand) Execute(job jobs.Job) (string, error) {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), c.Timeout())
 	defer cancelFunc()
 
-	cmd := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
-
-	var wg sync.WaitGroup
-	wg.Add(2) // stdout and stderr
-
-	outReader, err := cmd.StdoutPipe()
-	if err != nil {
-		return "", err
-	}
-	errReader, err := cmd.StderrPipe()
-	if err != nil {
-		return "", err
-	}
-
 	AppendLogs := func(line string) {
 		if e := logs.Append(job.ID, line); e != nil {
 			logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
@@ -72,24 +57,27 @@ func (c shellCommand) Execute(job jobs.Job) (string, error) {
 	}
 
 	buffer := bytes.NewBufferString("")
-	outTeeReader := io.TeeReader(outReader, buffer)
-	outScanner := bufio.NewScanner(outTeeReader)
+
+	cmd := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
+	op, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", SetError(fmt.Errorf("Could not create stdout pipe: %s", err))
+	}
+	ep, err := cmd.StderrPipe()
+	if err != nil {
+		return "", SetError(fmt.Errorf("Could not create stderr pipe: %s", err))
+	}
+
+	tr := io.TeeReader(io.MultiReader(op, ep), buffer)
+
+	done := make(chan struct{})
 
 	go func() {
-		for outScanner.Scan() {
-			line := fmt.Sprintln(outScanner.Text())
-			AppendLogs(line)
+		s := bufio.NewScanner(tr)
+		for s.Scan() {
+			AppendLogs(fmt.Sprintln(s.Text()))
 		}
-		wg.Done()
-	}()
-
-	errScanner := bufio.NewScanner(errReader)
-	go func() {
-		for errScanner.Scan() {
-			line := fmt.Sprintln(errScanner.Text())
-			AppendLogs(line)
-		}
-		wg.Done()
+		done <- struct{}{}
 	}()
 
 	err = cmd.Start()
@@ -98,11 +86,11 @@ func (c shellCommand) Execute(job jobs.Job) (string, error) {
 		return "", SetError(err)
 	}
 
-	err = cmd.Wait()
-	wg.Wait()
+	<-done
 
+	err = cmd.Wait()
 	if err != nil {
-		logrus.Errorf("Command failed to execute: %s", err)
+		logrus.Errorf("Command failed: %s", err)
 		return "", SetError(err)
 	}
 
