@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html id="html" lang="en-us">
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width"/>
+    <title>Meeseeks Box</title>
+    <meta name="description" content="You make a request. The Meeseek fulfills the request. And then it stops existing">
+    <meta name="author" content="Pablo Carranza">
+    <meta name="generator" content="Hugo 0.34" />
+    <style type="text/css">
+    body, div, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h6, pre, form, fieldset, input, textarea, p, blockquote, th, td {
+        margin: 0;
+        padding: 0;
+    }
+    * {-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;}
+    :before, :after {-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;}
+    img, object, embed {max-width: 100%; height: auto;}
+    object, embed {height: 100%;}
+    img { margin: 1.25% 0; -ms-interpolation-mode: bicubic; }
+    html {
+        background-color: #F0F1F3;
+        padding: 2%;
+    }
+    body {
+        font-size: 16px;
+        line-height: 1.6;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        color: #242424;
+        max-width: 800px;
+        margin: 5% auto;
+       
+    }
+    body::after {
+        clear: both;
+        content: "";
+        display: table;
+    }
+    header {
+        margin-bottom: 8%;
+    }
+    footer {
+        text-align: center;
+    }
+    h1, h2, h3, h4, h5, h1 a {
+        color: #263A48;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    h1, h2 {
+        font-size: 36px;
+        padding-bottom: 0.3em;
+        margin-bottom: 0.4em;
+        border-bottom: 1px solid #eee
+    }
+    h2 {
+        font-size: 22px;
+        padding-bottom: 0.6em;
+        margin-bottom: 0.6em;
+        margin-top: 2.5em;
+    }
+    h3 {
+        font-size: 18px;
+        margin-bottom: 0.3em;
+    }
+    h1 small a {
+        color: #98999C;
+        font-size: 15px;
+        font-weight: normal;
+        float: right;
+        position: absolute;
+        top: 15px;
+        right: 20px;
+    }
+    section {
+        background: #fff;
+        margin-bottom: 1%;
+        position: relative;
+        padding: 6% 8%;
+    }
+    blockquote {
+        border-left: 3px solid #d54e21;
+        font-size: 16px;
+        padding: 0 0 0 20px;
+        color: #d54e21;
+    }
+    blockquote a {
+        color: #d54e21;
+        font-weight: 500;
+    }
+    blockquote code {
+        color: #d54e21;
+    }
+    code, cite {
+        background-color: #F0F2F4;
+        border-radius: 3px;
+        color: #000;
+        font: monospace;
+        padding: 2px 7px;
+    }
+    a {
+        color: #1e8cbe;
+        text-decoration: underline;
+    }
+    a:hover {
+        color: #d54e21;
+    }
+    ul {
+        list-style: none;
+    }
+    ol {
+        list-style: number;
+    }
+    ol li {
+        color: #98999C;
+        margin-bottom: 5px;
+    }
+    ol li:last-child {
+        margin-bottom: 0;
+    }
+    p, ul, ol, blockquote  {
+        margin-bottom: 4%;
+    }
+    ul ul {
+        padding-top: 0;
+        margin-bottom: 0;
+        margin-left: 4%;
+    }
+    ul ul li:before {
+        content: '-';
+        display: inline-block;
+        padding-right: 2%;
+    }
+
+    ul.col-2 {
+        color: #98999C;
+        -webkit-column-count: 2;
+        -moz-column-count: 2;
+        column-count: 2;
+        -webkit-column-gap: 20px;
+        -moz-column-gap: 20px;
+        column-gap: 20px;
+    }
+
+    @media screen and (min-width: 500px) {
+        ul.col-2 {
+            -webkit-column-count: 3;
+            -moz-column-count: 3;
+            column-count: 3;
+            -webkit-column-gap: 20px;
+            -moz-column-gap: 20px;
+            column-gap: 20px;
+        }
+    }
+    nav {
+        background: #F0F1F3;
+        min-width: 215px;
+        margin-bottom: 5px;
+        margin-top: 15px;
+    }
+    nav:first-of-type a {
+        color: #d54e21;
+        border-radius: 0;
+    }
+    nav:first-of-type a:hover {
+        color: #d54e21;
+    }
+    nav:first-of-type a:before {
+        background-color: #d54e21;
+    }
+    nav.affix {
+        position: fixed;
+        top: 20px;
+    }
+    nav.affix-bottom {
+        position: absolute;
+    }
+    nav a {
+        border-radius: 3px;
+        font-size: 15px;
+        display: block;
+        cursor: pointer;
+        font-weight: 500;
+        position: relative;
+        text-decoration: none; 
+        padding: 10px 12px;
+        width: 100%;
+        padding-right: 3px;
+        border-bottom: 2px solid #fff;
+    }
+    nav a:before {
+        content: '';
+        width: 4px;
+        display: block;
+        left: 0;
+        position: absolute;
+        height: 100%;
+        display: none;
+        background: #1e8cbe;
+        top: 0;
+    }
+    nav a:hover {
+        background-color: #E6E8EA;
+        color: #1e8cbe;
+        text-decoration: underline;
+    }   
+    nav a:hover:before {
+        display: block;
+    }
+    nav a:last-of-type {
+        border-bottom: none;
+    }
+    .gist {
+        margin-top: 5.1%;
+        margin-bottom: 5%;
+    }
+    @media screen and (max-width: 1050px) {
+        body {
+            margin: 0 auto;
+        }
+    }
+    @media screen and (max-width: 767px) {
+        header span {
+            display: none;
+        }
+        h1 {
+            font-size: 26px;
+        }
+        h2 {
+            font-size: 20px;
+        }
+    }   
+    @media screen and (max-width: 514px) {
+        p, ul, ol, blockquote  {
+            margin-bottom: 8%;
+        }
+    }
+</style>
+</head>
+
+<body>
+    <section id="Menu">
+        <header>
+            <h1>Meeseeks Box</h1>
+            <p>You make a request. The Meeseek fulfills the request. And then it stops existing</p>
+        </header>
+        <nav>
+        
+        </nav>
+        <nav>
+        
+            <a href="#introduction">Introduction</a>
+        
+            <a href="#getting-started">Getting Started</a>
+        
+            <a href="#configuring-commands">Configuring commands</a>
+        
+        </nav>
+    </section>
+
+    
+
+    <section id="introduction">
+
+        <h1><a href="#introduction">Introduction</a><small><a href="#html">go to top</a></small></h1>
+
+        <p><a href="https://github.com/pcarranza/meeseeks-box">Meeseeks-box</a> is a ChatOps<br />
+Construction Kit that allows anyone to build your own automations following the<br />
+UNIX principle of using small tools that know how to do 1 thing right.</p>
+
+<p>In the case of the Meeseeks-Box itself, it knows how to talk to Slack, listen<br />
+for messages and dispatch jobs to be executed as if it was being executed by a<br />
+user in bash.</p>
+
+<p>The idea started when using <a href="https://github.com/operable/cog">COG</a> to automate<br />
+tasks and finding it complex or hard to build automations that could be simply<br />
+scripted in bash.</p>
+
+<h2 id="simplicity">Simplicity</h2>
+
+<p>Simplicity is key to allow anyone to start automating tasks right away. Most<br />
+systems engineers are quite comfortable creating bash scripts as tools, these<br />
+bash scripts can be used from the chat, lowering the bar to automation and<br />
+enabling other people to operate systems remotely.</p>
+
+<p>The drive for simplicity made me write this in Go, so installation is simply<br />
+downloading a binary (darwin, linux amd64 and armv6 are provided), exporting<br />
+a <code>SLACK_TOKEN</code> environment variable and start running it.</p>
+
+<p>The drive for simplicity made command registration be setting a configuration<br />
+file that points at the executable, the permissions model and the arguments<br />
+that will be included. This allows using any available command in the running<br />
+box (echo, curl, or even docker) turning the Meeseeks-Box into a glue kind of<br />
+command, like bash.</p>
+
+<p>The drive for simplicity made me use<br />
+<a href="https://github.com/coreos/bbolt">BoltDB</a> as an embedded database to not have<br />
+any dependency whatsoever to persist data right away from the start.</p>
+
+<h2 id="security-and-safety">Security and safety</h2>
+
+<p>Some commands are more dangerous than others, so every time a command is<br />
+registered it will start with a AllowNone strategy, forcing the administrator<br />
+to pick what level of security to use, other options are AllowGroup and<br />
+AllowAny.</p>
+
+<p>Some builtin commands (like the audit branch) uses AllowAdmin which requires<br />
+this group to be defined with the right users to enable using them.</p>
+
+<p>Regarding execution of commands, these are being launched with the go<br />
+<a href="https://golang.org/pkg/os/exec/#CommandContext">os/exec</a> package, setting a<br />
+60 seconds timeout by default to prevent commands from blocking forever,<br />
+eventually starving the box.</p>
+
+<p>This package internally uses <code>os.StartProcess</code>, which evetually derives in<br />
+the system calls <code>fork</code> and <code>exec</code>. This is safer than the classic <code>system</code><br />
+approach as it prevents a final user from injecting commands with colons into<br />
+the argument list.</p>
+
+<p>Executed jobs are always recorded, the command, arguments, start and finish<br />
+dates are recorded, along with the outputed logs, both on stdout and stderr,<br />
+and the final error returned by the execution. These logs are available<br />
+throught the <code>jobs</code> and <code>logs</code> commands to list the executed jobs and show<br />
+the output, or <code>last</code> and <code>tail</code> if you just want to see the last recorded<br />
+job.</p>
+
+<h2 id="flexibility">Flexibility</h2>
+
+<p>Because any command can be used to build automations users are allowed to<br />
+build their ChatOps experience with the tools that are better suited for them.</p>
+
+<p>So, you could:</p>
+
+<ul>
+<li>Invoke a remote API using <code>curl</code><br /></li>
+<li>Use a client tool such like <code>consul</code> or <code>kubectl</code> that will allow you to manage much more complex services.<br /></li>
+<li>Create one docker container per command by using the <code>docker</code> command.<br /></li>
+<li>Invoke bash scripts that perform complex operations.<br /></li>
+<li>In the future, create specific clients using the GRPC API.<br />
+<br /></li>
+</ul>
+
+<p>This is thought as glue, so you can build your own experience, according to your needs.</p>
+
+<h2 id="execution-locallity">Execution Locallity</h2>
+
+<p>Sometimes you need your script, or tool, to be executed in a specific<br />
+location. Imagine that you have a fleet composed by many hosts, and that you<br />
+need to run a command on every of the hosts that are in a specific tier.<br />
+Now imagine that you have one Meeseeks-Box talking to Slack, and that you<br />
+have one Meeseeks-Box running on each of the hosts of the fleet, each one<br />
+with labels that identify where are they, or what their role is.</p>
+
+<p>Now imagine that you can invoke a command to be executed in every host that<br />
+matches a label search from slack by issuing <code>@meeseeks command -labels
+tier=frontend,type=web args</code> and that this will issue the command execution<br />
+local to the host that you need to be running the command.</p>
+
+<p>No more complex and insecure ssh setups.</p>
+
+<h2 id="api">API</h2>
+
+<p>By adding a secure API other tools (like prometheus alert manager) can also<br />
+integrate with the meeseeks box, turning this tool in the genesis of<br />
+auto-remediation.</p>
+
+
+    </section>
+
+    
+
+    <section id="getting-started">
+
+        <h1><a href="#getting-started">Getting Started</a><small><a href="#html">go to top</a></small></h1>
+
+        <h2 id="installation">Installation</h2>
+
+<p>Following the simplicity tenet, installation is as simple as picking the right binary from the releases page, unpack with tar.gz and just launch.</p>
+
+<p>The only requirement is to have a valid slack token which can be obtained creating a bot user in <a href="https://my.slack.com/services/new/bot">Slack</a> and then passing it in a SLACK_TOKEN environment variable.</p>
+
+<h2 id="running-with-docker">Running with Docker</h2>
+
+<p>Docker images for both amd64 and armv6 are provided. To launch a meeseeks box just create the environment variables file, copy the configuration file and run with</p>
+
+<pre><code class="language-sh">docker run -it --rm \
+  --env-file %(pwd)/environment \
+  -v $(pwd)/meeseeks-box.yaml:/meeseeks.yaml \
+  pcarranza/meeseeks-box \
+  -config /meeseeks.yaml
+</code></pre>
+
+<h2 id="running-within-kubernetes">Running within kubernetes</h2>
+
+<p>Because docker images are provided, it&rsquo;s trivial to run a meeseeks-box inside a kubernetes cluster. The steps are as follow:</p>
+
+<ol>
+<li>Create the a token secret file with <code>echo -n &lt;SLACK_TOKEN&gt; &gt; slack-token</code><br /></li>
+<li>Load the token in kubernetes <code>kubectl create secret generic slack-token --from-file=./slack-token</code><br /></li>
+<li>Create the config map using the provided sample <code>kubectl create -f kubernetes/config-map.yml</code><br /></li>
+<li>Create the meeseeks deployment using the provided file <code>kubectl create -f kubernetes/deployment.yml</code><br />
+<br /></li>
+</ol>
+
+<h3 id="running-on-raspberrypi">Running on raspberrypi</h3>
+
+<p>To run on a raspberripy cluster you only need to change the container image to <code>pcarranza/meeseeks-box-armv6</code></p>
+
+<h2 id="starting-to-use-the-meeseeks-box">Starting to use the meeseeks-box</h2>
+
+<p>Once the process is running and you got <code>INFO[0000] Listening messages</code> printed out, you could simply invite your bot to any channel, or just open a direct DM conversation with it.</p>
+
+<p>If you are talking in a public channel you will need to start any message with the bot handle for it to pay attention to you, if you are talking in DM you don&rsquo;t need to say the name.</p>
+
+<p>Go ahead and try issuing <code>help</code> to get a list of commands supported, or <code>version</code> to see what version have you installed.</p>
+
+
+    </section>
+
+    
+
+    <section id="configuring-commands">
+
+        <h1><a href="#configuring-commands">Configuring commands</a><small><a href="#html">go to top</a></small></h1>
+
+        <h2 id="configuring-commands">Configuring Commands</h2>
+
+<p>Simply add those commands to the yaml configuration file, like this:</p>
+
+<pre><code class="language-yaml">---
+commands:
+  echo:
+    command: &quot;echo&quot;
+      auth_strategy: any
+      timeout: 5
+      help: command that prints back the arguments passed
+</code></pre>
+
+<p>Add as many commands as you need, with the only caveat tha they each command needs to have a different name.</p>
+
+<p>To invoke this command you will need to restart the process (still no hot configuration reloaded supported) and then write <code>@bot-name echo argument1 argument2</code> in a channel where the bot has already been invited.</p>
+
+<p>When invoking this command, the execution will be translated into calling the <code>echo</code> binary, passing through the arguments the user wrote in slack.</p>
+
+<p>As stated before, the <code>command</code> has to be an executable, it has to be inside the path and can only be a single word.</p>
+
+<h3 id="options">Options</h3>
+
+<p>A command can be configured the following way:</p>
+
+<ul>
+<li><code>command</code>: the command to execute<br /></li>
+<li><code>args</code>: list of arguments to always prepend to the command<br /></li>
+<li><code>timeout</code>: how long we allow the command to run until we cancel it, in<br />
+seconds, 60 by default<br /></li>
+<li><code>auth_strategy</code>: defined the authorization strategy<br />
+
+<ul>
+<li><code>any</code>: everyone will be allowed to run this command<br /></li>
+<li><code>none</code>: no user will be allowed to run this command (default value,<br />
+permissions have to be explicit and conscious)<br /></li>
+<li><code>group</code>: use <code>allowed_groups</code> to control who has access to this command<br /></li>
+</ul></li>
+<li><code>allowed_groups</code>: list of groups allowed to run this command<br /></li>
+<li><code>help</code>: help to be printed when using the builtin <code>help</code> command<br /></li>
+<li><code>templates</code>: adds the capacity to change how the replies from this command<br />
+are represented, check the Templating help for more details.<br />
+<br /></li>
+</ul>
+
+<h3 id="a-slightly-more-complex-example">A slightly more complex example</h3>
+
+<p>Running a command with docker, for example, would look like this</p>
+
+<pre><code>groups:
+  docker: [&quot;pablo&quot;]
+commands:
+  run-command:
+    command: docker
+    args:
+      - &quot;run&quot;
+      - &quot;-it&quot;
+      - &quot;--rm&quot;
+      - &quot;container-image:latest&quot;
+    auth_strategy: group
+    allowed_groups: [&quot;docker&quot;]
+    help: &quot;Run the container-image docker image passing arguments in&quot;
+</code></pre>
+
+<p>This will launch a container image every time the command in invoked.</p>
+
+
+    </section>
+
+    
+
+</body>
+</html>
