@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meeseeks
+data:
+  meeseeks.yml : |-
+    groups:
+      admin: ["pablo"]
+    database:
+      path: /var/lib/meeseeks/meeseeks.db
+    commands:
+      echo:
+        command: "echo"
+        auth_strategy: any
+        timeout: 5
+        help: "command that prints back the arguments passed"
