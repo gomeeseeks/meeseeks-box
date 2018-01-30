@@ -252,18 +252,22 @@
         
             <a href="#getting-started">Getting Started</a>
         
-            <a href="#configuring-commands">Configuring commands</a>
+            <a href="#configuring-shell-commands">Configuring Shell Commands</a>
+        
+            <a href="#auditory-commands-family">Auditory Commands Family</a>
         
         </nav>
     </section>
-
     
-
+    
+    
     <section id="introduction">
 
-        <h1><a href="#introduction">Introduction</a><small><a href="#html">go to top</a></small></h1>
+        <h1><a href="#introduction">Introduction</a><small><a href="#html">back to top</a></small></h1>
 
-        <p><a href="https://github.com/pcarranza/meeseeks-box">Meeseeks-box</a> is a ChatOps<br />
+        
+
+<p><a href="https://github.com/pcarranza/meeseeks-box">Meeseeks-box</a> is a ChatOps<br />
 Construction Kit that allows anyone to build your own automations following the<br />
 UNIX principle of using small tools that know how to do 1 thing right.</p>
 
@@ -365,14 +369,16 @@ auto-remediation.</p>
 
 
     </section>
-
     
-
+    
+    
     <section id="getting-started">
 
-        <h1><a href="#getting-started">Getting Started</a><small><a href="#html">go to top</a></small></h1>
+        <h1><a href="#getting-started">Getting Started</a><small><a href="#html">back to top</a></small></h1>
 
-        <h2 id="installation">Installation</h2>
+        
+
+<h2 id="installation">Installation</h2>
 
 <p>Following the simplicity tenet, installation is as simple as picking the right binary from the releases page, unpack with tar.gz and just launch.</p>
 
@@ -415,14 +421,14 @@ auto-remediation.</p>
 
 
     </section>
-
     
+    
+    
+    <section id="configuring-shell-commands">
 
-    <section id="configuring-commands">
+        <h1><a href="#configuring-shell-commands">Configuring Shell Commands</a><small><a href="#html">back to top</a></small></h1>
 
-        <h1><a href="#configuring-commands">Configuring commands</a><small><a href="#html">go to top</a></small></h1>
-
-        <h2 id="configuring-commands">Configuring Commands</h2>
+        
 
 <p>Simply add those commands to the yaml configuration file, like this:</p>
 
@@ -443,7 +449,7 @@ commands:
 
 <p>As stated before, the <code>command</code> has to be an executable, it has to be inside the path and can only be a single word.</p>
 
-<h3 id="options">Options</h3>
+<h2 id="options">Options</h2>
 
 <p>A command can be configured the following way:</p>
 
@@ -471,14 +477,13 @@ are represented, check the Templating help for more details.<br />
 
 <p>Running a command with docker, for example, would look like this</p>
 
-<pre><code>groups:
+<pre><code class="language-yaml">groups:
   docker: [&quot;pablo&quot;]
 commands:
   run-command:
     command: docker
     args:
       - &quot;run&quot;
-      - &quot;-it&quot;
       - &quot;--rm&quot;
       - &quot;container-image:latest&quot;
     auth_strategy: group
@@ -488,9 +493,176 @@ commands:
 
 <p>This will launch a container image every time the command in invoked.</p>
 
+<h3 id="environment-variables">Environment variables</h3>
+
+<p>Environment variables defined when launching the process will percolate to<br />
+the executed shell processes. This is so because of the fork/exec model and<br />
+because it is how Unix works.</p>
+
+<p>This can be particularly useful to define secrets and other process<br />
+configurations following the 12 factor app model.</p>
+
+<p>A caveat is that no environment variable will be expanded when calling a<br />
+command, so if a command is defined such that an argument is an environment<br />
+variable it will simply not work. If you need to use environment variables to<br />
+call a specific executable somehow consider wrapping it with a bash command<br />
+where the expansion will happen.</p>
+
 
     </section>
+    
+    
+    
+    <section id="auditory-commands-family">
 
+        <h1><a href="#auditory-commands-family">Auditory Commands Family</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Following the security tenet, the Meeseeks box provides a set of builtin<br />
+commands that allow any user to control the commands that were executed in<br />
+the past.</p>
+
+<p>These auditory commands can be split into 2 main groups, one that allows the<br />
+invoking user to check jobs launched by himself, and another that allows an<br />
+administrator to check commands that were called by all users, or one in<br />
+particular.</p>
+
+<h2 id="user-commands">User Commands</h2>
+
+<p>The set of commands that control a job are:</p>
+
+<h3 id="jobs"><code>jobs</code></h3>
+
+<p>This command will print the last 5 jobs that were invoked by the calling user.</p>
+
+<p>It supports the <code>-limit</code> argument to extend or shorten how many jobs are shown.</p>
+
+<p>Sample:</p>
+
+<blockquote>
+<p>pablo [2:13 PM]<br />
+@marvin jobs<br />
+marvin APP [2:13 PM]<br />
+@pablo Spend a few thousand million years in a job and eventually you get<br />
+promoted, I have my own bucket now. Finally, I am somebody.<br />
+<em>58</em> - 18 hours ago - <em>docker-ps</em> by <em>pablo</em> in <em>DM</em> - <em>Successful</em><br />
+<em>57</em> - 18 hours ago - <em>docker-images</em> by <em>pablo</em> in <em>DM</em> - <em>Successful</em><br />
+<em>56</em> - 18 hours ago - <em>docker-pull</em> by <em>pablo</em> in <em>DM</em> - <em>Failed</em><br />
+<em>55</em> - 18 hours ago - <em>df</em> by <em>pablo</em> in <em>DM</em> - <em>Failed</em></p>
+</blockquote>
+
+<h3 id="job"><code>job</code></h3>
+
+<p>This command will print the details of a job. It requires the user to send a job id.</p>
+
+<p>Sample:</p>
+
+<blockquote>
+<p>pablo [2:16 PM]<br />
+@marvin job 58<br />
+marvin APP [2:16 PM]<br />
+@pablo I know. Wretched, isn’t it?<br />
+* <em>ID</em> 58<br />
+* <em>Status</em> Successful<br />
+* <em>Command</em> docker-ps<br />
+* <em>Where</em> IM<br />
+* <em>When</em> 18 hours ago</p>
+</blockquote>
+
+<p>This command will also print other information like the arguments that were<br />
+passed in, in the case they are available.</p>
+
+<h3 id="logs"><code>logs</code></h3>
+
+<p>Given a job id, this command will print the recorded output of the job.</p>
+
+<p>It important to realize that any command executed will be recorded, for good,<br />
+and this output can always be extracted. This is particularly useful because<br />
+it can turn the Meeseeks into a production log.</p>
+
+<p>The way this command looks like is exactly the same as when a command<br />
+finishes execution.</p>
+
+<h3 id="last"><code>last</code></h3>
+
+<p>Last is equivalent to run <code>job</code> with the last job id available for the user.</p>
+
+<p>This command can be useful to see the status of the last invoked job.</p>
+
+<h3 id="tail"><code>tail</code></h3>
+
+<p>Tail is equivalent to run <code>logs</code> with the last job id available for the user.</p>
+
+<p>Because jobs stream the logs to the meeseeks storage this can be particularly<br />
+useful to monitor the current state of a job, even before it finishes.</p>
+
+<p>In future releases <code>tail</code> will be improved to only return N lines of the logs<br />
+instead of it all, and there will also be a <code>head</code> command to do the exact<br />
+opposite.</p>
+
+<h2 id="admin-commands">Admin Commands</h2>
+
+<p>Admin commands are equivalent to the user commands, with the caveat that they<br />
+don&rsquo;t filter by the calling user but return jobs or logs from any user.</p>
+
+<p>Becase he amount of data extracted this way can be a bit daunting, by default<br />
+all the listing commands will only return 5 lines unless <code>-limit X</code> is passed.<br />
+ This command also allows to filter by a particular user with <code>-user X</code>.</p>
+
+<h3 id="audit"><code>audit</code></h3>
+
+<p>Admin command that behaves like <code>jobs</code> but returns the unfiltered list of users.</p>
+
+<p>Use <code>-limit</code> and <code>-user</code> to filter away.</p>
+
+<h3 id="auditjob"><code>auditjob</code></h3>
+
+<p>Requires a job ID, behaves the same way as <code>jobs</code> but without the limitation<br />
+of filtering the job by the calling user.</p>
+
+<h3 id="auditlogs"><code>auditlogs</code></h3>
+
+<p>Requires a job ID, behaves the same way as <code>logs</code> but without the limitation<br />
+of filtering the job by the calling user.</p>
+
+<h2 id="not-recorded-commands">Not recorded commands</h2>
+
+<ul>
+<li>Builtin commands are not recorded, on purpose (they would simply be noise)<br /></li>
+<li>Rejected commands are not recorded.<br />
+<br /></li>
+</ul>
+
+<h2 id="a-note-about-privacy">A note about privacy</h2>
+
+<p>A side effect of how Slack behaves when searching for channels led to avoiding<br />
+leaking private conversations.</p>
+
+<p>This happens when a direct conversation in between more than one person and<br />
+the meeseeks takes place, the meeseeks will record the job, and it will<br />
+record the channel id.</p>
+
+<p>But when an admin requests the job list through the <code>audit</code> command, the job<br />
+will try to extract the channel description to show it to the admin. In some<br />
+cases this will not be possible. Particularly when the admin user does not<br />
+have access to the channel because it&rsquo;s not invited to it. When this happens<br />
+the query will return an error and this error will be handled by presenting<br />
+the channel as <strong>unknown-channel</strong>.</p>
+
+<p>If the user has access, then the channel will be presented in the form of<br />
+<strong>#@invitee1,invetee2,etc</strong>, this channel will be a link that can be clicked<br />
+*and can take him to the conversation.</p>
+
+<p>This started as a way of handling the error, but for the sake of privacy it<br />
+is left this way because it makes sense.</p>
+
+<p>This means that an admin is able to see the command details, or the logs, but<br />
+it will not be able to see who was in the private channel.</p>
+
+
+    </section>
+    
     
 
 </body>
