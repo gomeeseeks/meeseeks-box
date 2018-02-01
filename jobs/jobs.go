@@ -108,6 +108,18 @@ type JobFilter struct {
 	Match func(Job) bool
 }
 
+// MultiMatch builds a Match function from a list of Match functions
+func MultiMatch(matchers ...func(Job) bool) func(Job) bool {
+	return func(job Job) bool {
+		for _, matcher := range matchers {
+			if !matcher(job) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
 // Find will walk through the values on the jobs bucket and will apply the Match function
 // to determine if the job matches a search criteria.
 //

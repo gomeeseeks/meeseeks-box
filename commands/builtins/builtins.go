@@ -261,13 +261,10 @@ func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 	requestedStatus := strings.Title(*status)
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: *limit,
-		Match: func(j jobs.Job) bool {
-			if requestedStatus == "" {
-				return callingUser == j.Request.Username
-			}
-			return j.Status == requestedStatus &&
-				callingUser == j.Request.Username
-		},
+		Match: jobs.MultiMatch(
+			isUser(callingUser),
+			isStatusOrEmpty(requestedStatus),
+		),
 	})
 
 	if err != nil {
@@ -354,10 +351,7 @@ func (l lastCommand) Execute(job jobs.Job) (string, error) {
 	callingUser := job.Request.Username
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
-		Match: func(j jobs.Job) bool {
-			return j.Request.Username == callingUser &&
-				j.Request.Command != BuiltinLastCommand
-		},
+		Match: isUser(callingUser),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to get the last job: %s", err)
@@ -397,10 +391,9 @@ func (l findJobCommand) Execute(job jobs.Job) (string, error) {
 	callingUser := job.Request.Username
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
-		Match: func(j jobs.Job) bool {
-			return j.Request.Username == callingUser &&
-				j.ID == id
-		},
+		Match: jobs.MultiMatch(
+			isUser(callingUser),
+			isJobID(id)),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to get the last job: %s", err)
@@ -440,9 +433,7 @@ func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
 
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
-		Match: func(j jobs.Job) bool {
-			return j.ID == id
-		},
+		Match: isJobID(id),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to get job %d: %s", job.ID, err)
@@ -482,9 +473,7 @@ func (t auditLogsCommand) Execute(job jobs.Job) (string, error) {
 
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
-		Match: func(j jobs.Job) bool {
-			return j.ID == id
-		},
+		Match: isJobID(id),
 	})
 
 	if err != nil {
@@ -520,10 +509,7 @@ func (t tailCommand) Execute(job jobs.Job) (string, error) {
 	callingUser := job.Request.Username
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
-		Match: func(j jobs.Job) bool {
-			return j.Request.Username == callingUser &&
-				j.Request.Command != BuiltinTailCommand
-		},
+		Match: isUser(callingUser),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to get the last job: %s", err)
@@ -563,10 +549,9 @@ func (t logsCommand) Execute(job jobs.Job) (string, error) {
 	callingUser := job.Request.Username
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
-		Match: func(j jobs.Job) bool {
-			return j.Request.Username == callingUser &&
-				j.ID == id
-		},
+		Match: jobs.MultiMatch(
+			isUser(callingUser),
+			isJobID(id)),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to find job with id %d: %s", id, err)
@@ -593,4 +578,25 @@ func parseJobID(job jobs.Job) (uint64, error) {
 	}
 
 	return id, nil
+}
+
+func isUser(username string) func(jobs.Job) bool {
+	return func(j jobs.Job) bool {
+		return j.Request.Username == username
+	}
+}
+
+func isJobID(jobID uint64) func(jobs.Job) bool {
+	return func(j jobs.Job) bool {
+		return j.ID == jobID
+	}
+}
+
+func isStatusOrEmpty(status string) func(jobs.Job) bool {
+	return func(j jobs.Job) bool {
+		if status == "" {
+			return true
+		}
+		return j.Status == status
+	}
 }
