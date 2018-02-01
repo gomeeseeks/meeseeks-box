@@ -252,15 +252,21 @@ func (j jobsCommand) Cmd() string {
 func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
 	limit := flags.Int("limit", 5, "how many jobs to return")
+	status := flags.String("status", "", "filter jobs per status (running, failed or successful)")
 	if err := flags.Parse(job.Request.Args); err != nil {
 		return "", err
 	}
 
 	callingUser := job.Request.Username
+	requestedStatus := strings.Title(*status)
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: *limit,
 		Match: func(j jobs.Job) bool {
-			return callingUser == j.Request.Username
+			if requestedStatus == "" {
+				return callingUser == j.Request.Username
+			}
+			return j.Status == requestedStatus &&
+				callingUser == j.Request.Username
 		},
 	})
 
