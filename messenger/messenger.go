@@ -10,7 +10,7 @@ import (
 // Messenger handles multiple message sources
 type Messenger struct {
 	*slack.Client
-	MessagesCh chan message.Message
+	messagesCh chan message.Message
 }
 
 type MessengerOpts struct {
@@ -29,10 +29,14 @@ func Listen(opts MessengerOpts) (*Messenger, error) {
 
 	return &Messenger{
 		Client:     client,
-		MessagesCh: slackMessagesCh,
+		messagesCh: slackMessagesCh,
 	}, nil
 }
 
+func (m *Messenger) MessagesCh() chan message.Message {
+	return m.messagesCh
+}
+
 func (m *Messenger) Shutdown() {
-	close(m.MessagesCh)
+	close(m.messagesCh)
 }

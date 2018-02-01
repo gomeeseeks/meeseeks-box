@@ -12,6 +12,7 @@ import (
 
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -26,7 +27,8 @@ type SentMessage struct {
 
 // Harness is a builder that helps out testing meeseeks
 type Harness struct {
-	cnf string
+	cnf    string
+	dbpath string
 }
 
 // NewHarness returns a new empty harness
@@ -50,11 +52,28 @@ func (h Harness) WithConfig(c string) Harness {
 	return h
 }
 
+// WithDB provides a dabatase filepath for the testing harness
+func (h Harness) WithDBPath(dbpath string) Harness {
+	h.dbpath = dbpath
+	return h
+}
+
 // Build creates a clientStub and a configuration based on the provided one
-func (h Harness) Build() (ClientStub, config.Config) {
+func (h Harness) Load() (ClientStub, config.Config) {
 	c, err := config.New(strings.NewReader(h.cnf))
 	if err != nil {
 		log.Fatalf("Could not build test harness: %s", err)
+	}
+	if h.dbpath != "" {
+		c.Database = db.DatabaseConfig{
+			Path:    h.dbpath,
+			Mode:    0600,
+			Timeout: 2 * time.Second,
+		}
+	}
+	if err := config.LoadConfig(c); err != nil {
+		fmt.Printf("Failed to load configuration: %s", err)
+		return ClientStub{}, c
 	}
 	return newClientStub(), c
 }
@@ -64,26 +83,33 @@ func (h Harness) Build() (ClientStub, config.Config) {
 //
 // It implements the Client interface
 type ClientStub struct {
-	Messages chan SentMessage
+	MessagesSent     chan SentMessage
+	receivedMessages chan message.Message
 }
 
 // NewClientStub returns a new empty but intialized Client stub
 func newClientStub() ClientStub {
 	return ClientStub{
-		Messages: make(chan SentMessage),
+		MessagesSent:     make(chan SentMessage),
+		receivedMessages: make(chan message.Message),
 	}
 }
 
 // Reply implements the meeseeks.Client.Reply interface
 func (c ClientStub) Reply(text, color, channel string) error {
-	c.Messages <- SentMessage{Text: text, Color: color, Channel: channel}
+	c.MessagesSent <- SentMessage{Text: text, Color: color, Channel: channel}
 	return nil
 }
 
 // ReplyIM implements the meeseeks.Client.ReplyIM interface
 func (c ClientStub) ReplyIM(text, color, user string) error {
-	c.Messages <- SentMessage{Text: text, Color: color, Channel: user, IsIM: true}
+	c.MessagesSent <- SentMessage{Text: text, Color: color, Channel: user, IsIM: true}
 	return nil
+}
+
+// MessagesCh implements meeseeks.Client.MessagesCh interface
+func (c ClientStub) MessagesCh() chan message.Message {
+	return c.receivedMessages
 }
 
 // MessageStub is a simple stub that implements the Slack.Message interface
@@ -148,18 +174,21 @@ func Must(t *testing.T, message string, err error, additionalDetails ...string) 
 }
 
 // WithTmpDB creates a temporary database in which to run persistence tests
-func WithTmpDB(f func()) error {
+func WithTmpDB(f func(dbpath string)) error {
 	tmpdir, err := ioutil.TempDir("", "meeseeks")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(tmpdir)
 
+	dbpath := path.Join(tmpdir, "meeseeks.db")
 	db.Configure(db.DatabaseConfig{
-		Path:    path.Join(tmpdir, "meeseeks.db"),
+		Path:    dbpath,
 		Mode:    0600,
-		Timeout: time.Second * 1,
+		Timeout: 1 * time.Second,
 	})
-	f()
+
+	f(dbpath)
+
 	return nil
 }

@@ -218,7 +218,7 @@ func Test_BuiltinCommands(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
+			stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func(_ string) {
 				if tc.setup != nil {
 					tc.setup()
 				}
@@ -236,7 +236,7 @@ func Test_BuiltinCommands(t *testing.T) {
 }
 
 func Test_FilterJobsAudit(t *testing.T) {
-	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func() {
+	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func(_ string) {
 		r1 := request.Request{
 			Command:     "command",
 			Channel:     "general",

@@ -21,6 +21,10 @@ type DatabaseConfig struct {
 
 // Configure loads the required configuration to be able of connecting to a database
 func Configure(cnf DatabaseConfig) error {
+	if database != nil { // Close the database if it is currently open. This is probably candidate for a mutex
+		database.Close()
+	}
+
 	databaseConfig = cnf
 	db, err := open()
 	if err != nil {
@@ -92,4 +96,12 @@ func NextSequenceFor(bucketID []byte, tx *bolt.Tx) (uint64, *bolt.Bucket, error)
 		return 0, nil, err
 	}
 	return sequence, bucket, nil
+}
+
+// Close closes the database
+func Close() error {
+	if database == nil {
+		return nil
+	}
+	return database.Close()
 }

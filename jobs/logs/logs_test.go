@@ -45,7 +45,7 @@ func Test_Logs(t *testing.T) {
 			},
 		},
 	}
-	stubs.WithTmpDB(func() {
+	stubs.WithTmpDB(func(_ string) {
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
 				for _, line := range tc.logs {
@@ -64,14 +64,14 @@ func Test_Logs(t *testing.T) {
 }
 
 func Test_GetLoglessJob(t *testing.T) {
-	stubs.WithTmpDB(func() {
+	stubs.WithTmpDB(func(_ string) {
 		_, err := logs.Get(1)
 		stubs.AssertEquals(t, logs.ErrNoLogsForJob, err)
 	})
 }
 
 func Test_ErredOutJobHasError(t *testing.T) {
-	stubs.WithTmpDB(func() {
+	stubs.WithTmpDB(func(_ string) {
 		logs.SetError(1, errors.New("nasty error"))
 		l, err := logs.Get(1)
 		stubs.Must(t, "should be able to get a job with only an error", err)

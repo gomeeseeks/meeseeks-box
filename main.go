@@ -47,7 +47,7 @@ func main() {
 	}
 
 	meeseek := meeseeks.New(messaging, cnf)
-	go meeseek.Start(messaging.MessagesCh)
+	go meeseek.Start()
 
 	signalCh := make(chan os.Signal)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)

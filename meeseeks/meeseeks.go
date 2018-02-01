@@ -20,6 +20,7 @@ import (
 type Client interface {
 	Reply(text, color, channel string) error
 	ReplyIM(text, color, user string) error
+	MessagesCh() chan message.Message
 }
 
 // Meeseeks is the command execution engine
@@ -56,8 +57,8 @@ func New(client Client, conf config.Config) *Meeseeks {
 }
 
 // Start launches the meeseeks to read messages from the MessageCh
-func (m *Meeseeks) Start(messageCh chan message.Message) {
-	for msg := range messageCh {
+func (m *Meeseeks) Start() {
+	for msg := range m.client.MessagesCh() {
 		req, err := request.FromMessage(msg)
 		if err != nil {
 			log.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)

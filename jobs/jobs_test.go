@@ -15,14 +15,14 @@ var req = request.Request{
 }
 
 func Test_GettingAJobWorksWhenEmpty(t *testing.T) {
-	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func(_ string) {
 		_, err := jobs.Get(1)
 		stub.AssertEquals(t, "no job could be found", err.Error())
 	}))
 }
 
 func Test_GettingJobsWorksWhenEmpty(t *testing.T) {
-	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func(_ string) {
 		js, err := jobs.Find(jobs.JobFilter{
 			Limit: 10,
 			Match: func(_ jobs.Job) bool {
@@ -35,7 +35,7 @@ func Test_GettingJobsWorksWhenEmpty(t *testing.T) {
 }
 
 func Test_CreatingAndThenGettingAJob(t *testing.T) {
-	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func(_ string) {
 		expected, err := jobs.Create(req)
 		stub.Must(t, "Could not store a job: ", err)
 
@@ -47,7 +47,7 @@ func Test_CreatingAndThenGettingAJob(t *testing.T) {
 }
 
 func Test_MarkSuccessFul(t *testing.T) {
-	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func(_ string) {
 		job, err := jobs.Create(req)
 		stub.Must(t, "Could not store a job: ", err)
 
@@ -65,7 +65,7 @@ func Test_MarkSuccessFul(t *testing.T) {
 }
 
 func Test_MarkSuccessFulWithRunningEndStateFails(t *testing.T) {
-	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func(_ string) {
 		job, err := jobs.Create(req)
 		stub.Must(t, "Could not store a job: ", err)
 
@@ -77,7 +77,7 @@ func Test_MarkSuccessFulWithRunningEndStateFails(t *testing.T) {
 }
 
 func Test_FilterReturnsInOrder(t *testing.T) {
-	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func(_ string) {
 		jobs.Create(req)
 		jobs.Create(req)
 		jobs.Create(req)
@@ -93,7 +93,7 @@ func Test_FilterReturnsInOrder(t *testing.T) {
 }
 
 func Test_FilterReturnsEnough(t *testing.T) {
-	stub.Must(t, "failed to run tests", stub.WithTmpDB(func() {
+	stub.Must(t, "failed to run tests", stub.WithTmpDB(func(_ string) {
 		jobs.Create(req)
 		jobs.Create(req)
 
