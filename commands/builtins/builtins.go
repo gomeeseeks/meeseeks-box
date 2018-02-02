@@ -236,13 +236,17 @@ type jobsCommand struct {
 }
 
 var jobsTemplate = strings.Join([]string{
+	"{{- $length := len .jobs }}{{- if eq $length 0 }}",
+	"No jobs found\n",
+	"{{ else }}",
 	"{{- range $job := .jobs }}",
 	"*{{ $job.ID }}* - {{ HumanizeTime $job.StartTime }}",
 	" - *{{ $job.Request.Command }}*",
 	" by *{{ $job.Request.Username }}*",
 	" in *{{ if $job.Request.IsIM }}DM{{ else }}{{ $job.Request.ChannelLink }}{{ end }}*",
 	" - *{{ $job.Status }}*\n",
-	"{{end}}",
+	"{{ end }}",
+	"{{ end }}",
 }, "")
 
 func (j jobsCommand) Cmd() string {
