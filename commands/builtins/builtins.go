@@ -236,13 +236,17 @@ type jobsCommand struct {
 }
 
 var jobsTemplate = strings.Join([]string{
+	"{{- $length := len .jobs }}{{- if eq $length 0 }}",
+	"No jobs found\n",
+	"{{ else }}",
 	"{{- range $job := .jobs }}",
 	"*{{ $job.ID }}* - {{ HumanizeTime $job.StartTime }}",
 	" - *{{ $job.Request.Command }}*",
 	" by *{{ $job.Request.Username }}*",
 	" in *{{ if $job.Request.IsIM }}DM{{ else }}{{ $job.Request.ChannelLink }}{{ end }}*",
 	" - *{{ $job.Status }}*\n",
-	"{{end}}",
+	"{{ end }}",
+	"{{ end }}",
 }, "")
 
 func (j jobsCommand) Cmd() string {
@@ -297,18 +301,24 @@ func (j auditCommand) Execute(job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("audit", flag.ContinueOnError)
 	limit := flags.Int("limit", 5, "how many jobs to return")
 	user := flags.String("user", "", "the user to audit")
+	status := flags.String("status", "", "filter jobs per status (running, failed or successful)")
 	if err := flags.Parse(job.Request.Args); err != nil {
 		return "", err
 	}
 
+	requestedStatus := strings.Title(*status)
+
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: *limit,
-		Match: func(j jobs.Job) bool {
-			if *user == "" {
-				return true
-			}
-			return *user == j.Request.Username
-		},
+		Match: jobs.MultiMatch(
+			isStatusOrEmpty(requestedStatus),
+			func(j jobs.Job) bool {
+				if *user == "" {
+					return true
+				}
+				return *user == j.Request.Username
+			},
+		),
 	})
 
 	if err != nil {
