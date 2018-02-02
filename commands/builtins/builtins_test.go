@@ -31,11 +31,12 @@ func Test_BuiltinCommands(t *testing.T) {
 	auth.Configure(basicGroups)
 
 	tt := []struct {
-		name     string
-		cmd      string
-		job      jobs.Job
-		setup    func()
-		expected string
+		name          string
+		cmd           string
+		job           jobs.Job
+		setup         func()
+		expected      string
+		expectedMatch string
 	}{
 		{
 			name:     "version command",
@@ -58,6 +59,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				- last: shows the last executed command by the calling user
 				- logs: returns the logs of the command id passed as argument
 				- tail: returns the last command output or error
+				- token-new: creates a new API token for the calling user, channel and command with args, requires at least #channel and command
 				- version: prints the running meeseeks version
 				`),
 		},
@@ -214,6 +216,14 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			expected: "something to say 1",
 		},
+		{
+			name: "test token-new command",
+			cmd:  builtins.BuiltinNewAPITokenCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "admin_user", IsIM: true, Args: []string{"yolo", "rm", "-rf"}},
+			},
+			expectedMatch: "created token .*",
+		},
 	}
 
 	for _, tc := range tt {
@@ -229,7 +239,12 @@ func Test_BuiltinCommands(t *testing.T) {
 
 				out, err := cmd.Execute(tc.job)
 				stubs.Must(t, "cmd erred out", err)
-				stubs.AssertEquals(t, tc.expected, out)
+				if tc.expected != "" {
+					stubs.AssertEquals(t, tc.expected, out)
+				}
+				if tc.expectedMatch != "" {
+					stubs.AssertMatches(t, tc.expectedMatch, out)
+				}
 			}))
 		})
 	}

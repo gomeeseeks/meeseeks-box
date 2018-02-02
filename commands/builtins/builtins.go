@@ -10,6 +10,7 @@ import (
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
 	"github.com/pcarranza/meeseeks-box/jobs"
+	"github.com/pcarranza/meeseeks-box/token"
 
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/command"
@@ -31,6 +32,8 @@ const (
 	BuiltinLastCommand      = "last"
 	BuiltinTailCommand      = "tail"
 	BuiltinLogsCommand      = "logs"
+
+	BuiltinNewAPITokenCommand = "token-new"
 )
 
 // Commands is the basic set of builtin commands
@@ -77,6 +80,10 @@ var Commands = map[string]command.Command{
 	BuiltinLogsCommand: logsCommand{
 		help: help{"returns the logs of the command id passed as argument"},
 		cmd:  cmd{BuiltinLogsCommand},
+	},
+	BuiltinNewAPITokenCommand: newAPITokenCommand{
+		help: help{"creates a new API token for the calling user, channel and command with args, requires at least #channel and command"},
+		cmd:  cmd{BuiltinNewAPITokenCommand},
 	},
 }
 
@@ -562,6 +569,33 @@ func (t logsCommand) Execute(job jobs.Job) (string, error) {
 		return "", err
 	}
 	return jobLogs.Output, jobLogs.GetError()
+}
+
+type newAPITokenCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAll
+	defaultTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
+	if !job.Request.IsIM {
+		return "", fmt.Errorf("API tokens can only be created over an IM conversation, security ffs")
+	}
+	if len(job.Request.Args) < 2 {
+		return "", fmt.Errorf("not enough arguments passed in")
+	}
+	t, err := token.Create(token.NewTokenRequest{
+		User:    job.Request.Username,
+		Channel: job.Request.Args[0],
+		Command: job.Request.Args[1],
+		Args:    job.Request.Args[2:],
+	})
+	return fmt.Sprintf("created token %s", t), err
 }
 
 func parseJobID(job jobs.Job) (uint64, error) {

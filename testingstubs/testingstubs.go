@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -161,6 +162,15 @@ func (m MessageStub) IsIM() bool {
 func AssertEquals(t *testing.T, expected, actual interface{}) {
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("Value is not as expected,\nexpected %#v;\ngot %#v", expected, actual)
+	}
+}
+
+// AssertMatches Helper function for asserting that a value is what we expect
+func AssertMatches(t *testing.T, expected, actual string) {
+	r, err := regexp.Compile(expected)
+	Must(t, fmt.Sprintf("regex %s does not compile", expected), err)
+	if !r.Match([]byte(actual)) {
+		t.Fatalf("Value does not match expected,\nexpected %#v;\ngot %#v", expected, actual)
 	}
 }
 
