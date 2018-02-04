@@ -6,8 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/pcarranza/meeseeks-box/formatter"
+
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/messenger"
+	"github.com/pcarranza/meeseeks-box/slack"
 
 	"github.com/pcarranza/meeseeks-box/meeseeks"
 	"github.com/pcarranza/meeseeks-box/version"
@@ -38,15 +41,17 @@ func main() {
 		log.Fatalf("Could not load configuration: %s", err)
 	}
 
-	messaging, err := messenger.Listen(messenger.MessengerOpts{
-		Debug:      *debugMode,
-		SlackToken: os.Getenv("SLACK_TOKEN"),
-	})
+	slackClient, err := slack.Connect(*debugMode, os.Getenv("SLACK_TOKEN"))
+	if err != nil {
+		log.Fatalf("could not connect to slack: %s", err)
+	}
+
+	msgs, err := messenger.Listen(slackClient)
 	if err != nil {
 		log.Fatalf("Could not initialize messenger subsystem: %s", err)
 	}
 
-	meeseek := meeseeks.New(messaging, cnf)
+	meeseek := meeseeks.New(slackClient, msgs, formatter.New(cnf))
 	go meeseek.Start()
 
 	signalCh := make(chan os.Signal)
@@ -56,7 +61,7 @@ func main() {
 	sig := <-signalCh
 	log.Infof("Got signal %s, trying to gracefully shutdown", sig)
 
-	messaging.Shutdown()
+	msgs.Shutdown()
 	meeseek.Shutdown()
 
 	log.Infof("All done, quitting")

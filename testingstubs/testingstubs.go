@@ -113,6 +113,13 @@ func (c ClientStub) MessagesCh() chan message.Message {
 	return c.receivedMessages
 }
 
+// ListenMessages listens for messages and then passes it to the sent channel
+func (c ClientStub) ListenMessages(ch chan<- message.Message) {
+	for m := range c.receivedMessages {
+		ch <- m
+	}
+}
+
 // MessageStub is a simple stub that implements the Slack.Message interface
 type MessageStub struct {
 	Text      string

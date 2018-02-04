@@ -14,9 +14,27 @@ import (
 
 // Client is a chat client
 type Client struct {
-	apiClient    *slack.Client
-	rtm          *slack.RTM
-	messageMatch func(*slack.MessageEvent) *Message
+	apiClient *slack.Client
+	// TODO: remove the rtm as it should only be inside the message matcher.
+	// It should simply be inside there and it should pop messages matched out
+	// through a channel
+	rtm     *slack.RTM
+	matcher messageMatcher
+}
+
+// GetUser implements the messenger.MessengerClient interface
+func (c Client) GetUser(userID string) string {
+	return c.matcher.getUser(userID)
+}
+
+// GetChannel implements the messenger.MessengerClient interface
+func (c Client) GetChannel(channelID string) string {
+	return c.matcher.getChannel(channelID)
+}
+
+// IsIM implements the messenger.MessengerClient interface
+func (c Client) IsIM(channelID string) bool {
+	return c.matcher.isIMChannel(channelID)
 }
 
 // Connect builds a new chat client
@@ -25,25 +43,24 @@ func Connect(debug bool, token string) (*Client, error) {
 		return nil, fmt.Errorf("could not connect to slack: SLACK_TOKEN env var is empty")
 	}
 
-	slackAPI := slack.New(token)
-	slackAPI.SetDebug(debug)
+	slackClient := slack.New(token)
+	slackClient.SetDebug(debug)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	_, err := slackAPI.AuthTestContext(ctx)
+	_, err := slackClient.AuthTestContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to slack: %s", err)
 	}
 
-	rtm := slackAPI.NewRTM()
+	rtm := slackClient.NewRTM()
 	go rtm.ManageConnection()
 
-	mm := newMessageMatcher(rtm)
 	return &Client{
-		apiClient:    slackAPI,
-		rtm:          rtm,
-		messageMatch: mm.Matches,
+		apiClient: slackClient,
+		rtm:       rtm,
+		matcher:   newMessageMatcher(rtm),
 	}, nil
 }
 
@@ -59,28 +76,50 @@ func newMessageMatcher(rtm *slack.RTM) messageMatcher {
 	}
 }
 
-func (m messageMatcher) Matches(message *slack.MessageEvent) *Message {
+// GetUser finds the username given a userID
+func (m messageMatcher) getUser(userID string) string {
+	u, err := m.rtm.GetUserInfo(userID)
+	if err != nil {
+		log.Errorf("could not find user with id %s because %s, weeeird", userID, err)
+		return "unknown-user"
+	}
+	return u.Name
+}
+
+func (m messageMatcher) isIMChannel(channel string) bool {
+	return strings.HasPrefix(channel, "D")
+}
+
+// GetChannel returns a channel name given an ID
+func (m messageMatcher) getChannel(channelID string) string {
+	if m.isIMChannel(channelID) {
+		return "IM"
+	}
+
+	ch, err := m.rtm.GetChannelInfo(channelID)
+	if err != nil {
+		log.Errorf("could not find channel with id %s: %s", channelID, err)
+		return "unknown-channel"
+	}
+	return ch.Name
+}
+
+// Init has to be delayed until the point in which the RTM is actually working.
+// The simples way to do this lazily is to do it when the message listening starts
+func (m messageMatcher) init() {
 	if m.botID == "" {
 		m.botID = m.rtm.GetInfo().User.ID
 		m.prefixMatches = []string{fmt.Sprintf("<@%s>", m.botID)}
 	}
-	if text, ok := m.shouldCare(message); ok {
-		var username, channel string
-		if u, err := m.rtm.GetUserInfo(message.User); err != nil {
-			log.Errorf("could not find user with id %s because %s, weeeird", message.User, err)
-			username = "unknown-user"
-		} else {
-			username = u.Name
-		}
+}
 
-		if m.isIMChannel(message) {
-			channel = "IM"
-		} else if c, err := m.rtm.GetChannelInfo(message.Channel); err != nil {
-			log.Errorf("could not find channel with id %s because %s, weeeird", message.Channel, err)
-			channel = "unknown-channel"
-		} else {
-			channel = c.Name
-		}
+func (m messageMatcher) Matches(message *slack.MessageEvent) *Message {
+	m.init()
+
+	if text, ok := m.shouldCare(message); ok {
+		username := m.getUser(message.User)
+		channel := m.getChannel(message.Channel)
+		isIM := m.isIMChannel(message.Channel)
 
 		return &Message{
 			text:      text,
@@ -88,7 +127,7 @@ func (m messageMatcher) Matches(message *slack.MessageEvent) *Message {
 			channelID: message.Channel,
 			username:  username,
 			channel:   channel,
-			isIM:      m.isIMChannel(message),
+			isIM:      isIM,
 		}
 	}
 	return nil
@@ -98,15 +137,11 @@ func (m messageMatcher) isMyself(message *slack.MessageEvent) bool {
 	return message.User == m.botID
 }
 
-func (m messageMatcher) isIMChannel(message *slack.MessageEvent) bool {
-	return strings.HasPrefix(message.Channel, "D")
-}
-
 func (m messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) {
 	if m.isMyself(message) {
 		return "", false
 	}
-	if m.isIMChannel(message) {
+	if m.isIMChannel(message.Channel) {
 		return message.Text, true
 	}
 	for _, match := range m.prefixMatches {
@@ -124,7 +159,7 @@ func (c *Client) ListenMessages(ch chan<- message.Message) {
 	for msg := range c.rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
-			message := c.messageMatch(ev)
+			message := c.matcher.Matches(ev)
 			if message == nil {
 				continue
 			}

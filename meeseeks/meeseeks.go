@@ -5,29 +5,27 @@ import (
 	"sync"
 
 	"github.com/pcarranza/meeseeks-box/command"
+	"github.com/pcarranza/meeseeks-box/formatter"
 	"github.com/pcarranza/meeseeks-box/jobs"
+	"github.com/pcarranza/meeseeks-box/messenger"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/commands"
-	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
-	"github.com/pcarranza/meeseeks-box/template"
 )
 
-// Client interface that provides a way of replying to messages on a channel
-type Client interface {
+// ChatClient interface that provides a way of replying to messages on a channel
+type ChatClient interface {
 	Reply(text, color, channel string) error
 	ReplyIM(text, color, user string) error
-	MessagesCh() chan message.Message
 }
 
 // Meeseeks is the command execution engine
 type Meeseeks struct {
-	client    Client
-	config    config.Config
-	templates *template.TemplatesBuilder
+	client    ChatClient
+	messenger *messenger.Messenger
+	formatter *formatter.Formatter
 
 	tasksCh chan task
 	wg      sync.WaitGroup
@@ -39,13 +37,11 @@ type task struct {
 }
 
 // New creates a new Meeseeks service
-func New(client Client, conf config.Config) *Meeseeks {
-	templatesBuilder := template.NewBuilder().WithMessages(conf.Messages)
-
+func New(client ChatClient, messenger *messenger.Messenger, formatter *formatter.Formatter) *Meeseeks {
 	m := Meeseeks{
+		messenger: messenger,
+		formatter: formatter,
 		client:    client,
-		config:    conf,
-		templates: templatesBuilder,
 		tasksCh:   make(chan task, 20),
 
 		wg: sync.WaitGroup{},
@@ -58,7 +54,7 @@ func New(client Client, conf config.Config) *Meeseeks {
 
 // Start launches the meeseeks to read messages from the MessageCh
 func (m *Meeseeks) Start() {
-	for msg := range m.client.MessagesCh() {
+	for msg := range m.messenger.MessagesCh() {
 		req, err := request.FromMessage(msg)
 		if err != nil {
 			log.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)

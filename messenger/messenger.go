@@ -1,42 +1,35 @@
 package messenger
 
 import (
-	"fmt"
-
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
-	"github.com/pcarranza/meeseeks-box/slack"
 )
+
+// Listener provides the necessary interface to start listening messages in a channel.
+type Listener interface {
+	ListenMessages(chan<- message.Message)
+}
 
 // Messenger handles multiple message sources
 type Messenger struct {
-	*slack.Client
 	messagesCh chan message.Message
 }
 
-type MessengerOpts struct {
-	Debug      bool
-	SlackToken string
-}
-
-func Listen(opts MessengerOpts) (*Messenger, error) {
-	client, err := slack.Connect(opts.Debug, opts.SlackToken)
-	if err != nil {
-		return nil, fmt.Errorf("could not connect to slack: %s", err)
-	}
-
-	slackMessagesCh := make(chan message.Message)
-	go client.ListenMessages(slackMessagesCh)
+// Listen starts a routine to listen for messages on the provided client
+func Listen(listener Listener) (*Messenger, error) {
+	messagesCh := make(chan message.Message)
+	go listener.ListenMessages(messagesCh)
 
 	return &Messenger{
-		Client:     client,
-		messagesCh: slackMessagesCh,
+		messagesCh: messagesCh,
 	}, nil
 }
 
-func (m *Messenger) MessagesCh() chan message.Message {
+// MessagesCh returns the channel in which to listen for messages
+func (m *Messenger) MessagesCh() <-chan message.Message {
 	return m.messagesCh
 }
 
+// Shutdown takes down the system
 func (m *Messenger) Shutdown() {
 	close(m.messagesCh)
 }

@@ -5,6 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pcarranza/meeseeks-box/messenger"
+
+	"github.com/pcarranza/meeseeks-box/formatter"
+
 	"github.com/renstrom/dedent"
 
 	"regexp"
@@ -147,7 +151,11 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			    args: ["pre-message"]
 			`)).WithDBPath(dbpath).Load()
 
-		m := meeseeks.New(client, cnf)
+		msgs, err := messenger.Listen(client)
+		if err != nil {
+			t.Fatalf("could not create listener: %s", err)
+		}
+		m := meeseeks.New(client, msgs, formatter.New(cnf))
 		go m.Start()
 
 		for _, tc := range tt {
