@@ -10,7 +10,7 @@ import (
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
 	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/pcarranza/meeseeks-box/token"
+	"github.com/pcarranza/meeseeks-box/tokens"
 
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/command"
@@ -589,7 +589,7 @@ func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
 	if len(job.Request.Args) < 2 {
 		return "", fmt.Errorf("not enough arguments passed in")
 	}
-	t, err := token.Create(token.NewTokenRequest{
+	t, err := tokens.Create(tokens.NewTokenRequest{
 		User:    job.Request.Username,
 		Channel: job.Request.Args[0],
 		Command: job.Request.Args[1],

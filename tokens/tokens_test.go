@@ -1,15 +1,15 @@
-package token_test
+package tokens_test
 
 import (
 	"testing"
 
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
-	"github.com/pcarranza/meeseeks-box/token"
+	"github.com/pcarranza/meeseeks-box/tokens"
 )
 
 func Test_TokenLifecycle(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
-		id, err := token.Create(token.NewTokenRequest{
+		id, err := tokens.Create(tokens.NewTokenRequest{
 			Command: "echo",
 			User:    "myuser",
 			Channel: "mychannel",
@@ -20,7 +20,7 @@ func Test_TokenLifecycle(t *testing.T) {
 			t.Fatal("create token returned an empty token id(?)")
 		}
 
-		tk, err := token.Get(id)
+		tk, err := tokens.Get(id)
 		stubs.Must(t, "could not get token back", err)
 
 		stubs.AssertEquals(t, id, tk.TokenID)
@@ -33,7 +33,7 @@ func Test_TokenLifecycle(t *testing.T) {
 
 func Test_TokenListing(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
-		id, err := token.Create(token.NewTokenRequest{
+		id, err := tokens.Create(tokens.NewTokenRequest{
 			Command: "echo",
 			User:    "myuser",
 			Channel: "mychannel",
@@ -41,10 +41,10 @@ func Test_TokenListing(t *testing.T) {
 		})
 		stubs.Must(t, "could not create token", err)
 
-		t1, err := token.Get(id)
+		t1, err := tokens.Get(id)
 		stubs.Must(t, "could not get token back", err)
 
-		id, err = token.Create(token.NewTokenRequest{
+		id, err = tokens.Create(tokens.NewTokenRequest{
 			Command: "echo",
 			User:    "someone_else",
 			Channel: "my_other_channel",
@@ -52,37 +52,37 @@ func Test_TokenListing(t *testing.T) {
 		})
 		stubs.Must(t, "could not create token", err)
 
-		t2, err := token.Get(id)
+		t2, err := tokens.Get(id)
 		stubs.Must(t, "could not get token back", err)
 
 		tt := []struct {
 			Name     string
-			Filter   token.Filter
-			Expected []token.Token
+			Filter   tokens.Filter
+			Expected []tokens.Token
 		}{
 			{
 				Name:     "empty list",
-				Expected: []token.Token{},
-				Filter: token.Filter{
+				Expected: []tokens.Token{},
+				Filter: tokens.Filter{
 					Limit: 0,
 				},
 			},
 			{
 				Name:     "filter by username works",
-				Expected: []token.Token{t2},
-				Filter: token.Filter{
+				Expected: []tokens.Token{t2},
+				Filter: tokens.Filter{
 					Limit: 5,
-					Match: func(tk token.Token) bool {
+					Match: func(tk tokens.Token) bool {
 						return tk.User == t2.User
 					},
 				},
 			},
 			{
 				Name:     "filter by channel works",
-				Expected: []token.Token{t1},
-				Filter: token.Filter{
+				Expected: []tokens.Token{t1},
+				Filter: tokens.Filter{
 					Limit: 5,
-					Match: func(tk token.Token) bool {
+					Match: func(tk tokens.Token) bool {
 						return tk.Channel == t1.Channel
 					},
 				},
@@ -90,9 +90,9 @@ func Test_TokenListing(t *testing.T) {
 		}
 		for _, tc := range tt {
 			t.Run(tc.Name, func(t *testing.T) {
-				tokens, err := token.Find(tc.Filter)
+				token, err := tokens.Find(tc.Filter)
 				stubs.Must(t, "failed to list tokens", err)
-				stubs.AssertEquals(t, tc.Expected, tokens)
+				stubs.AssertEquals(t, tc.Expected, token)
 			})
 		}
 	})
