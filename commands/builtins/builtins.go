@@ -232,7 +232,7 @@ type cancelJobCommand struct {
 	noHandshake
 	noRecord
 	emptyArgs
-	allowAll
+	allowAdmins
 	plainTemplates
 	defaultTimeout
 	cancelFunc func(jobID uint64)
