@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/nlopes/slack"
 )
@@ -22,14 +22,24 @@ type Client struct {
 	matcher messageMatcher
 }
 
-// GetUser implements the messenger.MessengerClient interface
-func (c Client) GetUser(userID string) string {
+// GetUsername implements the messenger.MessengerClient interface
+func (c Client) GetUsername(userID string) string {
 	return c.matcher.getUser(userID)
+}
+
+// GetUserLink implements the messenger.MessengerClient interface
+func (c Client) GetUserLink(userID string) string {
+	return fmt.Sprintf("<@%s>", userID)
 }
 
 // GetChannel implements the messenger.MessengerClient interface
 func (c Client) GetChannel(channelID string) string {
 	return c.matcher.getChannel(channelID)
+}
+
+// GetChannelLink implements the messenger.MessengerClient interface
+func (c Client) GetChannelLink(channelID string) string {
+	return fmt.Sprintf("<#%s|%s>", channelID, c.matcher.getChannel(channelID))
 }
 
 // IsIM implements the messenger.MessengerClient interface
@@ -77,28 +87,28 @@ func newMessageMatcher(rtm *slack.RTM) messageMatcher {
 }
 
 // GetUser finds the username given a userID
-func (m messageMatcher) getUser(userID string) string {
+func (m *messageMatcher) getUser(userID string) string {
 	u, err := m.rtm.GetUserInfo(userID)
 	if err != nil {
-		log.Errorf("could not find user with id %s because %s, weeeird", userID, err)
+		logrus.Errorf("could not find user with id %s because %s, weeeird", userID, err)
 		return "unknown-user"
 	}
 	return u.Name
 }
 
-func (m messageMatcher) isIMChannel(channel string) bool {
+func (m *messageMatcher) isIMChannel(channel string) bool {
 	return strings.HasPrefix(channel, "D")
 }
 
 // GetChannel returns a channel name given an ID
-func (m messageMatcher) getChannel(channelID string) string {
+func (m *messageMatcher) getChannel(channelID string) string {
 	if m.isIMChannel(channelID) {
 		return "IM"
 	}
 
 	ch, err := m.rtm.GetChannelInfo(channelID)
 	if err != nil {
-		log.Errorf("could not find channel with id %s: %s", channelID, err)
+		logrus.Errorf("could not find channel with id %s: %s", channelID, err)
 		return "unknown-channel"
 	}
 	return ch.Name
@@ -106,14 +116,14 @@ func (m messageMatcher) getChannel(channelID string) string {
 
 // Init has to be delayed until the point in which the RTM is actually working.
 // The simples way to do this lazily is to do it when the message listening starts
-func (m messageMatcher) init() {
+func (m *messageMatcher) init() {
 	if m.botID == "" {
 		m.botID = m.rtm.GetInfo().User.ID
 		m.prefixMatches = []string{fmt.Sprintf("<@%s>", m.botID)}
 	}
 }
 
-func (m messageMatcher) Matches(message *slack.MessageEvent) *Message {
+func (m *messageMatcher) Matches(message *slack.MessageEvent) *Message {
 	m.init()
 
 	if text, ok := m.shouldCare(message); ok {
@@ -133,19 +143,22 @@ func (m messageMatcher) Matches(message *slack.MessageEvent) *Message {
 	return nil
 }
 
-func (m messageMatcher) isMyself(message *slack.MessageEvent) bool {
+func (m *messageMatcher) isMyself(message *slack.MessageEvent) bool {
 	return message.User == m.botID
 }
 
-func (m messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) {
+func (m *messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) {
 	if m.isMyself(message) {
+		logrus.Infof("It's myself, ignoring message")
 		return "", false
 	}
 	if m.isIMChannel(message.Channel) {
+		logrus.Infof("Channel %s is IM channel, responding...", message.Channel)
 		return message.Text, true
 	}
 	for _, match := range m.prefixMatches {
 		if strings.HasPrefix(message.Text, match) {
+			logrus.Infof("Message %s matches prefix, responding...", message.Text)
 			return strings.TrimSpace(message.Text[len(match):]), true
 		}
 	}
@@ -154,7 +167,7 @@ func (m messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) {
 
 // ListenMessages listens to messages and sends the matching ones through the channel
 func (c *Client) ListenMessages(ch chan<- message.Message) {
-	log.Infof("Listening messages")
+	logrus.Infof("Listening messages")
 
 	for msg := range c.rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
@@ -164,15 +177,15 @@ func (c *Client) ListenMessages(ch chan<- message.Message) {
 				continue
 			}
 
-			log.Debugf("Received matching message %#v", ev.Text)
+			logrus.Debugf("Received matching message %#v", ev.Text)
 
 			ch <- *message
 
 		default:
-			log.Debugf("Ignored Slack Event %#v", ev)
+			logrus.Debugf("Ignored Slack Event %#v", ev)
 		}
 	}
-	log.Infof("Stopped listening to messages")
+	logrus.Infof("Stopped listening to messages")
 }
 
 // Reply replies to the user building a message with attachment
@@ -215,8 +228,13 @@ func (m Message) GetText() string {
 	return m.text
 }
 
-// GetUsernameID returns the user id formatted for using in a slack message
-func (m Message) GetUsernameID() string {
+// GetUserID returns the user ID
+func (m Message) GetUserID() string {
+	return m.userID
+}
+
+// GetUserLink returns the user id formatted for using in a slack message
+func (m Message) GetUserLink() string {
 	return fmt.Sprintf("<@%s>", m.userID)
 }
 

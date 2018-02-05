@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
+	"github.com/sirupsen/logrus"
 )
 
 // Listener provides the necessary interface to start listening messages in a channel.
@@ -34,5 +35,6 @@ func (m *Messenger) MessagesCh() <-chan message.Message {
 
 // Shutdown takes down the system
 func (m *Messenger) Shutdown() {
+	logrus.Infof("Shutting down messenger messages channel")
 	close(m.messagesCh)
 }

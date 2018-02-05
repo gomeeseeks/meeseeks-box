@@ -13,8 +13,10 @@ import (
 // MetadataClient is a helper client used to augment the metadata of the user
 // and channel extracted from the registered token.
 type MetadataClient interface {
-	GetUser(string) string
+	GetUsername(string) string
+	GetUserLink(string) string
 	GetChannel(string) string
+	GetChannelLink(string) string
 	IsIM(string) bool
 }
 
@@ -42,6 +44,7 @@ func (l Listener) ListenMessages(ch chan<- message.Message) {
 
 // Shutdown closes the internal messages channel
 func (l Listener) Shutdown() {
+	logrus.Infof("Shutting down API messages channel")
 	close(l.messageCh)
 }
 
@@ -83,6 +86,8 @@ func (s *Server) GetListener() Listener {
 // Shutdown shuts down the http server gracefully
 func (s *Server) Shutdown() error {
 	defer s.listener.Shutdown()
+	logrus.Infof("Shutting down API server")
+
 	return s.httpServer.Shutdown(nil)
 }
 
@@ -125,31 +130,36 @@ func (m apiMessage) GetText() string {
 }
 
 // GetUsernameID returns the user id formatted for using in a slack message
-func (m apiMessage) GetUsernameID() string {
-	return m.token.User
+func (m apiMessage) GetUserID() string {
+	return m.token.UserID
 }
 
 // GetUsername returns the user friendly username
 func (m apiMessage) GetUsername() string {
-	return m.metadata.GetUser(m.token.User)
+	return m.metadata.GetUsername(m.token.UserID)
+}
+
+// GetUserLink
+func (m apiMessage) GetUserLink() string {
+	return m.metadata.GetUserLink(m.token.UserID)
 }
 
 // GetChannelID returns the channel id from the which the message was sent
 func (m apiMessage) GetChannelID() string {
-	return m.token.Channel
+	return m.token.ChannelID
 }
 
 // GetChannel returns the channel from which the message was sent
 func (m apiMessage) GetChannel() string {
-	return m.metadata.GetChannel(m.token.Channel)
+	return m.metadata.GetChannel(m.token.ChannelID)
 }
 
 // GetChannelLink returns the channel that slack will turn into a link
 func (m apiMessage) GetChannelLink() string {
-	return m.metadata.GetChannel(m.token.Channel)
+	return m.metadata.GetChannelLink(m.token.ChannelID)
 }
 
 // IsIM returns if the message is an IM message
 func (m apiMessage) IsIM() bool {
-	return m.metadata.IsIM(m.token.Channel)
+	return m.metadata.IsIM(m.token.ChannelID)
 }

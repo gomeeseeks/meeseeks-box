@@ -44,24 +44,36 @@ func main() {
 		log.Fatalf("Could not load configuration: %s", err)
 	}
 
+	log.Info("Loaded configuration")
+
 	slackClient, err := slack.Connect(*debugMode, os.Getenv("SLACK_TOKEN"))
 	if err != nil {
-		log.Fatalf("could not connect to slack: %s", err)
+		log.Fatalf("Could not connect to slack: %s", err)
 	}
 
+	log.Info("Connected to slack")
+
 	apiServer := api.NewServer(slackClient, *apiAddress)
-	err = apiServer.ListenAndServe(*apiPath)
-	if err != nil {
-		log.Fatalf("could not start API server: %s", err)
-	}
+	go func() {
+		err = apiServer.ListenAndServe(*apiPath)
+		if err != nil {
+			log.Fatalf("Could not start API server: %s", err)
+		}
+	}()
+
+	log.Infof("Started api server on %s%s", *apiAddress, *apiPath)
 
 	msgs, err := messenger.Listen(slackClient, apiServer.GetListener())
 	if err != nil {
 		log.Fatalf("Could not initialize messenger subsystem: %s", err)
 	}
 
+	log.Info("Listening messages")
+
 	meeseek := meeseeks.New(slackClient, msgs, formatter.New(cnf))
 	go meeseek.Start()
+
+	log.Info("Started commands pipeline")
 
 	signalCh := make(chan os.Signal)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)

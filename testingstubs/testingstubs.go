@@ -162,13 +162,18 @@ func (m MessageStub) GetChannelLink() string {
 	return m.Channel + "Link"
 }
 
-// GetUsernameID implements the slack.Message.GetUserFrom interface
-func (m MessageStub) GetUsernameID() string {
+// GetUserLink implements the slack.Message.GetUserFrom interface
+func (m MessageStub) GetUserLink() string {
 	return fmt.Sprintf("<@%s>", m.User)
 }
 
 // GetUsername implements the slack.Message.GetUsername interface
 func (m MessageStub) GetUsername() string {
+	return m.User
+}
+
+// GetUserID implements the slack.Message.GetUsername interface
+func (m MessageStub) GetUserID() string {
 	return m.User
 }
 
@@ -226,12 +231,28 @@ type MetadataStub struct {
 	IM bool
 }
 
-func (m MetadataStub) GetChannel(channelID string) string {
+func (m MetadataStub) GetChannelLink(channelID string) string {
 	return fmt.Sprintf("<#%s>", channelID)
 }
 
-func (m MetadataStub) GetUser(user string) string {
-	return fmt.Sprintf("<@%s>", user)
+func (m MetadataStub) GetChannelID(channelID string) string {
+	return channelID
+}
+
+func (m MetadataStub) GetChannel(channelID string) string {
+	return fmt.Sprintf("name: %s", channelID)
+}
+
+func (m MetadataStub) GetUserLink(userID string) string {
+	return fmt.Sprintf("<@%s>", userID)
+}
+
+func (m MetadataStub) GetUserID(userID string) string {
+	return userID
+}
+
+func (m MetadataStub) GetUsername(userID string) string {
+	return fmt.Sprintf("name: %s", userID)
 }
 
 func (m MetadataStub) IsIM(_ string) bool {

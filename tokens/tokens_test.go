@@ -10,9 +10,9 @@ import (
 func Test_TokenLifecycle(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
 		id, err := tokens.Create(tokens.NewTokenRequest{
-			User:    "myuser",
-			Channel: "mychannel",
-			Text:    "echo hello",
+			UserID:    "myuser",
+			ChannelID: "mychannel",
+			Text:      "echo hello",
 		})
 		stubs.Must(t, "could not create token", err)
 		if id == "" {
@@ -23,8 +23,8 @@ func Test_TokenLifecycle(t *testing.T) {
 		stubs.Must(t, "could not get token back", err)
 
 		stubs.AssertEquals(t, id, tk.TokenID)
-		stubs.AssertEquals(t, "myuser", tk.User)
-		stubs.AssertEquals(t, "mychannel", tk.Channel)
+		stubs.AssertEquals(t, "myuser", tk.UserID)
+		stubs.AssertEquals(t, "mychannel", tk.ChannelID)
 		stubs.AssertEquals(t, "echo hello", tk.Text)
 	})
 }
@@ -32,9 +32,9 @@ func Test_TokenLifecycle(t *testing.T) {
 func Test_TokenListing(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
 		id, err := tokens.Create(tokens.NewTokenRequest{
-			Text:    "echo something",
-			User:    "myuser",
-			Channel: "mychannel",
+			Text:      "echo something",
+			UserID:    "myuser",
+			ChannelID: "mychannel",
 		})
 		stubs.Must(t, "could not create token", err)
 
@@ -42,9 +42,9 @@ func Test_TokenListing(t *testing.T) {
 		stubs.Must(t, "could not get token back", err)
 
 		id, err = tokens.Create(tokens.NewTokenRequest{
-			Text:    "echo something else",
-			User:    "someone_else",
-			Channel: "my_other_channel",
+			Text:      "echo something else",
+			UserID:    "someone_else",
+			ChannelID: "my_other_channel",
 		})
 		stubs.Must(t, "could not create token", err)
 
@@ -69,7 +69,7 @@ func Test_TokenListing(t *testing.T) {
 				Filter: tokens.Filter{
 					Limit: 5,
 					Match: func(tk tokens.Token) bool {
-						return tk.User == t2.User
+						return tk.UserID == t2.UserID
 					},
 				},
 			},
@@ -79,7 +79,7 @@ func Test_TokenListing(t *testing.T) {
 				Filter: tokens.Filter{
 					Limit: 5,
 					Match: func(tk tokens.Token) bool {
-						return tk.Channel == t1.Channel
+						return tk.ChannelID == t1.ChannelID
 					},
 				},
 			},

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/formatter"
 	"github.com/pcarranza/meeseeks-box/jobs"
@@ -98,11 +100,16 @@ func (m *Meeseeks) createTask(req request.Request, cmd command.Command) (task, e
 // Shutdown initiates a shutdown process by waiting for jobs to finish and then
 // closing the tasks channel
 func (m *Meeseeks) Shutdown() {
-	defer close(m.tasksCh)
+	defer m.closeTasksChannel()
 
 	log.Info("Waiting for jobs to finish")
 	m.wg.Wait()
 	log.Info("Done waiting, exiting")
+}
+
+func (m *Meeseeks) closeTasksChannel() {
+	logrus.Infof("Closing meeseeks tasks channel")
+	close(m.tasksCh)
 }
 
 func (m *Meeseeks) jobsLoop() {
