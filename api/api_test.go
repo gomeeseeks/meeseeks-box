@@ -58,7 +58,7 @@ import (
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
 
-func TestSendingCommand(t *testing.T) {
+func TestAPIServer(t *testing.T) {
 	stubs.Must(t, "failed to create a temporary DB", stubs.WithTmpDB(func(dbpath string) {
 		// This is necessary because we need to store and then load the token in the DB
 		stubs.NewHarness().WithEchoCommand().WithDBPath(dbpath).Load()
@@ -85,25 +85,41 @@ func TestSendingCommand(t *testing.T) {
 					actualStatus)
 			}
 		}
+		assertNothing := func(_ *testing.T, _ chan message.Message) {
+		}
 
 		tt := []struct {
 			name          string
 			reqToken      string
 			assertStatus  func(*testing.T, string)
-			assertMessage func(*testing.T, message.Message)
+			assertMessage func(*testing.T, chan message.Message)
 		}{
 			{
 				"valid call",
 				tk,
 				assertHttpStatus(http.StatusAccepted),
-				func(t *testing.T, msg message.Message) {
+				func(t *testing.T, ch chan message.Message) {
+					msg := <-ch
 					stubs.AssertEquals(t, "echo something", msg.GetText())
 					stubs.AssertEquals(t, "<#generalID>", msg.GetChannel())
 					stubs.AssertEquals(t, "generalID", msg.GetChannelID())
+					stubs.AssertEquals(t, "<#generalID>", msg.GetChannelLink())
 					stubs.AssertEquals(t, "<@someone>", msg.GetUsername())
 					stubs.AssertEquals(t, "someone", msg.GetUsernameID())
 					stubs.AssertEquals(t, false, msg.IsIM())
 				},
+			},
+			{
+				"invalid token",
+				"invalid_token",
+				assertHttpStatus(http.StatusUnauthorized),
+				assertNothing,
+			},
+			{
+				"no token",
+				"",
+				assertHttpStatus(http.StatusBadRequest),
+				assertNothing,
 			},
 		}
 		for _, tc := range tt {
@@ -111,15 +127,13 @@ func TestSendingCommand(t *testing.T) {
 				req, err := http.NewRequest("POST", testSrv.URL, nil)
 				stubs.Must(t, "Could not create request", err)
 
-				req.Header.Add("TOKEN", tk)
+				req.Header.Add("TOKEN", tc.reqToken)
 
 				resp, err := testSrv.Client().Do(req)
 				stubs.Must(t, "failed to do request", err)
 
 				tc.assertStatus(t, resp.Status)
-
-				msg := <-ch
-				tc.assertMessage(t, msg)
+				tc.assertMessage(t, ch)
 			})
 		}
 

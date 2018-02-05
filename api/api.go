@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/prometheus/common/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
@@ -37,7 +38,7 @@ func (s Server) Listen(path, address string) {
 	go http.ListenAndServe(address, nil)
 }
 
-// Handle handles a request
+// HandlePostToken handles a request
 func (s Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 	tokenID := r.Header.Get("TOKEN")
 	if tokenID == "" {
@@ -52,6 +53,7 @@ func (s Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+	log.Infof("token is %#v", token)
 
 	logrus.Infof("received valid token %s from", token)
 	s.messageCh <- apiMessage{
