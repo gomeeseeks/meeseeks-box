@@ -19,8 +19,7 @@ var ErrTokenNotFound = fmt.Errorf("no token found")
 type NewTokenRequest struct {
 	User    string
 	Channel string
-	Command string
-	Args    []string
+	Text    string
 }
 
 // Token is a persisted token
@@ -28,8 +27,7 @@ type Token struct {
 	TokenID   string    `json:"token"`
 	User      string    `json:"user"`
 	Channel   string    `json:"channel"`
-	Command   string    `json:"command"`
-	Args      []string  `json:"args"`
+	Text      string    `json:"text"`
 	CreatedOn time.Time `json:"created_on"`
 }
 
@@ -64,8 +62,7 @@ func Create(r NewTokenRequest) (string, error) {
 			TokenID:   token,
 			User:      r.User,
 			Channel:   r.Channel,
-			Command:   r.Command,
-			Args:      r.Args,
+			Text:      r.Text,
 			CreatedOn: time.Now(),
 		}
 		tb, err := json.Marshal(t)

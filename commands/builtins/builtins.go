@@ -592,8 +592,7 @@ func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
 	t, err := tokens.Create(tokens.NewTokenRequest{
 		User:    job.Request.Username,
 		Channel: job.Request.Args[0],
-		Command: job.Request.Args[1],
-		Args:    job.Request.Args[2:],
+		Text:    strings.Join(job.Request.Args[1:], " "),
 	})
 	return fmt.Sprintf("created token %s", t), err
 }

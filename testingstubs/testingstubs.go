@@ -47,13 +47,25 @@ func (h Harness) WithConfigFile(f string) Harness {
 	return h
 }
 
+// WithEchoCommand returns a harness configured to have an echo command available
+func (h Harness) WithEchoCommand() Harness {
+	h.cnf = `---
+commands:
+  echo:
+    command: echo
+    auth_strategy: any
+    timeout: 5
+`
+	return h
+}
+
 // WithConfig allows to change the configuration string
 func (h Harness) WithConfig(c string) Harness {
 	h.cnf = c
 	return h
 }
 
-// WithDB provides a dabatase filepath for the testing harness
+// WithDBPath provides a dabatase filepath for the testing harness
 func (h Harness) WithDBPath(dbpath string) Harness {
 	h.dbpath = dbpath
 	return h
@@ -208,4 +220,20 @@ func WithTmpDB(f func(dbpath string)) error {
 	f(dbpath)
 
 	return nil
+}
+
+type MetadataStub struct {
+	IM bool
+}
+
+func (m MetadataStub) GetChannel(channelID string) string {
+	return fmt.Sprintf("<#%s>", channelID)
+}
+
+func (m MetadataStub) GetUser(user string) string {
+	return fmt.Sprintf("<@%s>", user)
+}
+
+func (m MetadataStub) IsIM(_ string) bool {
+	return m.IM
 }

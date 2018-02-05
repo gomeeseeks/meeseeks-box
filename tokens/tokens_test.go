@@ -10,10 +10,9 @@ import (
 func Test_TokenLifecycle(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
 		id, err := tokens.Create(tokens.NewTokenRequest{
-			Command: "echo",
 			User:    "myuser",
 			Channel: "mychannel",
-			Args:    []string{"hello"},
+			Text:    "echo hello",
 		})
 		stubs.Must(t, "could not create token", err)
 		if id == "" {
@@ -24,20 +23,18 @@ func Test_TokenLifecycle(t *testing.T) {
 		stubs.Must(t, "could not get token back", err)
 
 		stubs.AssertEquals(t, id, tk.TokenID)
-		stubs.AssertEquals(t, "echo", tk.Command)
 		stubs.AssertEquals(t, "myuser", tk.User)
 		stubs.AssertEquals(t, "mychannel", tk.Channel)
-		stubs.AssertEquals(t, []string{"hello"}, tk.Args)
+		stubs.AssertEquals(t, "echo hello", tk.Text)
 	})
 }
 
 func Test_TokenListing(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
 		id, err := tokens.Create(tokens.NewTokenRequest{
-			Command: "echo",
+			Text:    "echo something",
 			User:    "myuser",
 			Channel: "mychannel",
-			Args:    []string{"hello"},
 		})
 		stubs.Must(t, "could not create token", err)
 
@@ -45,10 +42,9 @@ func Test_TokenListing(t *testing.T) {
 		stubs.Must(t, "could not get token back", err)
 
 		id, err = tokens.Create(tokens.NewTokenRequest{
-			Command: "echo",
+			Text:    "echo something else",
 			User:    "someone_else",
 			Channel: "my_other_channel",
-			Args:    []string{"hello"},
 		})
 		stubs.Must(t, "could not create token", err)
 
