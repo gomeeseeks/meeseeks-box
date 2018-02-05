@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/pcarranza/meeseeks-box/api"
@@ -91,12 +93,28 @@ func TestAPIServer(t *testing.T) {
 		tt := []struct {
 			name          string
 			reqToken      string
+			payload       string
 			assertStatus  func(*testing.T, string)
 			assertMessage func(*testing.T, chan message.Message)
 		}{
 			{
-				"valid call",
+				"invalid token",
+				"invalid_token",
+				"",
+				assertHttpStatus(http.StatusUnauthorized),
+				assertNothing,
+			},
+			{
+				"no token",
+				"",
+				"",
+				assertHttpStatus(http.StatusBadRequest),
+				assertNothing,
+			},
+			{
+				"valid without payload call",
 				tk,
+				"",
 				assertHttpStatus(http.StatusAccepted),
 				func(t *testing.T, ch chan message.Message) {
 					msg := <-ch
@@ -110,23 +128,28 @@ func TestAPIServer(t *testing.T) {
 				},
 			},
 			{
-				"invalid token",
-				"invalid_token",
-				assertHttpStatus(http.StatusUnauthorized),
-				assertNothing,
-			},
-			{
-				"no token",
-				"",
-				assertHttpStatus(http.StatusBadRequest),
-				assertNothing,
+				"valid with payload call",
+				tk,
+				"with arguments that will be attached",
+				assertHttpStatus(http.StatusAccepted),
+				func(t *testing.T, ch chan message.Message) {
+					msg := <-ch
+					stubs.AssertEquals(t, "echo something with arguments that will be attached", msg.GetText())
+				},
 			},
 		}
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
-				req, err := http.NewRequest("POST", testSrv.URL, nil)
+
+				values := make(url.Values)
+				if tc.payload != "" {
+					values.Add("message", tc.payload)
+				}
+
+				req, err := http.NewRequest("POST", testSrv.URL, strings.NewReader(values.Encode()))
 				stubs.Must(t, "Could not create request", err)
 
+				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 				req.Header.Add("TOKEN", tc.reqToken)
 
 				resp, err := testSrv.Client().Do(req)

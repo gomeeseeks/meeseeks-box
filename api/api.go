@@ -2,8 +2,8 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
-	"github.com/prometheus/common/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/meeseeks/message"
@@ -53,12 +53,12 @@ func (s Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	log.Infof("token is %#v", token)
 
 	logrus.Infof("received valid token %s from", token)
 	s.messageCh <- apiMessage{
-		metadata: s.metadata,
-		token:    token,
+		metadata:    s.metadata,
+		token:       token,
+		formMessage: r.FormValue("message"),
 	}
 
 	w.WriteHeader(http.StatusAccepted)
@@ -73,13 +73,18 @@ func (s Server) ListenMessages(ch chan<- message.Message) {
 
 // Message a chat message
 type apiMessage struct {
-	token    tokens.Token
-	metadata MetadataClient
+	token       tokens.Token
+	metadata    MetadataClient
+	formMessage string
 }
 
 // GetText returns the message text
 func (m apiMessage) GetText() string {
-	return m.token.Text
+	text := m.token.Text
+	if m.formMessage != "" {
+		text = strings.Join([]string{text, m.formMessage}, " ")
+	}
+	return text
 }
 
 // GetUsernameID returns the user id formatted for using in a slack message
