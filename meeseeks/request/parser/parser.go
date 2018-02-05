@@ -14,7 +14,7 @@ const (
 // ErrUnclosedQuoteInCommand means that the command is not correctly escaped
 var ErrUnclosedQuoteInCommand = errors.New("Unclosed quote on command")
 
-// ParseCommand parses a command and returns a slice of strings and an error if the command is wrongly built
+// Parse parses a command and returns a slice of strings and an error if the command is wrongly built
 func Parse(command string) ([]string, error) {
 	args := make([]string, 0)
 	state := startState
@@ -49,7 +49,7 @@ func Parse(command string) ([]string, error) {
 			continue
 		}
 
-		if c == '"' || c == '\'' {
+		if c == '"' || c == '\'' || c == '`' {
 			state = quotesState
 			quote = string(c)
 			continue
