@@ -74,10 +74,11 @@ func TestAPIServer(t *testing.T) {
 
 		s := api.NewServer(stubs.MetadataStub{
 			IM: false,
-		})
+		}, ":0")
+		defer s.Shutdown()
 
 		ch := make(chan message.Message)
-		go s.ListenMessages(ch)
+		go s.GetListener().ListenMessages(ch)
 
 		testSrv := httptest.NewServer(http.HandlerFunc(s.HandlePostToken))
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/pcarranza/meeseeks-box/formatter"
 
+	"github.com/pcarranza/meeseeks-box/api"
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/messenger"
 	"github.com/pcarranza/meeseeks-box/slack"
@@ -21,6 +22,8 @@ func main() {
 	configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
 	debugMode := flag.Bool("debug", false, "enabled debug mode")
 	showVersion := flag.Bool("version", false, "print the version and exit")
+	apiAddress := flag.String("api-endpoint", ":9696", "api endpoint in which to listen for api calls")
+	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
 
 	flag.Parse()
 
@@ -46,7 +49,13 @@ func main() {
 		log.Fatalf("could not connect to slack: %s", err)
 	}
 
-	msgs, err := messenger.Listen(slackClient)
+	apiServer := api.NewServer(slackClient, *apiAddress)
+	err = apiServer.ListenAndServe(*apiPath)
+	if err != nil {
+		log.Fatalf("could not start API server: %s", err)
+	}
+
+	msgs, err := messenger.Listen(slackClient, apiServer.GetListener())
 	if err != nil {
 		log.Fatalf("Could not initialize messenger subsystem: %s", err)
 	}
@@ -61,6 +70,7 @@ func main() {
 	sig := <-signalCh
 	log.Infof("Got signal %s, trying to gracefully shutdown", sig)
 
+	apiServer.Shutdown()
 	msgs.Shutdown()
 	meeseek.Shutdown()
 

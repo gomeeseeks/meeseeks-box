@@ -18,28 +18,76 @@ type MetadataClient interface {
 	IsIM(string) bool
 }
 
-// Server is used to provide API access
-type Server struct {
+// Listener implements the message Listener API and is used to send the messaged
+// received from the API to the messaging pipeline
+type Listener struct {
 	metadata  MetadataClient
 	messageCh chan message.Message
 }
 
-// NewServer returns a new API Server that will use the provided metadata client
-func NewServer(client MetadataClient) Server {
-	return Server{
+func (l Listener) sendMessage(token tokens.Token, message string) {
+	l.messageCh <- apiMessage{
+		metadata:    l.metadata,
+		token:       token,
+		formMessage: message,
+	}
+}
+
+// ListenMessages listens to messages and sends the matching ones through the channel
+func (l Listener) ListenMessages(ch chan<- message.Message) {
+	for m := range l.messageCh {
+		ch <- m
+	}
+}
+
+// Shutdown closes the internal messages channel
+func (l Listener) Shutdown() {
+	close(l.messageCh)
+}
+
+// NewListener returns a new message listener unsing the provided metadata client
+func NewListener(client MetadataClient) Listener {
+	return Listener{
 		metadata:  client,
 		messageCh: make(chan message.Message),
 	}
 }
 
-// Listen starts listening
-func (s Server) Listen(path, address string) {
+// Server is used to provide API access
+type Server struct {
+	listener   Listener
+	httpServer http.Server
+}
+
+// NewServer returns a new API Server that will use the provided metadata client
+func NewServer(client MetadataClient, address string) Server {
+	return Server{
+		listener: NewListener(client),
+		httpServer: http.Server{
+			Addr: address,
+		},
+	}
+}
+
+// ListenAndServe starts listening on the provided address, then serving http requests
+func (s *Server) ListenAndServe(path string) error {
 	http.HandleFunc(path, s.HandlePostToken)
-	go http.ListenAndServe(address, nil)
+	return s.httpServer.ListenAndServe()
+}
+
+// GetListener returns the internal messages listener to register with the chat pipeline
+func (s *Server) GetListener() Listener {
+	return s.listener
+}
+
+// Shutdown shuts down the http server gracefully
+func (s *Server) Shutdown() error {
+	defer s.listener.Shutdown()
+	return s.httpServer.Shutdown(nil)
 }
 
 // HandlePostToken handles a request
-func (s Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 	tokenID := r.Header.Get("TOKEN")
 	if tokenID == "" {
 		http.Error(w, "no token", http.StatusBadRequest)
@@ -55,20 +103,9 @@ func (s Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logrus.Infof("received valid token %s from", token)
-	s.messageCh <- apiMessage{
-		metadata:    s.metadata,
-		token:       token,
-		formMessage: r.FormValue("message"),
-	}
+	s.listener.sendMessage(token, r.FormValue("message"))
 
 	w.WriteHeader(http.StatusAccepted)
-}
-
-// ListenMessages listens to messages and sends the matching ones through the channel
-func (s Server) ListenMessages(ch chan<- message.Message) {
-	for m := range s.messageCh {
-		ch <- m
-	}
 }
 
 // Message a chat message

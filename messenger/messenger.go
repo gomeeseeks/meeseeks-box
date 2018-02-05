@@ -15,9 +15,12 @@ type Messenger struct {
 }
 
 // Listen starts a routine to listen for messages on the provided client
-func Listen(listener Listener) (*Messenger, error) {
+func Listen(listeners ...Listener) (*Messenger, error) {
 	messagesCh := make(chan message.Message)
-	go listener.ListenMessages(messagesCh)
+
+	for _, listener := range listeners {
+		go listener.ListenMessages(messagesCh)
+	}
 
 	return &Messenger{
 		messagesCh: messagesCh,
