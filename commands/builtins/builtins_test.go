@@ -1,6 +1,7 @@
 package builtins_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/pcarranza/meeseeks-box/auth"
@@ -257,7 +258,7 @@ func Test_BuiltinCommands(t *testing.T) {
 					t.Fatalf("could not find command %s", tc.cmd)
 				}
 
-				out, err := cmd.Execute(tc.job)
+				out, err := cmd.Execute(context.Background(), tc.job)
 				stubs.Must(t, "cmd erred out", err)
 				if tc.expected != "" {
 					stubs.AssertEquals(t, tc.expected, out)
@@ -301,7 +302,7 @@ func Test_FilterJobsAudit(t *testing.T) {
 			t.Fatalf("could not find command %s", "audit")
 		}
 
-		audit, err := cmd.Execute(jobs.Job{
+		audit, err := cmd.Execute(context.Background(), jobs.Job{
 			Request: request.Request{Args: []string{"-user", "someone"}},
 		})
 		if err != nil {
@@ -309,7 +310,7 @@ func Test_FilterJobsAudit(t *testing.T) {
 		}
 		stubs.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n*1* - now - *command* by *someone* in *<#123>* - *Running*\n", audit)
 
-		limit, err := cmd.Execute(jobs.Job{
+		limit, err := cmd.Execute(context.Background(), jobs.Job{
 			Request: request.Request{Args: []string{"-user", "someone", "-limit", "2"}},
 		})
 		if err != nil {

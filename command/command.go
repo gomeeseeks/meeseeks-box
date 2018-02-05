@@ -3,6 +3,8 @@ package command
 import (
 	"time"
 
+	"context"
+
 	"github.com/pcarranza/meeseeks-box/jobs"
 )
 
@@ -13,7 +15,7 @@ const (
 
 // Command is the base interface for any command
 type Command interface {
-	Execute(job jobs.Job) (string, error)
+	Execute(context.Context, jobs.Job) (string, error)
 	Cmd() string
 	HasHandshake() bool
 	Templates() map[string]string

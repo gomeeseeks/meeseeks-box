@@ -1,7 +1,9 @@
 package shell_test
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/commands/shell"
@@ -20,6 +22,12 @@ var failCommand = shell.New(shell.CommandOpts{
 	Help: "command that fails",
 })
 
+var sleepCommand = shell.New(shell.CommandOpts{
+	Cmd:  "sleep",
+	Args: []string{"10"},
+	Help: "command that sleeps",
+})
+
 func TestShellCommand(t *testing.T) {
 	stubs.AssertEquals(t, "echo", echoCommand.Cmd())
 	stubs.AssertEquals(t, []string{}, echoCommand.Args())
@@ -33,7 +41,7 @@ func TestShellCommand(t *testing.T) {
 
 func TestExecuteEcho(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
-		out, err := echoCommand.Execute(jobs.Job{
+		out, err := echoCommand.Execute(context.Background(), jobs.Job{
 			ID:      1,
 			Request: request.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
 		})
@@ -44,10 +52,25 @@ func TestExecuteEcho(t *testing.T) {
 
 func TestExecuteFail(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
-		_, err := failCommand.Execute(jobs.Job{
+		_, err := failCommand.Execute(context.Background(), jobs.Job{
 			ID:      2,
 			Request: request.Request{},
 		})
 		stubs.AssertEquals(t, "exit status 1", err.Error())
+	})
+}
+
+func TestSleepingCanBeWokenUp(t *testing.T) {
+	stubs.WithTmpDB(func(_ string) {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			<-time.After(10 * time.Millisecond)
+			cancel()
+		}()
+		_, err := sleepCommand.Execute(ctx, jobs.Job{
+			ID:      3,
+			Request: request.Request{},
+		})
+		stubs.AssertEquals(t, "signal: killed", err.Error())
 	})
 }

@@ -1,6 +1,7 @@
 package builtins
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"strconv"
@@ -32,6 +33,7 @@ const (
 	BuiltinLastCommand      = "last"
 	BuiltinTailCommand      = "tail"
 	BuiltinLogsCommand      = "logs"
+	BuiltinCancelJobCommand = "cancel"
 
 	BuiltinNewAPITokenCommand    = "token-new"
 	BuiltinListAPITokenCommand   = "tokens"
@@ -193,7 +195,7 @@ type versionCommand struct {
 	defaultTimeout
 }
 
-func (v versionCommand) Execute(job jobs.Job) (string, error) {
+func (v versionCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	return fmt.Sprintf("meeseeks-box version %s, commit %s, built at %s",
 		version.Version, version.Commit, version.Date), nil
 }
@@ -214,7 +216,7 @@ var helpTemplate = dedent.Dedent(`
 	{{ range $name, $cmd := .commands }}- {{ $name }}: {{ $cmd.Help }}
 	{{ end }}`)
 
-func (h helpCommand) Execute(job jobs.Job) (string, error) {
+func (h helpCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	tmpl, err := template.New("help", helpTemplate)
 	if err != nil {
 		return "", err
@@ -222,6 +224,35 @@ func (h helpCommand) Execute(job jobs.Job) (string, error) {
 	return tmpl.Render(template.Payload{
 		"commands": h.commands,
 	})
+}
+
+type cancelJobCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	emptyArgs
+	allowAll
+	plainTemplates
+	defaultTimeout
+	cancelFunc func(jobID uint64)
+}
+
+// NewCancelJobCommand creates a command that will invoke the passed cancel job function when executed
+func NewCancelJobCommand(f func(jobID uint64)) command.Command {
+	return cancelJobCommand{
+		help:       help{"cancels a jobs that is currently running"},
+		cancelFunc: f,
+	}
+}
+
+func (c cancelJobCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
+	jobID, err := parseJobID(job)
+	if err != nil {
+		return "", err
+	}
+	c.cancelFunc(jobID)
+	return fmt.Sprintf("Issued command cancellation to job %d", jobID), nil
 }
 
 type groupsCommand struct {
@@ -242,7 +273,7 @@ var groupsTemplate = dedent.Dedent(`
 	{{- end }}
 	`)
 
-func (g groupsCommand) Execute(job jobs.Job) (string, error) {
+func (g groupsCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	tmpl, err := template.New("version", groupsTemplate)
 	if err != nil {
 		return "", err
@@ -277,7 +308,7 @@ var jobsTemplate = strings.Join([]string{
 	"{{ end }}",
 }, "")
 
-func (j jobsCommand) Execute(job jobs.Job) (string, error) {
+func (j jobsCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
 	limit := flags.Int("limit", 5, "how many jobs to return")
 	status := flags.String("status", "", "filter jobs per status (running, failed or successful)")
@@ -318,7 +349,7 @@ type auditCommand struct {
 	defaultTimeout
 }
 
-func (j auditCommand) Execute(job jobs.Job) (string, error) {
+func (j auditCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("audit", flag.ContinueOnError)
 	limit := flags.Int("limit", 5, "how many jobs to return")
 	user := flags.String("user", "", "the user to audit")
@@ -375,7 +406,7 @@ var jobTemplate = `
 {{- end }}{{- end }}
 `
 
-func (l lastCommand) Execute(job jobs.Job) (string, error) {
+func (l lastCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	callingUser := job.Request.Username
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
@@ -407,7 +438,7 @@ type findJobCommand struct {
 	defaultTimeout
 }
 
-func (l findJobCommand) Execute(job jobs.Job) (string, error) {
+func (l findJobCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	id, err := parseJobID(job)
 	if err != nil {
 		return "", err
@@ -447,7 +478,7 @@ type auditJobCommand struct {
 	defaultTimeout
 }
 
-func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
+func (l auditJobCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	id, err := parseJobID(job)
 	if err != nil {
 		return "", err
@@ -484,7 +515,7 @@ type auditLogsCommand struct {
 	defaultTimeout
 }
 
-func (t auditLogsCommand) Execute(job jobs.Job) (string, error) {
+func (t auditLogsCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	id, err := parseJobID(job)
 	if err != nil {
 		return "", err
@@ -521,7 +552,7 @@ type tailCommand struct {
 	defaultTimeout
 }
 
-func (t tailCommand) Execute(job jobs.Job) (string, error) {
+func (t tailCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	callingUser := job.Request.Username
 	jobs, err := jobs.Find(jobs.JobFilter{
 		Limit: 1,
@@ -553,7 +584,7 @@ type logsCommand struct {
 	defaultTimeout
 }
 
-func (t logsCommand) Execute(job jobs.Job) (string, error) {
+func (t logsCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	id, err := parseJobID(job)
 	if err != nil {
 		return "", err
@@ -592,7 +623,7 @@ type newAPITokenCommand struct {
 	defaultTimeout
 }
 
-func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
+func (n newAPITokenCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	if !job.Request.IsIM {
 		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
 	}
