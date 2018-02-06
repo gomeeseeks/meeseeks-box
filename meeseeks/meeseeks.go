@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/prometheus/common/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/command"
 	"github.com/pcarranza/meeseeks-box/formatter"
 	"github.com/pcarranza/meeseeks-box/jobs"
 	"github.com/pcarranza/meeseeks-box/messenger"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/commands"
@@ -59,7 +59,7 @@ func (m *Meeseeks) Start() {
 	for msg := range m.messenger.MessagesCh() {
 		req, err := request.FromMessage(msg)
 		if err != nil {
-			log.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
+			logrus.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
 			m.replyWithError(msg, err)
 			continue
 		}
@@ -74,7 +74,7 @@ func (m *Meeseeks) Start() {
 			continue
 		}
 
-		log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
+		logrus.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 			req.Command, req.Username, req.Channel, req.Args)
 
 		t, err := m.createTask(req, cmd)
@@ -102,9 +102,9 @@ func (m *Meeseeks) createTask(req request.Request, cmd command.Command) (task, e
 func (m *Meeseeks) Shutdown() {
 	defer m.closeTasksChannel()
 
-	log.Info("Waiting for jobs to finish")
+	logrus.Info("Waiting for jobs to finish")
 	m.wg.Wait()
-	log.Info("Done waiting, exiting")
+	logrus.Info("Done waiting, exiting")
 }
 
 func (m *Meeseeks) closeTasksChannel() {
@@ -123,7 +123,7 @@ func (m *Meeseeks) jobsLoop() {
 
 			out, err := t.cmd.Execute(t.job)
 			if err != nil {
-				log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
+				logrus.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 					req.Command, req.Username, err)
 				m.replyWithCommandFailed(req, cmd, err, out)
 				job.Finish(jobs.FailedStatus)
