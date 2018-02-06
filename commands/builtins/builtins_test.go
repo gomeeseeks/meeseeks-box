@@ -60,6 +60,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				- logs: returns the logs of the command id passed as argument
 				- tail: returns the last command output or error
 				- token-new: creates a new API token for the calling user, channel and command with args, requires at least #channel and command
+				- tokens: lists the API tokens
 				- version: prints the running meeseeks version
 				`),
 		},

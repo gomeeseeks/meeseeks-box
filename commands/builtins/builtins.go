@@ -33,7 +33,8 @@ const (
 	BuiltinTailCommand      = "tail"
 	BuiltinLogsCommand      = "logs"
 
-	BuiltinNewAPITokenCommand = "token-new"
+	BuiltinNewAPITokenCommand  = "token-new"
+	BuiltinListAPITokenCommand = "tokens"
 )
 
 // Commands is the basic set of builtin commands
@@ -84,6 +85,10 @@ var Commands = map[string]command.Command{
 	BuiltinNewAPITokenCommand: newAPITokenCommand{
 		help: help{"creates a new API token for the calling user, channel and command with args, requires at least #channel and command"},
 		cmd:  cmd{BuiltinNewAPITokenCommand},
+	},
+	BuiltinListAPITokenCommand: listAPITokensCommand{
+		help: help{"lists the API tokens"},
+		cmd:  cmd{BuiltinListAPITokenCommand},
 	},
 }
 
@@ -584,7 +589,7 @@ type newAPITokenCommand struct {
 
 func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
 	if !job.Request.IsIM {
-		return "", fmt.Errorf("API tokens can only be created over an IM conversation, security ffs")
+		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
 	}
 	if len(job.Request.Args) < 3 {
 		return "", fmt.Errorf("not enough arguments passed in")
@@ -595,6 +600,41 @@ func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
 		Text:        strings.Join(job.Request.Args[2:], " "),
 	})
 	return fmt.Sprintf("created token %s", t), err
+}
+
+type listAPITokensCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAdmins
+	defaultTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+var listTokensTemplate = `{{ range $t := .tokens }}- {{ $t.TokenID }} {{ $t.UserLink }} on {{ $t.ChannelLink }} "{{ $t.Text}}"
+{{ end }}`
+
+func (l listAPITokensCommand) Execute(job jobs.Job) (string, error) {
+	if !job.Request.IsIM {
+		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
+	}
+	tmpl, err := template.New("tokens", listTokensTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	t, err := tokens.Find(tokens.Filter{
+		Limit: 5,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return tmpl.Render(template.Payload{
+		"tokens": t,
+	})
 }
 
 func parseJobID(job jobs.Job) (uint64, error) {
