@@ -97,10 +97,33 @@ func Get(tokenID string) (Token, error) {
 	return token, err
 }
 
+// Revoke destroys a token by ID
+func Revoke(tokenID string) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(tokensBucketKey)
+		if bucket == nil {
+			return ErrTokenNotFound
+		}
+		return bucket.Delete([]byte(tokenID))
+	})
+}
+
 // Filter is used to filter the tokens to be returned from a List query
 type Filter struct {
 	Limit int
 	Match func(Token) bool
+}
+
+// MultiMatch builds a Match function from a list of Match functions
+func MultiMatch(matchers ...func(Token) bool) func(Token) bool {
+	return func(token Token) bool {
+		for _, matcher := range matchers {
+			if !matcher(token) {
+				return false
+			}
+		}
+		return true
+	}
 }
 
 // Find returns a list of tokens that match the filter

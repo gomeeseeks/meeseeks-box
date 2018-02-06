@@ -10,6 +10,7 @@ import (
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
+	"github.com/pcarranza/meeseeks-box/tokens"
 	"github.com/renstrom/dedent"
 )
 
@@ -60,6 +61,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				- logs: returns the logs of the command id passed as argument
 				- tail: returns the last command output or error
 				- token-new: creates a new API token for the calling user, channel and command with args, requires at least #channel and command
+				- token-revoke: revokes an API token
 				- tokens: lists the API tokens
 				- version: prints the running meeseeks version
 				`),
@@ -224,6 +226,23 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: request.Request{Username: "admin_user", IsIM: true, Args: []string{"admin_user", "yolo", "rm", "-rf"}},
 			},
 			expectedMatch: "created token .*",
+		},
+		{
+			name: "test tokens command",
+			cmd:  builtins.BuiltinListAPITokenCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "admin_user", IsIM: true},
+			},
+			setup: func() {
+				_, err := tokens.Create(tokens.NewTokenRequest{
+					ChannelLink: "channelLink",
+					UserLink:    "userLink",
+					Text:        "something",
+				})
+				stubs.Must(t, "create token", err)
+
+			},
+			expectedMatch: "- \\*.*?\\* userLink at channelLink _something_",
 		},
 	}
 

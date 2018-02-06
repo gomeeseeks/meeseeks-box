@@ -33,8 +33,9 @@ const (
 	BuiltinTailCommand      = "tail"
 	BuiltinLogsCommand      = "logs"
 
-	BuiltinNewAPITokenCommand  = "token-new"
-	BuiltinListAPITokenCommand = "tokens"
+	BuiltinNewAPITokenCommand    = "token-new"
+	BuiltinListAPITokenCommand   = "tokens"
+	BuiltinRevokeAPITokenCommand = "token-revoke"
 )
 
 // Commands is the basic set of builtin commands
@@ -89,6 +90,10 @@ var Commands = map[string]command.Command{
 	BuiltinListAPITokenCommand: listAPITokensCommand{
 		help: help{"lists the API tokens"},
 		cmd:  cmd{BuiltinListAPITokenCommand},
+	},
+	BuiltinRevokeAPITokenCommand: revokeAPITokenCommand{
+		help: help{"revokes an API token"},
+		cmd:  cmd{BuiltinRevokeAPITokenCommand},
 	},
 }
 
@@ -582,7 +587,7 @@ type newAPITokenCommand struct {
 	noHandshake
 	noRecord
 	allowAdmins
-	defaultTemplates
+	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -594,6 +599,7 @@ func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
 	if len(job.Request.Args) < 3 {
 		return "", fmt.Errorf("not enough arguments passed in")
 	}
+
 	t, err := tokens.Create(tokens.NewTokenRequest{
 		UserLink:    job.Request.Args[0],
 		ChannelLink: job.Request.Args[1],
@@ -602,31 +608,83 @@ func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
 	return fmt.Sprintf("created token %s", t), err
 }
 
+type revokeAPITokenCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAdmins
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+func (r revokeAPITokenCommand) Execute(job jobs.Job) (string, error) {
+	if !job.Request.IsIM {
+		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
+	}
+	if len(job.Request.Args) != 1 {
+		return "", fmt.Errorf("only one token ID should be passed as an argument")
+	}
+	tokenID := job.Request.Args[0]
+	if err := tokens.Revoke(tokenID); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("Token *%s* has been revoked", tokenID), nil
+}
+
 type listAPITokensCommand struct {
 	cmd
 	help
 	noHandshake
 	noRecord
 	allowAdmins
-	defaultTemplates
+	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
 
-var listTokensTemplate = `{{ range $t := .tokens }}- {{ $t.TokenID }} {{ $t.UserLink }} on {{ $t.ChannelLink }} "{{ $t.Text}}"
-{{ end }}`
+var listTokensTemplate = `{{ if eq (len .tokens) 0 }}No tokens could be found{{ else }}{{ range $t := .tokens }}- *{{ $t.TokenID }}* {{ $t.UserLink }} at {{ $t.ChannelLink }} _{{ $t.Text}}_
+{{ end }}{{ end }}`
 
 func (l listAPITokensCommand) Execute(job jobs.Job) (string, error) {
 	if !job.Request.IsIM {
 		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
 	}
+
+	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
+	limit := flags.Int("limit", 5, "how many jobs to return")
+	user := flags.String("user", "", "user to filter for")
+	channel := flags.String("channel", "", "channel to filter for")
+	command := flags.String("command", "", "command to filter for")
+
+	flags.Parse(job.Request.Args)
+
 	tmpl, err := template.New("tokens", listTokensTemplate)
 	if err != nil {
 		return "", err
 	}
 
+	matchers := []func(tokens.Token) bool{}
+	if *user != "" {
+		matchers = append(matchers, func(t tokens.Token) bool {
+			return t.UserLink == *user
+		})
+	}
+	if *channel != "" {
+		matchers = append(matchers, func(t tokens.Token) bool {
+			return t.ChannelLink == *channel
+		})
+	}
+	if *command != "" {
+		matchers = append(matchers, func(t tokens.Token) bool {
+			return strings.HasPrefix(t.Text, *command)
+		})
+	}
+
 	t, err := tokens.Find(tokens.Filter{
-		Limit: 5,
+		Limit: *limit,
+		Match: tokens.MultiMatch(matchers...),
 	})
 	if err != nil {
 		return "", err
