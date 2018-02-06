@@ -28,11 +28,13 @@ type Listener struct {
 }
 
 func (l Listener) sendMessage(token tokens.Token, message string) {
-	l.messageCh <- apiMessage{
+	m := apiMessage{
 		metadata:    l.metadata,
 		token:       token,
 		formMessage: message,
 	}
+	logrus.Debugf("Sending API message %#v to messages channel", m)
+	l.messageCh <- m
 }
 
 // ListenMessages listens to messages and sends the matching ones through the channel

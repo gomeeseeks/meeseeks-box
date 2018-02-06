@@ -8,6 +8,7 @@ import (
 
 	"github.com/coreos/bbolt"
 	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/sirupsen/logrus"
 )
 
 var tokensBucketKey = []byte("tokens")
@@ -70,6 +71,7 @@ func Create(r NewTokenRequest) (string, error) {
 			return fmt.Errorf("could not marshal token: %s", err)
 		}
 
+		logrus.Debugf("Creating token %#v", t)
 		return bucket.Put([]byte(token), tb)
 	})
 	return token, err
@@ -91,6 +93,7 @@ func Get(tokenID string) (Token, error) {
 
 		return json.Unmarshal(payload, &token)
 	})
+	logrus.Debugf("Returning token %#v with ID %s", token, tokenID)
 	return token, err
 }
 
@@ -130,5 +133,6 @@ func Find(filter Filter) ([]Token, error) {
 		}
 		return nil
 	})
+	logrus.Debugf("Looking up tokens, found %#v", tokens)
 	return tokens, err
 }

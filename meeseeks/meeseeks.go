@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/prometheus/common/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/command"
@@ -128,7 +127,7 @@ func (m *Meeseeks) jobsLoop() {
 				m.replyWithCommandFailed(req, cmd, err, out)
 				job.Finish(jobs.FailedStatus)
 			} else {
-				log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
+				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 					req.Username)
 				m.replyWithSuccess(job.Request, cmd, out)
 				job.Finish(jobs.SuccessStatus)

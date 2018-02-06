@@ -12,6 +12,8 @@ import (
 	"github.com/nlopes/slack"
 )
 
+var errIgnoredMessage = fmt.Errorf("Ignore this message")
+
 // Client is a chat client
 type Client struct {
 	apiClient *slack.Client
@@ -123,7 +125,7 @@ func (m *messageMatcher) init() {
 	}
 }
 
-func (m *messageMatcher) Matches(message *slack.MessageEvent) *Message {
+func (m *messageMatcher) Matches(message *slack.MessageEvent) (Message, error) {
 	m.init()
 
 	if text, ok := m.shouldCare(message); ok {
@@ -131,16 +133,16 @@ func (m *messageMatcher) Matches(message *slack.MessageEvent) *Message {
 		channel := m.getChannel(message.Channel)
 		isIM := m.isIMChannel(message.Channel)
 
-		return &Message{
+		return Message{
 			text:      text,
 			userID:    message.User,
 			channelID: message.Channel,
 			username:  username,
 			channel:   channel,
 			isIM:      isIM,
-		}
+		}, nil
 	}
-	return nil
+	return Message{}, errIgnoredMessage
 }
 
 func (m *messageMatcher) isMyself(message *slack.MessageEvent) bool {
@@ -172,14 +174,13 @@ func (c *Client) ListenMessages(ch chan<- message.Message) {
 	for msg := range c.rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
-			message := c.matcher.Matches(ev)
-			if message == nil {
+			message, err := c.matcher.Matches(ev)
+			if err != nil {
 				continue
 			}
 
-			logrus.Debugf("Received matching message '%s'", ev.Text)
-
-			ch <- *message
+			logrus.Debugf("Sending Slack message %#v to messages channel", message)
+			ch <- message
 
 		default:
 			logrus.Debugf("Ignored Slack Event %#v", ev)
@@ -200,6 +201,7 @@ func (c *Client) Reply(content, color, channel string) error {
 			},
 		},
 	}
+	logrus.Debugf("Replying in Slack %s with %#v", channel, params)
 	_, _, err := c.apiClient.PostMessage(channel, "", params)
 	return err
 }
@@ -210,6 +212,7 @@ func (c *Client) ReplyIM(content, color, user string) error {
 	if err != nil {
 		return fmt.Errorf("could not open IM with %s: %s", user, err)
 	}
+	logrus.Debugf("Replying in Slack IM with '%s' and color %s", content, color)
 	return c.Reply(content, color, channel)
 }
 
