@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -22,6 +23,19 @@ type Client struct {
 	// through a channel
 	rtm     *slack.RTM
 	matcher messageMatcher
+}
+
+// ParseChannelLink implements the messenger.MessengerClient interface
+func (c Client) ParseChannelLink(channel string) (string, error) {
+	r, err := regexp.Compile("<@(.*)\\|.*>")
+	if err != nil {
+		return "", fmt.Errorf("could not compile regex for parsing the channel link: %s", err)
+	}
+	mm := r.FindStringSubmatch(channel)
+	if len(mm) != 2 {
+		return "", fmt.Errorf("invalid channel link: %s", channel)
+	}
+	return mm[1], nil
 }
 
 // GetUsername implements the messenger.MessengerClient interface

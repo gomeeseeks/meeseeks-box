@@ -13,6 +13,7 @@ import (
 // MetadataClient is a helper client used to augment the metadata of the user
 // and channel extracted from the registered token.
 type MetadataClient interface {
+	ParseChannelLink(string) (string, error)
 	GetUsername(string) string
 	GetUserLink(string) string
 	GetChannel(string) string
@@ -28,10 +29,19 @@ type Listener struct {
 }
 
 func (l Listener) sendMessage(token tokens.Token, message string) {
+	channelID, err := l.metadata.ParseChannelLink(token.ChannelLink)
+	if err != nil {
+		logrus.Errorf("Failed to parse channel link %s: %s. Dropping message!", token.ChannelLink, err)
+		return
+		// TODO: this error should go to the administration channel
+	}
+
 	m := apiMessage{
-		metadata:    l.metadata,
-		token:       token,
-		formMessage: message,
+		channelID:      channelID,
+		userID:         token.UserID,
+		text:           token.Text,
+		metadata:       l.metadata,
+		messagePayload: message,
 	}
 	logrus.Debugf("Sending API message %#v to messages channel", m)
 	l.messageCh <- m
@@ -109,7 +119,6 @@ func (s *Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logrus.Infof("received valid token %s from", token)
 	s.listener.sendMessage(token, r.FormValue("message"))
 
 	w.WriteHeader(http.StatusAccepted)
@@ -117,51 +126,53 @@ func (s *Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 
 // Message a chat message
 type apiMessage struct {
-	token       tokens.Token
-	metadata    MetadataClient
-	formMessage string
+	userID         string
+	channelID      string
+	text           string
+	messagePayload string
+	metadata       MetadataClient
 }
 
 // GetText returns the message text
 func (m apiMessage) GetText() string {
-	text := m.token.Text
-	if m.formMessage != "" {
-		text = strings.Join([]string{text, m.formMessage}, " ")
+	text := m.text
+	if m.messagePayload != "" {
+		text = strings.Join([]string{text, m.messagePayload}, " ")
 	}
 	return text
 }
 
 // GetUsernameID returns the user id formatted for using in a slack message
 func (m apiMessage) GetUserID() string {
-	return m.token.UserID
+	return m.userID
 }
 
 // GetUsername returns the user friendly username
 func (m apiMessage) GetUsername() string {
-	return m.metadata.GetUsername(m.token.UserID)
+	return m.metadata.GetUsername(m.userID)
 }
 
 // GetUserLink
 func (m apiMessage) GetUserLink() string {
-	return m.metadata.GetUserLink(m.token.UserID)
+	return m.metadata.GetUserLink(m.userID)
 }
 
 // GetChannelID returns the channel id from the which the message was sent
 func (m apiMessage) GetChannelID() string {
-	return m.token.ChannelID
+	return m.channelID
 }
 
 // GetChannel returns the channel from which the message was sent
 func (m apiMessage) GetChannel() string {
-	return m.metadata.GetChannel(m.token.ChannelID)
+	return m.metadata.GetChannel(m.channelID)
 }
 
 // GetChannelLink returns the channel that slack will turn into a link
 func (m apiMessage) GetChannelLink() string {
-	return m.metadata.GetChannelLink(m.token.ChannelID)
+	return m.metadata.GetChannelLink(m.channelID)
 }
 
 // IsIM returns if the message is an IM message
 func (m apiMessage) IsIM() bool {
-	return m.metadata.IsIM(m.token.ChannelID)
+	return m.metadata.IsIM(m.channelID)
 }

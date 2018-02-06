@@ -590,9 +590,9 @@ func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
 		return "", fmt.Errorf("not enough arguments passed in")
 	}
 	t, err := tokens.Create(tokens.NewTokenRequest{
-		UserID:    job.Request.UserID,
-		ChannelID: job.Request.Args[0],
-		Text:      strings.Join(job.Request.Args[1:], " "),
+		UserID:      job.Request.UserID,
+		ChannelLink: job.Request.Args[0],
+		Text:        strings.Join(job.Request.Args[1:], " "),
 	})
 	return fmt.Sprintf("created token %s", t), err
 }

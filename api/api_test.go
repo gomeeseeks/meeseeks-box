@@ -66,9 +66,9 @@ func TestAPIServer(t *testing.T) {
 		stubs.NewHarness().WithEchoCommand().WithDBPath(dbpath).Load()
 
 		tk, err := tokens.Create(tokens.NewTokenRequest{
-			UserID:    "someone",
-			Text:      "echo something",
-			ChannelID: "generalID",
+			UserID:      "someone",
+			ChannelLink: "generalLink",
+			Text:        "echo something",
 		})
 		stubs.Must(t, "failed to create the token", err)
 
@@ -120,9 +120,9 @@ func TestAPIServer(t *testing.T) {
 				func(t *testing.T, ch chan message.Message) {
 					msg := <-ch
 					stubs.AssertEquals(t, "echo something", msg.GetText())
-					stubs.AssertEquals(t, "generalID", msg.GetChannelID())
-					stubs.AssertEquals(t, "name: generalID", msg.GetChannel())
-					stubs.AssertEquals(t, "<#generalID>", msg.GetChannelLink())
+					stubs.AssertEquals(t, "generalLink", msg.GetChannelID())
+					stubs.AssertEquals(t, "name: generalLink", msg.GetChannel())
+					stubs.AssertEquals(t, "<#generalLink>", msg.GetChannelLink())
 					stubs.AssertEquals(t, "name: someone", msg.GetUsername())
 					stubs.AssertEquals(t, "<@someone>", msg.GetUserLink())
 					stubs.AssertEquals(t, "someone", msg.GetUserID())

@@ -231,6 +231,10 @@ type MetadataStub struct {
 	IM bool
 }
 
+func (m MetadataStub) ParseChannelLink(channelLink string) (string, error) {
+	return channelLink, nil
+}
+
 func (m MetadataStub) GetChannelLink(channelID string) string {
 	return fmt.Sprintf("<#%s>", channelID)
 }

@@ -18,18 +18,18 @@ var ErrTokenNotFound = fmt.Errorf("no token found")
 
 // NewTokenRequest is used to create a new token
 type NewTokenRequest struct {
-	UserID    string
-	ChannelID string
-	Text      string
+	UserID      string
+	ChannelLink string
+	Text        string
 }
 
 // Token is a persisted token
 type Token struct {
-	TokenID   string    `json:"token"`
-	UserID    string    `json:"userID"`
-	ChannelID string    `json:"channelID"`
-	Text      string    `json:"text"`
-	CreatedOn time.Time `json:"created_on"`
+	TokenID     string    `json:"token"`
+	UserID      string    `json:"userID"`
+	ChannelLink string    `json:"channelLink"`
+	Text        string    `json:"text"`
+	CreatedOn   time.Time `json:"created_on"`
 }
 
 // createUUID has been _honored_ from hashicorp UUID
@@ -60,11 +60,11 @@ func Create(r NewTokenRequest) (string, error) {
 		}
 
 		t := Token{
-			TokenID:   token,
-			UserID:    r.UserID,
-			ChannelID: r.ChannelID,
-			Text:      r.Text,
-			CreatedOn: time.Now(),
+			TokenID:     token,
+			UserID:      r.UserID,
+			ChannelLink: r.ChannelLink,
+			Text:        r.Text,
+			CreatedOn:   time.Now(),
 		}
 		tb, err := json.Marshal(t)
 		if err != nil {
