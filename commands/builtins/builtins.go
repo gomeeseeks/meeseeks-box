@@ -576,7 +576,7 @@ type newAPITokenCommand struct {
 	help
 	noHandshake
 	noRecord
-	allowAll
+	allowAdmins
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
