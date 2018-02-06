@@ -27,7 +27,7 @@ type Client struct {
 
 // ParseChannelLink implements the messenger.MessengerClient interface
 func (c Client) ParseChannelLink(channel string) (string, error) {
-	r, err := regexp.Compile("<@(.*)\\|.*>")
+	r, err := regexp.Compile("<#(.*)\\|.*>")
 	if err != nil {
 		return "", fmt.Errorf("could not compile regex for parsing the channel link: %s", err)
 	}
