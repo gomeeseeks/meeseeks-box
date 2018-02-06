@@ -233,7 +233,7 @@ type cancelJobCommand struct {
 	noRecord
 	emptyArgs
 	allowAdmins
-	plainTemplates
+	defaultTemplates
 	defaultTimeout
 	cancelFunc func(jobID uint64)
 }
@@ -250,6 +250,13 @@ func (c cancelJobCommand) Execute(_ context.Context, job jobs.Job) (string, erro
 	jobID, err := parseJobID(job)
 	if err != nil {
 		return "", err
+	}
+	j, err := jobs.Get(jobID)
+	if err != nil {
+		return "", err
+	}
+	if j.Request.UserID != j.Request.UserID {
+		return "", jobs.ErrNoJobWithID
 	}
 	c.cancelFunc(jobID)
 	return fmt.Sprintf("Issued command cancellation to job %d", jobID), nil
@@ -650,7 +657,7 @@ type revokeAPITokenCommand struct {
 	defaultTimeout
 }
 
-func (r revokeAPITokenCommand) Execute(job jobs.Job) (string, error) {
+func (r revokeAPITokenCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	if !job.Request.IsIM {
 		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
 	}
@@ -678,7 +685,7 @@ type listAPITokensCommand struct {
 var listTokensTemplate = `{{ if eq (len .tokens) 0 }}No tokens could be found{{ else }}{{ range $t := .tokens }}- *{{ $t.TokenID }}* {{ $t.UserLink }} at {{ $t.ChannelLink }} _{{ $t.Text}}_
 {{ end }}{{ end }}`
 
-func (l listAPITokensCommand) Execute(job jobs.Job) (string, error) {
+func (l listAPITokensCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	if !job.Request.IsIM {
 		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
 	}
