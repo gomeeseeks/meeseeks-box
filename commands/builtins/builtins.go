@@ -34,6 +34,7 @@ const (
 	BuiltinTailCommand      = "tail"
 	BuiltinLogsCommand      = "logs"
 	BuiltinCancelJobCommand = "cancel"
+	BuiltinKillJobCommand   = "kill"
 
 	BuiltinNewAPITokenCommand    = "token-new"
 	BuiltinListAPITokenCommand   = "tokens"
@@ -232,7 +233,7 @@ type cancelJobCommand struct {
 	noHandshake
 	noRecord
 	emptyArgs
-	allowAdmins
+	allowAll
 	defaultTemplates
 	defaultTimeout
 	cancelFunc func(jobID uint64)
@@ -241,7 +242,7 @@ type cancelJobCommand struct {
 // NewCancelJobCommand creates a command that will invoke the passed cancel job function when executed
 func NewCancelJobCommand(f func(jobID uint64)) command.Command {
 	return cancelJobCommand{
-		help:       help{"cancels a jobs that is currently running"},
+		help:       help{"cancels a jobs owned by the calling user that is currently running"},
 		cancelFunc: f,
 	}
 }
@@ -255,10 +256,43 @@ func (c cancelJobCommand) Execute(_ context.Context, job jobs.Job) (string, erro
 	if err != nil {
 		return "", err
 	}
-	if j.Request.UserID != j.Request.UserID {
+	if job.Request.Username != j.Request.Username {
 		return "", jobs.ErrNoJobWithID
 	}
 	c.cancelFunc(jobID)
+	return fmt.Sprintf("Issued command cancellation to job %d", jobID), nil
+}
+
+type killJobCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	emptyArgs
+	allowAdmins
+	defaultTemplates
+	defaultTimeout
+	cancelFunc func(jobID uint64)
+}
+
+// NewKillJobCommand creates a command that will invoke the passed cancel job function when executed
+func NewKillJobCommand(f func(jobID uint64)) command.Command {
+	return killJobCommand{
+		help:       help{"cancels a jobs that is currently running, from any user"},
+		cancelFunc: f,
+	}
+}
+
+func (k killJobCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
+	jobID, err := parseJobID(job)
+	if err != nil {
+		return "", err
+	}
+	_, err = jobs.Get(jobID)
+	if err != nil {
+		return "", err
+	}
+	k.cancelFunc(jobID)
 	return fmt.Sprintf("Issued command cancellation to job %d", jobID), nil
 }
 

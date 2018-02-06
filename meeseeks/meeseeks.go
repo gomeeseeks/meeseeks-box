@@ -44,6 +44,7 @@ type task struct {
 func New(client ChatClient, messenger *messenger.Messenger, formatter *formatter.Formatter) *Meeseeks {
 	ac := newActiveCommands()
 	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel))
+	commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel))
 
 	m := Meeseeks{
 		messenger: messenger,

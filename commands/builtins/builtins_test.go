@@ -2,6 +2,7 @@ package builtins_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/pcarranza/meeseeks-box/auth"
@@ -25,12 +26,24 @@ var req = request.Request{
 	Channel:     "general",
 	ChannelID:   "123",
 	ChannelLink: "<#123>",
+	UserID:      "someoneID",
 	Username:    "someone",
 	Args:        []string{"arg1", "arg2"},
 }
 
 func Test_BuiltinCommands(t *testing.T) {
 	auth.Configure(basicGroups)
+
+	var jobID uint64
+
+	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(
+		func(j uint64) {
+			jobID = j
+		}))
+	commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(
+		func(j uint64) {
+			jobID = j
+		}))
 
 	tt := []struct {
 		name          string
@@ -39,6 +52,7 @@ func Test_BuiltinCommands(t *testing.T) {
 		setup         func()
 		expected      string
 		expectedMatch string
+		expectedError error
 	}{
 		{
 			name:     "version command",
@@ -54,10 +68,12 @@ func Test_BuiltinCommands(t *testing.T) {
 				- audit: lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter.
 				- auditjob: shows a command metadata by job ID from any user (admin only)
 				- auditlogs: shows the logs of any command by job ID (admin only)
+				- cancel: cancels a jobs owned by the calling user that is currently running
 				- groups: prints the configured groups
 				- help: prints all the kwnown commands and its associated help
 				- job: find one job by id
 				- jobs: shows the last executed jobs for the calling user, accepts -limit
+				- kill: cancels a jobs that is currently running, from any user
 				- last: shows the last executed command by the calling user
 				- logs: returns the logs of the command id passed as argument
 				- tail: returns the last command output or error
@@ -245,6 +261,51 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			expectedMatch: "- \\*.*?\\* userLink at channelLink _something_",
 		},
+		{
+			name: "test kill job command",
+			cmd:  builtins.BuiltinKillJobCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "someone", Args: []string{"1"}},
+			},
+			setup: func() {
+				_, err := jobs.Create(req)
+				stubs.Must(t, "create job", err)
+
+				_, err = jobs.Create(req)
+				stubs.Must(t, "create job", err)
+			},
+			expected: "Issued command cancellation to job 1",
+		},
+		{
+			name: "test cancel job command",
+			cmd:  builtins.BuiltinCancelJobCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "someone", Args: []string{"2"}},
+			},
+			setup: func() {
+				_, err := jobs.Create(req)
+				stubs.Must(t, "create job", err)
+
+				_, err = jobs.Create(req)
+				stubs.Must(t, "create job", err)
+			},
+			expected: "Issued command cancellation to job 2",
+		},
+		{
+			name: "test cancel job command with wrong user",
+			cmd:  builtins.BuiltinCancelJobCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "someone_else", Args: []string{"2"}},
+			},
+			setup: func() {
+				_, err := jobs.Create(req)
+				stubs.Must(t, "create job", err)
+
+				_, err = jobs.Create(req)
+				stubs.Must(t, "create job", err)
+			},
+			expectedError: fmt.Errorf("no job could be found"),
+		},
 	}
 
 	for _, tc := range tt {
@@ -259,6 +320,11 @@ func Test_BuiltinCommands(t *testing.T) {
 				}
 
 				out, err := cmd.Execute(context.Background(), tc.job)
+				if err != nil && tc.expectedError != nil {
+					stubs.AssertEquals(t, err.Error(), tc.expectedError.Error())
+					return
+				}
+
 				stubs.Must(t, "cmd erred out", err)
 				if tc.expected != "" {
 					stubs.AssertEquals(t, tc.expected, out)
