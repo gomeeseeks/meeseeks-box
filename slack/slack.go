@@ -149,16 +149,16 @@ func (m *messageMatcher) isMyself(message *slack.MessageEvent) bool {
 
 func (m *messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) {
 	if m.isMyself(message) {
-		logrus.Infof("It's myself, ignoring message")
+		logrus.Debug("It's myself, ignoring message")
 		return "", false
 	}
 	if m.isIMChannel(message.Channel) {
-		logrus.Infof("Channel %s is IM channel, responding...", message.Channel)
+		logrus.Debugf("Channel %s is IM channel, responding...", message.Channel)
 		return message.Text, true
 	}
 	for _, match := range m.prefixMatches {
 		if strings.HasPrefix(message.Text, match) {
-			logrus.Infof("Message %s matches prefix, responding...", message.Text)
+			logrus.Debugf("Message '%s' matches prefix, responding...", message.Text)
 			return strings.TrimSpace(message.Text[len(match):]), true
 		}
 	}
@@ -167,7 +167,7 @@ func (m *messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) 
 
 // ListenMessages listens to messages and sends the matching ones through the channel
 func (c *Client) ListenMessages(ch chan<- message.Message) {
-	logrus.Infof("Listening messages")
+	logrus.Infof("Listening Slack RTM Messages")
 
 	for msg := range c.rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
@@ -177,7 +177,7 @@ func (c *Client) ListenMessages(ch chan<- message.Message) {
 				continue
 			}
 
-			logrus.Debugf("Received matching message %#v", ev.Text)
+			logrus.Debugf("Received matching message '%s'", ev.Text)
 
 			ch <- *message
 

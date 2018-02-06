@@ -21,6 +21,7 @@ import (
 func main() {
 	configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
 	debugMode := flag.Bool("debug", false, "enabled debug mode")
+	debugSlack := flag.Bool("debug-slack", false, "enabled debug mode for slack")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	apiAddress := flag.String("api-endpoint", ":9696", "api endpoint in which to listen for api calls")
 	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
@@ -46,7 +47,7 @@ func main() {
 
 	log.Info("Loaded configuration")
 
-	slackClient, err := slack.Connect(*debugMode, os.Getenv("SLACK_TOKEN"))
+	slackClient, err := slack.Connect(*debugSlack, os.Getenv("SLACK_TOKEN"))
 	if err != nil {
 		log.Fatalf("Could not connect to slack: %s", err)
 	}
