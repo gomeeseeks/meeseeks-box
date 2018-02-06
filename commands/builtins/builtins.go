@@ -586,13 +586,13 @@ func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
 	if !job.Request.IsIM {
 		return "", fmt.Errorf("API tokens can only be created over an IM conversation, security ffs")
 	}
-	if len(job.Request.Args) < 2 {
+	if len(job.Request.Args) < 3 {
 		return "", fmt.Errorf("not enough arguments passed in")
 	}
 	t, err := tokens.Create(tokens.NewTokenRequest{
-		UserID:      job.Request.UserID,
-		ChannelLink: job.Request.Args[0],
-		Text:        strings.Join(job.Request.Args[1:], " "),
+		UserLink:    job.Request.Args[0],
+		ChannelLink: job.Request.Args[1],
+		Text:        strings.Join(job.Request.Args[2:], " "),
 	})
 	return fmt.Sprintf("created token %s", t), err
 }

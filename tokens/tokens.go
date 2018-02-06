@@ -18,7 +18,7 @@ var ErrTokenNotFound = fmt.Errorf("no token found")
 
 // NewTokenRequest is used to create a new token
 type NewTokenRequest struct {
-	UserID      string
+	UserLink    string
 	ChannelLink string
 	Text        string
 }
@@ -26,7 +26,7 @@ type NewTokenRequest struct {
 // Token is a persisted token
 type Token struct {
 	TokenID     string    `json:"token"`
-	UserID      string    `json:"userID"`
+	UserLink    string    `json:"userLink"`
 	ChannelLink string    `json:"channelLink"`
 	Text        string    `json:"text"`
 	CreatedOn   time.Time `json:"created_on"`
@@ -61,7 +61,7 @@ func Create(r NewTokenRequest) (string, error) {
 
 		t := Token{
 			TokenID:     token,
-			UserID:      r.UserID,
+			UserLink:    r.UserLink,
 			ChannelLink: r.ChannelLink,
 			Text:        r.Text,
 			CreatedOn:   time.Now(),

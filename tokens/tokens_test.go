@@ -10,7 +10,7 @@ import (
 func Test_TokenLifecycle(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
 		id, err := tokens.Create(tokens.NewTokenRequest{
-			UserID:      "myuser",
+			UserLink:    "myuser",
 			ChannelLink: "mychannel",
 			Text:        "echo hello",
 		})
@@ -23,7 +23,7 @@ func Test_TokenLifecycle(t *testing.T) {
 		stubs.Must(t, "could not get token back", err)
 
 		stubs.AssertEquals(t, id, tk.TokenID)
-		stubs.AssertEquals(t, "myuser", tk.UserID)
+		stubs.AssertEquals(t, "myuser", tk.UserLink)
 		stubs.AssertEquals(t, "mychannel", tk.ChannelLink)
 		stubs.AssertEquals(t, "echo hello", tk.Text)
 	})
@@ -33,7 +33,7 @@ func Test_TokenListing(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
 		id, err := tokens.Create(tokens.NewTokenRequest{
 			Text:        "echo something",
-			UserID:      "myuser",
+			UserLink:    "myuser",
 			ChannelLink: "mychannel",
 		})
 		stubs.Must(t, "could not create token", err)
@@ -43,7 +43,7 @@ func Test_TokenListing(t *testing.T) {
 
 		id, err = tokens.Create(tokens.NewTokenRequest{
 			Text:        "echo something else",
-			UserID:      "someone_else",
+			UserLink:    "someone_else",
 			ChannelLink: "my_other_channel",
 		})
 		stubs.Must(t, "could not create token", err)
@@ -69,7 +69,7 @@ func Test_TokenListing(t *testing.T) {
 				Filter: tokens.Filter{
 					Limit: 5,
 					Match: func(tk tokens.Token) bool {
-						return tk.UserID == t2.UserID
+						return tk.UserLink == t2.UserLink
 					},
 				},
 			},

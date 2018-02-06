@@ -38,6 +38,19 @@ func (c Client) ParseChannelLink(channel string) (string, error) {
 	return mm[1], nil
 }
 
+// ParseUserLink implements the messenger.MessengerClient interface
+func (c Client) ParseUserLink(userLink string) (string, error) {
+	r, err := regexp.Compile("<@(.*)>")
+	if err != nil {
+		return "", fmt.Errorf("could not compile regex for parsing the user link: %s", err)
+	}
+	mm := r.FindStringSubmatch(userLink)
+	if len(mm) != 2 {
+		return "", fmt.Errorf("invalid user link: %s", userLink)
+	}
+	return mm[1], nil
+}
+
 // GetUsername implements the messenger.MessengerClient interface
 func (c Client) GetUsername(userID string) string {
 	return c.matcher.getUser(userID)

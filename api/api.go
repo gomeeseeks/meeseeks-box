@@ -14,6 +14,7 @@ import (
 // and channel extracted from the registered token.
 type MetadataClient interface {
 	ParseChannelLink(string) (string, error)
+	ParseUserLink(string) (string, error)
 	GetUsername(string) string
 	GetUserLink(string) string
 	GetChannel(string) string
@@ -36,9 +37,16 @@ func (l Listener) sendMessage(token tokens.Token, message string) {
 		// TODO: this error should go to the administration channel
 	}
 
+	userID, err := l.metadata.ParseUserLink(token.UserLink)
+	if err != nil {
+		logrus.Errorf("Failed to parse user link %s: %s. Dropping message!", token.UserLink, err)
+		return
+		// TODO: this error should go to the administration channel
+	}
+
 	m := apiMessage{
 		channelID:      channelID,
-		userID:         token.UserID,
+		userID:         userID,
 		text:           token.Text,
 		metadata:       l.metadata,
 		messagePayload: message,

@@ -220,7 +220,7 @@ func Test_BuiltinCommands(t *testing.T) {
 			name: "test token-new command",
 			cmd:  builtins.BuiltinNewAPITokenCommand,
 			job: jobs.Job{
-				Request: request.Request{Username: "admin_user", IsIM: true, Args: []string{"yolo", "rm", "-rf"}},
+				Request: request.Request{Username: "admin_user", IsIM: true, Args: []string{"admin_user", "yolo", "rm", "-rf"}},
 			},
 			expectedMatch: "created token .*",
 		},

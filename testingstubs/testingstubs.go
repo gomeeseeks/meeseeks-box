@@ -232,7 +232,11 @@ type MetadataStub struct {
 }
 
 func (m MetadataStub) ParseChannelLink(channelLink string) (string, error) {
-	return channelLink, nil
+	return strings.Replace(channelLink, "Link", "", -1), nil
+}
+
+func (m MetadataStub) ParseUserLink(userLink string) (string, error) {
+	return strings.Replace(userLink, "Link", "", -1), nil
 }
 
 func (m MetadataStub) GetChannelLink(channelID string) string {
