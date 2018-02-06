@@ -56,7 +56,7 @@ func Create(req request.Request) (Job, error) {
 			Status:    RunningStatus,
 		}
 
-		log.Debugf("creating job $#v", job)
+		log.Debugf("Creating job %#v", job)
 		return save(job, bucket)
 	})
 	if err != nil {
@@ -79,6 +79,7 @@ func Get(id uint64) (Job, error) {
 		}
 		return json.Unmarshal(payload, job)
 	})
+	log.Debugf("Returning job %#v for ID %d, err: %s", *job, id, err)
 	return *job, err
 }
 

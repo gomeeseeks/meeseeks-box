@@ -32,7 +32,7 @@ func TestShellCommand(t *testing.T) {
 }
 
 func TestExecuteEcho(t *testing.T) {
-	stubs.WithTmpDB(func() {
+	stubs.WithTmpDB(func(_ string) {
 		out, err := echoCommand.Execute(jobs.Job{
 			ID:      1,
 			Request: request.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
@@ -43,7 +43,7 @@ func TestExecuteEcho(t *testing.T) {
 }
 
 func TestExecuteFail(t *testing.T) {
-	stubs.WithTmpDB(func() {
+	stubs.WithTmpDB(func(_ string) {
 		_, err := failCommand.Execute(jobs.Job{
 			ID:      2,
 			Request: request.Request{},

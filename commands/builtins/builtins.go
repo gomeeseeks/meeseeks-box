@@ -10,6 +10,7 @@ import (
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
 
 	"github.com/pcarranza/meeseeks-box/jobs"
+	"github.com/pcarranza/meeseeks-box/tokens"
 
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/command"
@@ -31,6 +32,10 @@ const (
 	BuiltinLastCommand      = "last"
 	BuiltinTailCommand      = "tail"
 	BuiltinLogsCommand      = "logs"
+
+	BuiltinNewAPITokenCommand    = "token-new"
+	BuiltinListAPITokenCommand   = "tokens"
+	BuiltinRevokeAPITokenCommand = "token-revoke"
 )
 
 // Commands is the basic set of builtin commands
@@ -40,33 +45,55 @@ var Commands = map[string]command.Command{
 	// map
 	BuiltinVersionCommand: versionCommand{
 		help: help{"prints the running meeseeks version"},
+		cmd:  cmd{BuiltinVersionCommand},
 	},
 	BuiltinGroupsCommand: groupsCommand{
 		help: help{"prints the configured groups"},
+		cmd:  cmd{BuiltinGroupsCommand},
 	},
 	BuiltinJobsCommand: jobsCommand{
 		help: help{"shows the last executed jobs for the calling user, accepts -limit"},
+		cmd:  cmd{BuiltinJobsCommand},
 	},
 	BuiltinAuditCommand: auditCommand{
 		help: help{"lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter."},
+		cmd:  cmd{BuiltinAuditCommand},
 	},
 	BuiltinAuditJobCommand: auditJobCommand{
 		help: help{"shows a command metadata by job ID from any user (admin only)"},
+		cmd:  cmd{BuiltinAuditJobCommand},
 	},
 	BuiltinAuditLogsCommand: auditLogsCommand{
 		help: help{"shows the logs of any command by job ID (admin only)"},
+		cmd:  cmd{BuiltinAuditLogsCommand},
 	},
 	BuiltinLastCommand: lastCommand{
 		help: help{"shows the last executed command by the calling user"},
+		cmd:  cmd{BuiltinLastCommand},
 	},
 	BuiltinFindJobCommand: findJobCommand{
 		help: help{"find one job by id"},
+		cmd:  cmd{BuiltinFindJobCommand},
 	},
 	BuiltinTailCommand: tailCommand{
 		help: help{"returns the last command output or error"},
+		cmd:  cmd{BuiltinTailCommand},
 	},
 	BuiltinLogsCommand: logsCommand{
 		help: help{"returns the logs of the command id passed as argument"},
+		cmd:  cmd{BuiltinLogsCommand},
+	},
+	BuiltinNewAPITokenCommand: newAPITokenCommand{
+		help: help{"creates a new API token for the calling user, channel and command with args, requires at least #channel and command"},
+		cmd:  cmd{BuiltinNewAPITokenCommand},
+	},
+	BuiltinListAPITokenCommand: listAPITokensCommand{
+		help: help{"lists the API tokens"},
+		cmd:  cmd{BuiltinListAPITokenCommand},
+	},
+	BuiltinRevokeAPITokenCommand: revokeAPITokenCommand{
+		help: help{"revokes an API token"},
+		cmd:  cmd{BuiltinRevokeAPITokenCommand},
 	},
 }
 
@@ -74,6 +101,7 @@ var Commands = map[string]command.Command{
 func AddHelpCommand(c map[string]command.Command) {
 	c[BuiltinHelpCommand] = helpCommand{
 		commands: c,
+		cmd:      cmd{BuiltinHelpCommand},
 		help:     help{"prints all the kwnown commands and its associated help"},
 	}
 }
@@ -146,7 +174,16 @@ func (h help) Help() string {
 	return h.help
 }
 
+type cmd struct {
+	cmd string
+}
+
+func (c cmd) Cmd() string {
+	return c.cmd
+}
+
 type versionCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -156,16 +193,13 @@ type versionCommand struct {
 	defaultTimeout
 }
 
-func (v versionCommand) Cmd() string {
-	return BuiltinVersionCommand
-}
-
 func (v versionCommand) Execute(job jobs.Job) (string, error) {
 	return fmt.Sprintf("meeseeks-box version %s, commit %s, built at %s",
 		version.Version, version.Commit, version.Date), nil
 }
 
 type helpCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -180,10 +214,6 @@ var helpTemplate = dedent.Dedent(`
 	{{ range $name, $cmd := .commands }}- {{ $name }}: {{ $cmd.Help }}
 	{{ end }}`)
 
-func (h helpCommand) Cmd() string {
-	return BuiltinHelpCommand
-}
-
 func (h helpCommand) Execute(job jobs.Job) (string, error) {
 	tmpl, err := template.New("help", helpTemplate)
 	if err != nil {
@@ -195,6 +225,7 @@ func (h helpCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type groupsCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -211,10 +242,6 @@ var groupsTemplate = dedent.Dedent(`
 	{{- end }}
 	`)
 
-func (g groupsCommand) Cmd() string {
-	return BuiltinGroupsCommand
-}
-
 func (g groupsCommand) Execute(job jobs.Job) (string, error) {
 	tmpl, err := template.New("version", groupsTemplate)
 	if err != nil {
@@ -226,6 +253,7 @@ func (g groupsCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type jobsCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -248,10 +276,6 @@ var jobsTemplate = strings.Join([]string{
 	"{{ end }}",
 	"{{ end }}",
 }, "")
-
-func (j jobsCommand) Cmd() string {
-	return BuiltinJobsCommand
-}
 
 func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
@@ -284,6 +308,7 @@ func (j jobsCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type auditCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -291,10 +316,6 @@ type auditCommand struct {
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-}
-
-func (j auditCommand) Cmd() string {
-	return BuiltinAuditCommand
 }
 
 func (j auditCommand) Execute(job jobs.Job) (string, error) {
@@ -334,6 +355,7 @@ func (j auditCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type lastCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -352,10 +374,6 @@ var jobTemplate = `
 * *When* {{ HumanizeTime $job.StartTime }}
 {{- end }}{{- end }}
 `
-
-func (l lastCommand) Cmd() string {
-	return BuiltinLastCommand
-}
 
 func (l lastCommand) Execute(job jobs.Job) (string, error) {
 	callingUser := job.Request.Username
@@ -379,6 +397,7 @@ func (l lastCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type findJobCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -386,10 +405,6 @@ type findJobCommand struct {
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-}
-
-func (l findJobCommand) Cmd() string {
-	return BuiltinFindJobCommand
 }
 
 func (l findJobCommand) Execute(job jobs.Job) (string, error) {
@@ -422,6 +437,7 @@ func (l findJobCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type auditJobCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -429,10 +445,6 @@ type auditJobCommand struct {
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-}
-
-func (l auditJobCommand) Cmd() string {
-	return BuiltinAuditJobCommand
 }
 
 func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
@@ -462,6 +474,7 @@ func (l auditJobCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type auditLogsCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -469,10 +482,6 @@ type auditLogsCommand struct {
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
-}
-
-func (t auditLogsCommand) Cmd() string {
-	return BuiltinAuditLogsCommand
 }
 
 func (t auditLogsCommand) Execute(job jobs.Job) (string, error) {
@@ -502,6 +511,7 @@ func (t auditLogsCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type tailCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -509,10 +519,6 @@ type tailCommand struct {
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
-}
-
-func (t tailCommand) Cmd() string {
-	return BuiltinTailCommand
 }
 
 func (t tailCommand) Execute(job jobs.Job) (string, error) {
@@ -537,6 +543,7 @@ func (t tailCommand) Execute(job jobs.Job) (string, error) {
 }
 
 type logsCommand struct {
+	cmd
 	help
 	noHandshake
 	noRecord
@@ -544,10 +551,6 @@ type logsCommand struct {
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
-}
-
-func (t logsCommand) Cmd() string {
-	return BuiltinLogsCommand
 }
 
 func (t logsCommand) Execute(job jobs.Job) (string, error) {
@@ -576,6 +579,120 @@ func (t logsCommand) Execute(job jobs.Job) (string, error) {
 		return "", err
 	}
 	return jobLogs.Output, jobLogs.GetError()
+}
+
+type newAPITokenCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAdmins
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+func (n newAPITokenCommand) Execute(job jobs.Job) (string, error) {
+	if !job.Request.IsIM {
+		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
+	}
+	if len(job.Request.Args) < 3 {
+		return "", fmt.Errorf("not enough arguments passed in")
+	}
+
+	t, err := tokens.Create(tokens.NewTokenRequest{
+		UserLink:    job.Request.Args[0],
+		ChannelLink: job.Request.Args[1],
+		Text:        strings.Join(job.Request.Args[2:], " "),
+	})
+	return fmt.Sprintf("created token %s", t), err
+}
+
+type revokeAPITokenCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAdmins
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+func (r revokeAPITokenCommand) Execute(job jobs.Job) (string, error) {
+	if !job.Request.IsIM {
+		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
+	}
+	if len(job.Request.Args) != 1 {
+		return "", fmt.Errorf("only one token ID should be passed as an argument")
+	}
+	tokenID := job.Request.Args[0]
+	if err := tokens.Revoke(tokenID); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("Token *%s* has been revoked", tokenID), nil
+}
+
+type listAPITokensCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAdmins
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+var listTokensTemplate = `{{ if eq (len .tokens) 0 }}No tokens could be found{{ else }}{{ range $t := .tokens }}- *{{ $t.TokenID }}* {{ $t.UserLink }} at {{ $t.ChannelLink }} _{{ $t.Text}}_
+{{ end }}{{ end }}`
+
+func (l listAPITokensCommand) Execute(job jobs.Job) (string, error) {
+	if !job.Request.IsIM {
+		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
+	}
+
+	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
+	limit := flags.Int("limit", 5, "how many jobs to return")
+	user := flags.String("user", "", "user to filter for")
+	channel := flags.String("channel", "", "channel to filter for")
+	command := flags.String("command", "", "command to filter for")
+
+	flags.Parse(job.Request.Args)
+
+	tmpl, err := template.New("tokens", listTokensTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	matchers := []func(tokens.Token) bool{}
+	if *user != "" {
+		matchers = append(matchers, func(t tokens.Token) bool {
+			return t.UserLink == *user
+		})
+	}
+	if *channel != "" {
+		matchers = append(matchers, func(t tokens.Token) bool {
+			return t.ChannelLink == *channel
+		})
+	}
+	if *command != "" {
+		matchers = append(matchers, func(t tokens.Token) bool {
+			return strings.HasPrefix(t.Text, *command)
+		})
+	}
+
+	t, err := tokens.Find(tokens.Filter{
+		Limit: *limit,
+		Match: tokens.MultiMatch(matchers...),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return tmpl.Render(template.Payload{
+		"tokens": t,
+	})
 }
 
 func parseJobID(job jobs.Job) (uint64, error) {

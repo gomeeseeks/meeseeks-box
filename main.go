@@ -6,8 +6,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/pcarranza/meeseeks-box/formatter"
+
+	"github.com/pcarranza/meeseeks-box/api"
 	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/messenger"
+	"github.com/pcarranza/meeseeks-box/slack"
 
 	"github.com/pcarranza/meeseeks-box/meeseeks"
 	"github.com/pcarranza/meeseeks-box/version"
@@ -17,7 +21,10 @@ import (
 func main() {
 	configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
 	debugMode := flag.Bool("debug", false, "enabled debug mode")
+	debugSlack := flag.Bool("debug-slack", false, "enabled debug mode for slack")
 	showVersion := flag.Bool("version", false, "print the version and exit")
+	apiAddress := flag.String("api-endpoint", ":9696", "api endpoint in which to listen for api calls")
+	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
 
 	flag.Parse()
 
@@ -38,16 +45,36 @@ func main() {
 		log.Fatalf("Could not load configuration: %s", err)
 	}
 
-	messaging, err := messenger.Listen(messenger.MessengerOpts{
-		Debug:      *debugMode,
-		SlackToken: os.Getenv("SLACK_TOKEN"),
-	})
+	log.Info("Loaded configuration")
+
+	slackClient, err := slack.Connect(*debugSlack, os.Getenv("SLACK_TOKEN"))
+	if err != nil {
+		log.Fatalf("Could not connect to slack: %s", err)
+	}
+
+	log.Info("Connected to slack")
+
+	apiServer := api.NewServer(slackClient, *apiAddress)
+	go func() {
+		err = apiServer.ListenAndServe(*apiPath)
+		if err != nil {
+			log.Fatalf("Could not start API server: %s", err)
+		}
+	}()
+
+	log.Infof("Started api server on %s%s", *apiAddress, *apiPath)
+
+	msgs, err := messenger.Listen(slackClient, apiServer.GetListener())
 	if err != nil {
 		log.Fatalf("Could not initialize messenger subsystem: %s", err)
 	}
 
-	meeseek := meeseeks.New(messaging, cnf)
-	go meeseek.Start(messaging.MessagesCh)
+	log.Info("Listening messages")
+
+	meeseek := meeseeks.New(slackClient, msgs, formatter.New(cnf))
+	go meeseek.Start()
+
+	log.Info("Started commands pipeline")
 
 	signalCh := make(chan os.Signal)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
@@ -56,7 +83,8 @@ func main() {
 	sig := <-signalCh
 	log.Infof("Got signal %s, trying to gracefully shutdown", sig)
 
-	messaging.Shutdown()
+	apiServer.Shutdown()
+	msgs.Shutdown()
 	meeseek.Shutdown()
 
 	log.Infof("All done, quitting")

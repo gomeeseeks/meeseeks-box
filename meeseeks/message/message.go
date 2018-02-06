@@ -13,7 +13,9 @@ type Message interface {
 	// The friendly name of the user that has sent the message, used internally to match with groups and such
 	GetUsername() string
 	// The username id of the user that has sent the message, used in replies so they notify the user
-	GetUsernameID() string
+	GetUserID() string
+	// The user link returns a link to the user
+	GetUserLink() string
 	// IsIM
 	IsIM() bool
 }

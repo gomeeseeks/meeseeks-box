@@ -38,6 +38,11 @@ func Test_ParsingCommandsCorrectly(t *testing.T) {
 			command:  "echo -n    'this is a message'",
 			expected: []string{"echo", "-n", "this is a message"},
 		},
+		{
+			name:     "with backticks",
+			command:  "echo `this is a message`",
+			expected: []string{"echo", "this is a message"},
+		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {

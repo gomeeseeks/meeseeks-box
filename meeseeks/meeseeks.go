@@ -4,29 +4,29 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/pcarranza/meeseeks-box/command"
+	"github.com/pcarranza/meeseeks-box/formatter"
 	"github.com/pcarranza/meeseeks-box/jobs"
-	log "github.com/sirupsen/logrus"
+	"github.com/pcarranza/meeseeks-box/messenger"
 
 	"github.com/pcarranza/meeseeks-box/auth"
 	"github.com/pcarranza/meeseeks-box/commands"
-	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
-	"github.com/pcarranza/meeseeks-box/template"
 )
 
-// Client interface that provides a way of replying to messages on a channel
-type Client interface {
+// ChatClient interface that provides a way of replying to messages on a channel
+type ChatClient interface {
 	Reply(text, color, channel string) error
 	ReplyIM(text, color, user string) error
 }
 
 // Meeseeks is the command execution engine
 type Meeseeks struct {
-	client    Client
-	config    config.Config
-	templates *template.TemplatesBuilder
+	client    ChatClient
+	messenger *messenger.Messenger
+	formatter *formatter.Formatter
 
 	tasksCh chan task
 	wg      sync.WaitGroup
@@ -38,13 +38,11 @@ type task struct {
 }
 
 // New creates a new Meeseeks service
-func New(client Client, conf config.Config) *Meeseeks {
-	templatesBuilder := template.NewBuilder().WithMessages(conf.Messages)
-
+func New(client ChatClient, messenger *messenger.Messenger, formatter *formatter.Formatter) *Meeseeks {
 	m := Meeseeks{
+		messenger: messenger,
+		formatter: formatter,
 		client:    client,
-		config:    conf,
-		templates: templatesBuilder,
 		tasksCh:   make(chan task, 20),
 
 		wg: sync.WaitGroup{},
@@ -56,11 +54,11 @@ func New(client Client, conf config.Config) *Meeseeks {
 }
 
 // Start launches the meeseeks to read messages from the MessageCh
-func (m *Meeseeks) Start(messageCh chan message.Message) {
-	for msg := range messageCh {
+func (m *Meeseeks) Start() {
+	for msg := range m.messenger.MessagesCh() {
 		req, err := request.FromMessage(msg)
 		if err != nil {
-			log.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
+			logrus.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
 			m.replyWithError(msg, err)
 			continue
 		}
@@ -75,7 +73,7 @@ func (m *Meeseeks) Start(messageCh chan message.Message) {
 			continue
 		}
 
-		log.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
+		logrus.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 			req.Command, req.Username, req.Channel, req.Args)
 
 		t, err := m.createTask(req, cmd)
@@ -101,11 +99,16 @@ func (m *Meeseeks) createTask(req request.Request, cmd command.Command) (task, e
 // Shutdown initiates a shutdown process by waiting for jobs to finish and then
 // closing the tasks channel
 func (m *Meeseeks) Shutdown() {
-	defer close(m.tasksCh)
+	defer m.closeTasksChannel()
 
-	log.Info("Waiting for jobs to finish")
+	logrus.Info("Waiting for jobs to finish")
 	m.wg.Wait()
-	log.Info("Done waiting, exiting")
+	logrus.Info("Done waiting, exiting")
+}
+
+func (m *Meeseeks) closeTasksChannel() {
+	logrus.Infof("Closing meeseeks tasks channel")
+	close(m.tasksCh)
 }
 
 func (m *Meeseeks) jobsLoop() {
@@ -119,12 +122,12 @@ func (m *Meeseeks) jobsLoop() {
 
 			out, err := t.cmd.Execute(t.job)
 			if err != nil {
-				log.Errorf("Command '%s' from user '%s' failed execution with error: %s",
+				logrus.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 					req.Command, req.Username, err)
 				m.replyWithCommandFailed(req, cmd, err, out)
 				job.Finish(jobs.FailedStatus)
 			} else {
-				log.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
+				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 					req.Username)
 				m.replyWithSuccess(job.Request, cmd, out)
 				job.Finish(jobs.SuccessStatus)

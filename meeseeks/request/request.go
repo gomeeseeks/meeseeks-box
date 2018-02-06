@@ -15,7 +15,8 @@ type Request struct {
 	Command     string   `json:"Command"`
 	Args        []string `json:"Arguments"`
 	Username    string   `json:"Username"`
-	UsernameID  string   `json:"UsernameID"`
+	UserID      string   `json:"UserID"`
+	UserLink    string   `json:"UserLink"`
 	Channel     string   `json:"Channel"`
 	ChannelID   string   `json:"CannelID"`
 	ChannelLink string   `json:"CannelLink"`
@@ -37,7 +38,8 @@ func FromMessage(msg message.Message) (Request, error) {
 		Command:     args[0],
 		Args:        args[1:],
 		Username:    msg.GetUsername(),
-		UsernameID:  msg.GetUsernameID(),
+		UserID:      msg.GetUserID(),
+		UserLink:    msg.GetUserLink(),
 		Channel:     msg.GetChannel(),
 		ChannelID:   msg.GetChannelID(),
 		ChannelLink: msg.GetChannelLink(),

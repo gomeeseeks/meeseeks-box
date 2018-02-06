@@ -10,6 +10,7 @@ import (
 	"github.com/pcarranza/meeseeks-box/jobs/logs"
 	"github.com/pcarranza/meeseeks-box/meeseeks/request"
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
+	"github.com/pcarranza/meeseeks-box/tokens"
 	"github.com/renstrom/dedent"
 )
 
@@ -31,11 +32,12 @@ func Test_BuiltinCommands(t *testing.T) {
 	auth.Configure(basicGroups)
 
 	tt := []struct {
-		name     string
-		cmd      string
-		job      jobs.Job
-		setup    func()
-		expected string
+		name          string
+		cmd           string
+		job           jobs.Job
+		setup         func()
+		expected      string
+		expectedMatch string
 	}{
 		{
 			name:     "version command",
@@ -58,6 +60,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				- last: shows the last executed command by the calling user
 				- logs: returns the logs of the command id passed as argument
 				- tail: returns the last command output or error
+				- token-new: creates a new API token for the calling user, channel and command with args, requires at least #channel and command
+				- token-revoke: revokes an API token
+				- tokens: lists the API tokens
 				- version: prints the running meeseeks version
 				`),
 		},
@@ -214,11 +219,36 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			expected: "something to say 1",
 		},
+		{
+			name: "test token-new command",
+			cmd:  builtins.BuiltinNewAPITokenCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "admin_user", IsIM: true, Args: []string{"admin_user", "yolo", "rm", "-rf"}},
+			},
+			expectedMatch: "created token .*",
+		},
+		{
+			name: "test tokens command",
+			cmd:  builtins.BuiltinListAPITokenCommand,
+			job: jobs.Job{
+				Request: request.Request{Username: "admin_user", IsIM: true},
+			},
+			setup: func() {
+				_, err := tokens.Create(tokens.NewTokenRequest{
+					ChannelLink: "channelLink",
+					UserLink:    "userLink",
+					Text:        "something",
+				})
+				stubs.Must(t, "create token", err)
+
+			},
+			expectedMatch: "- \\*.*?\\* userLink at channelLink _something_",
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func() {
+			stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func(_ string) {
 				if tc.setup != nil {
 					tc.setup()
 				}
@@ -229,14 +259,19 @@ func Test_BuiltinCommands(t *testing.T) {
 
 				out, err := cmd.Execute(tc.job)
 				stubs.Must(t, "cmd erred out", err)
-				stubs.AssertEquals(t, tc.expected, out)
+				if tc.expected != "" {
+					stubs.AssertEquals(t, tc.expected, out)
+				}
+				if tc.expectedMatch != "" {
+					stubs.AssertMatches(t, tc.expectedMatch, out)
+				}
 			}))
 		})
 	}
 }
 
 func Test_FilterJobsAudit(t *testing.T) {
-	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func() {
+	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func(_ string) {
 		r1 := request.Request{
 			Command:     "command",
 			Channel:     "general",

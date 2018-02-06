@@ -5,13 +5,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pcarranza/meeseeks-box/messenger"
+
+	"github.com/pcarranza/meeseeks-box/formatter"
+
 	"github.com/renstrom/dedent"
 
 	"regexp"
 
-	"github.com/pcarranza/meeseeks-box/config"
 	"github.com/pcarranza/meeseeks-box/meeseeks"
-	"github.com/pcarranza/meeseeks-box/meeseeks/message"
 	"github.com/pcarranza/meeseeks-box/template"
 	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
 )
@@ -22,7 +24,7 @@ type expectedMessage struct {
 	IsIM        bool
 }
 
-func Test_BasicReplying(t *testing.T) {
+func Test_MeeseeksInteractions(t *testing.T) {
 	handshakeMatcher := fmt.Sprintf("^(%s)$", strings.Join(template.DefaultHandshakeMessages, "|"))
 
 	tt := []struct {
@@ -127,8 +129,9 @@ func Test_BasicReplying(t *testing.T) {
 		},
 	}
 
-	client, cnf := stubs.NewHarness().
-		WithConfig(dedent.Dedent(`
+	stubs.WithTmpDB(func(dbpath string) {
+		client, cnf := stubs.NewHarness().
+			WithConfig(dedent.Dedent(`
 			---
 			commands:
 			  echo:
@@ -146,19 +149,19 @@ func Test_BasicReplying(t *testing.T) {
 			    auth_strategy: any
 			    timeout: 5
 			    args: ["pre-message"]
-			`)).Build()
+			`)).WithDBPath(dbpath).Load()
 
-	config.LoadConfig(cnf)
+		msgs, err := messenger.Listen(client)
+		if err != nil {
+			t.Fatalf("could not create listener: %s", err)
+		}
+		m := meeseeks.New(client, msgs, formatter.New(cnf))
+		go m.Start()
 
-	m := meeseeks.New(client, cnf)
-	messageCh := make(chan message.Message)
-	go m.Start(messageCh)
-
-	stubs.WithTmpDB(func() {
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Logf("starting test %s", tc.name)
-				messageCh <- stubs.MessageStub{
+				client.MessagesCh() <- stubs.MessageStub{
 					Text:      tc.message,
 					Channel:   tc.channel,
 					ChannelID: tc.channel + "ID",
@@ -168,7 +171,7 @@ func Test_BasicReplying(t *testing.T) {
 
 				for _, expected := range tc.expected {
 					t.Logf("reading replies from client on %s", tc.name)
-					actual := <-client.Messages
+					actual := <-client.MessagesSent
 
 					r, err := regexp.Compile(expected.TextMatcher)
 					stubs.Must(t, "could not compile regex", err, expected.TextMatcher)
@@ -181,7 +184,7 @@ func Test_BasicReplying(t *testing.T) {
 				}
 			})
 		}
+		m.Shutdown()
 	})
-	m.Shutdown()
 
 }
