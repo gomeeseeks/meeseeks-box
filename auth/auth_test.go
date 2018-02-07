@@ -3,10 +3,10 @@ package auth_test
 import (
 	"testing"
 
-	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/commands"
-	"github.com/pcarranza/meeseeks-box/commands/shell"
-	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/commands/shell"
+	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
 func Test_Auth(t *testing.T) {

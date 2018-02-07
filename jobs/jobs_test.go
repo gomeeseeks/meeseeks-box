@@ -3,9 +3,9 @@ package jobs_test
 import (
 	"testing"
 
-	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/pcarranza/meeseeks-box/meeseeks/request"
-	stub "github.com/pcarranza/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	stub "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
 var req = request.Request{

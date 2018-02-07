@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/coreos/bbolt"
-	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/sirupsen/logrus"
 )
 

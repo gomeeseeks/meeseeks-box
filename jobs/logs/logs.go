@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	bolt "github.com/coreos/bbolt"
-	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/db"
 )
 
 var logsBucketKey = []byte("logs")

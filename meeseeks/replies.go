@@ -1,9 +1,9 @@
 package meeseeks
 
 import (
-	"github.com/pcarranza/meeseeks-box/command"
-	"github.com/pcarranza/meeseeks-box/meeseeks/message"
-	"github.com/pcarranza/meeseeks-box/meeseeks/request"
+	"github.com/gomeeseeks/meeseeks-box/command"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
 	log "github.com/sirupsen/logrus"
 )
 

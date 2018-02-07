@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/commands"
-	"github.com/pcarranza/meeseeks-box/commands/builtins"
-	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/pcarranza/meeseeks-box/jobs/logs"
-	"github.com/pcarranza/meeseeks-box/meeseeks/request"
-	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
-	"github.com/pcarranza/meeseeks-box/tokens"
+	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/tokens"
 	"github.com/renstrom/dedent"
 )
 

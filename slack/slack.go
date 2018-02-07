@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
 	"github.com/sirupsen/logrus"
 
 	"github.com/nlopes/slack"

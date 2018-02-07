@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pcarranza/meeseeks-box/commands/builtins"
+	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/sirupsen/logrus"
 
-	"github.com/pcarranza/meeseeks-box/command"
-	"github.com/pcarranza/meeseeks-box/formatter"
-	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/pcarranza/meeseeks-box/messenger"
+	"github.com/gomeeseeks/meeseeks-box/command"
+	"github.com/gomeeseeks/meeseeks-box/formatter"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/messenger"
 
-	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/commands"
-	"github.com/pcarranza/meeseeks-box/meeseeks/request"
+	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
 )
 
 // ChatClient interface that provides a way of replying to messages on a channel

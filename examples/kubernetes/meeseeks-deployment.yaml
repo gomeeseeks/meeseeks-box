@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: meeseeks
-        image: pcarranza/meeseeks-box
+        image: gomeeseeks/meeseeks-box
         env:
         - name: SLACK_TOKEN
           valueFrom:

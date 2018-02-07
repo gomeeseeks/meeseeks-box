@@ -8,15 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/jobs/logs"
+	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 
-	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/pcarranza/meeseeks-box/tokens"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/tokens"
 
-	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/command"
-	"github.com/pcarranza/meeseeks-box/template"
-	"github.com/pcarranza/meeseeks-box/version"
+	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/command"
+	"github.com/gomeeseeks/meeseeks-box/template"
+	"github.com/gomeeseeks/meeseeks-box/version"
 	"github.com/renstrom/dedent"
 )
 

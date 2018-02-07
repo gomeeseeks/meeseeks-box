@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/command"
-	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/pcarranza/meeseeks-box/jobs/logs"
+	"github.com/gomeeseeks/meeseeks-box/command"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/sirupsen/logrus"
 )
 

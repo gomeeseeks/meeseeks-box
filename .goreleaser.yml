@@ -1,7 +1,7 @@
 project_name: meeseeks-box
 release:
   github:
-    owner: pcarranza
+    owner: gomeeseeks
     name: meeseeks-box
   name_template: '{{.Tag}}'
 builds:
@@ -14,7 +14,7 @@ builds:
   goarm:
   - "6"
   main: .
-  ldflags: -s -w -X github.com/pcarranza/meeseeks-box/version.Version={{.Version}} -X github.com/pcarranza/meeseeks-box/version.Commit={{.Commit}} -X github.com/pcarranza/meeseeks-box/version.Date={{.Date}}
+  ldflags: -s -w -X github.com/gomeeseeks/meeseeks-box/version.Version={{.Version}} -X github.com/gomeeseeks/meeseeks-box/version.Commit={{.Commit}} -X github.com/gomeeseeks/meeseeks-box/version.Date={{.Date}}
   binary: meeseeks-box
 archive:
   name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm
@@ -40,14 +40,14 @@ changelog:
       - Merge
       - WIP
 dockers:
-  - image: pcarranza/meeseeks-box
+  - image: gomeeseeks/meeseeks-box
     goos: linux
     goarch: amd64
     goarm: ''
     binary: meeseeks-box
     dockerfile: Dockerfile
     latest: true
-  - image: pcarranza/meeseeks-box-armv6
+  - image: gomeeseeks/meeseeks-box-armv6
     goos: linux
     goarch: arm
     goarm: '6'

@@ -6,15 +6,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/pcarranza/meeseeks-box/formatter"
+	"github.com/gomeeseeks/meeseeks-box/formatter"
 
-	"github.com/pcarranza/meeseeks-box/api"
-	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/messenger"
-	"github.com/pcarranza/meeseeks-box/slack"
+	"github.com/gomeeseeks/meeseeks-box/api"
+	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/messenger"
+	"github.com/gomeeseeks/meeseeks-box/slack"
 
-	"github.com/pcarranza/meeseeks-box/meeseeks"
-	"github.com/pcarranza/meeseeks-box/version"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/version"
 	log "github.com/sirupsen/logrus"
 )
 

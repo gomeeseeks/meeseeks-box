@@ -3,8 +3,8 @@ package commands
 import (
 	"sync"
 
-	"github.com/pcarranza/meeseeks-box/command"
-	"github.com/pcarranza/meeseeks-box/commands/builtins"
+	"github.com/gomeeseeks/meeseeks-box/command"
+	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 )
 
 var commands map[string]command.Command
