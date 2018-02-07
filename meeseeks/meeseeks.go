@@ -1,9 +1,11 @@
 package meeseeks
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
+	"github.com/pcarranza/meeseeks-box/commands/builtins"
 	"github.com/sirupsen/logrus"
 
 	"github.com/pcarranza/meeseeks-box/command"
@@ -28,8 +30,9 @@ type Meeseeks struct {
 	messenger *messenger.Messenger
 	formatter *formatter.Formatter
 
-	tasksCh chan task
-	wg      sync.WaitGroup
+	tasksCh        chan task
+	wg             sync.WaitGroup
+	activeCommands *activeCommands
 }
 
 type task struct {
@@ -39,16 +42,21 @@ type task struct {
 
 // New creates a new Meeseeks service
 func New(client ChatClient, messenger *messenger.Messenger, formatter *formatter.Formatter) *Meeseeks {
+	ac := newActiveCommands()
+	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel))
+	commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel))
+
 	m := Meeseeks{
 		messenger: messenger,
 		formatter: formatter,
 		client:    client,
 		tasksCh:   make(chan task, 20),
 
-		wg: sync.WaitGroup{},
+		wg:             sync.WaitGroup{},
+		activeCommands: ac,
 	}
 
-	go m.jobsLoop()
+	go m.loop()
 
 	return &m
 }
@@ -111,7 +119,7 @@ func (m *Meeseeks) closeTasksChannel() {
 	close(m.tasksCh)
 }
 
-func (m *Meeseeks) jobsLoop() {
+func (m *Meeseeks) loop() {
 	for t := range m.tasksCh {
 		go func(t task) {
 			job := t.job
@@ -120,7 +128,10 @@ func (m *Meeseeks) jobsLoop() {
 
 			m.replyWithHandshake(req, cmd)
 
-			out, err := t.cmd.Execute(t.job)
+			ctx := m.activeCommands.Add(t)
+			defer m.activeCommands.Cancel(job.ID)
+
+			out, err := t.cmd.Execute(ctx, t.job)
 			if err != nil {
 				logrus.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 					req.Command, req.Username, err)
@@ -135,4 +146,41 @@ func (m *Meeseeks) jobsLoop() {
 			m.wg.Done()
 		}(t)
 	}
+}
+
+type activeCommands struct {
+	ctx map[uint64]context.CancelFunc
+	m   sync.Mutex
+}
+
+func newActiveCommands() *activeCommands {
+	return &activeCommands{
+		ctx: make(map[uint64]context.CancelFunc),
+	}
+}
+
+func (a *activeCommands) Add(t task) context.Context {
+	defer a.m.Unlock()
+	a.m.Lock()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	a.ctx[t.job.ID] = cancel
+	return ctx
+}
+
+func (a *activeCommands) Cancel(jobID uint64) {
+	defer a.m.Unlock()
+	a.m.Lock()
+
+	cancel, ok := a.ctx[jobID]
+	if !ok {
+		logrus.Debugf("could not cancel job %d because it is not in the active jobs list", jobID)
+		return
+	}
+
+	// Delete the cancel command from the map
+	delete(a.ctx, jobID)
+
+	// Invoke the cancel function
+	cancel()
 }

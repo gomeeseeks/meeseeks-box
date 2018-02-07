@@ -38,10 +38,10 @@ type shellCommand struct {
 }
 
 // Execute implements Command.Execute for the ShellCommand
-func (c shellCommand) Execute(job jobs.Job) (string, error) {
+func (c shellCommand) Execute(ctx context.Context, job jobs.Job) (string, error) {
 	cmdArgs := append(c.Args(), job.Request.Args...)
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), c.Timeout())
+	ctx, cancelFunc := context.WithTimeout(ctx, c.Timeout())
 	defer cancelFunc()
 
 	AppendLogs := func(line string) {
