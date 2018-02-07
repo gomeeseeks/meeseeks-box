@@ -6,8 +6,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/pcarranza/meeseeks-box/meeseeks/message"
-	"github.com/pcarranza/meeseeks-box/tokens"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/tokens"
 )
 
 // MetadataClient is a helper client used to augment the metadata of the user

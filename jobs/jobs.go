@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/db"
-	"github.com/pcarranza/meeseeks-box/meeseeks/request"
+	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
 
 	"encoding/json"
 

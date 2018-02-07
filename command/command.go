@@ -5,7 +5,7 @@ import (
 
 	"context"
 
-	"github.com/pcarranza/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
 )
 
 // Defaults for commands

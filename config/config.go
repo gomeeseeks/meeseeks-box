@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/commands"
-	"github.com/pcarranza/meeseeks-box/commands/shell"
+	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 
-	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/db"
 
 	yaml "gopkg.in/yaml.v2"
 )

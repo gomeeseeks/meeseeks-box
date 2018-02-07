@@ -5,17 +5,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pcarranza/meeseeks-box/messenger"
+	"github.com/gomeeseeks/meeseeks-box/messenger"
 
-	"github.com/pcarranza/meeseeks-box/formatter"
+	"github.com/gomeeseeks/meeseeks-box/formatter"
 
 	"github.com/renstrom/dedent"
 
 	"regexp"
 
-	"github.com/pcarranza/meeseeks-box/meeseeks"
-	"github.com/pcarranza/meeseeks-box/template"
-	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/template"
+	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
 type expectedMessage struct {

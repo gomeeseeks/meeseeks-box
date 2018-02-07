@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/renstrom/dedent"
 )
 

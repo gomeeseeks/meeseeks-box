@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pcarranza/meeseeks-box/api"
-	"github.com/pcarranza/meeseeks-box/meeseeks/message"
-	"github.com/pcarranza/meeseeks-box/tokens"
+	"github.com/gomeeseeks/meeseeks-box/api"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/tokens"
 
-	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
+	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
 /*

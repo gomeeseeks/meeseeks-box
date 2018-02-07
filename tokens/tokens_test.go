@@ -3,8 +3,8 @@ package tokens_test
 import (
 	"testing"
 
-	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
-	"github.com/pcarranza/meeseeks-box/tokens"
+	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/tokens"
 )
 
 func Test_TokenLifecycle(t *testing.T) {

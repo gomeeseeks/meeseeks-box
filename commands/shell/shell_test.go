@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/command"
-	"github.com/pcarranza/meeseeks-box/commands/shell"
-	"github.com/pcarranza/meeseeks-box/jobs"
-	"github.com/pcarranza/meeseeks-box/meeseeks/request"
-	stubs "github.com/pcarranza/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/command"
+	"github.com/gomeeseeks/meeseeks-box/commands/shell"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
 var echoCommand = shell.New(shell.CommandOpts{

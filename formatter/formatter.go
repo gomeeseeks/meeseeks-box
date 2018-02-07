@@ -1,8 +1,8 @@
 package formatter
 
 import (
-	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/template"
+	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/template"
 )
 
 type Formatter struct {
