@@ -1,21 +1,48 @@
-image: golang:1.9
+image: golang:1.9-alpine
 
 stages:
   - test
+  - compile
+  - docker
 
 before_script:
 
-test:
-  stage: test
-  script:
+.go_job: &go_job
+  before_script:
+    - apk add -U git make
     - GOPATH=$(mktemp -d)
     - PATH=${GOPATH}/bin:${PATH}
     - PROJECT=$(basename ${CI_PROJECT_DIR})
-    - GROUP=$(basename $(dirname ${CI_PROJECT_DIR}))
     - WORKDIR=${GOPATH}/src/github.com/gomeeseeks/${PROJECT}
-    - mkdir -p ${WORKDIR}
-    - cp -a * ${WORKDIR}
+    - mkdir -p ${GOPATH}/src/github.com/gomeeseeks
+    - ln -s ${CI_PROJECT_DIR} ${WORKDIR}
     - go get -u github.com/golang/dep/cmd/dep
-    - cd ${WORKDIR} 
+    - cd ${WORKDIR}
     - dep ensure -v
+
+test:
+  <<: *go_job
+  stage: test
+  script:
     - make test
+
+compile:
+  <<: *go_job
+  stage: compile
+  script:
+    - make compile
+  artifacts:
+    paths:
+      - meeseeks-box
+    expire_in: 7d
+
+docker:
+  stage: docker
+  services:
+    - docker:dind
+  image: docker:git
+  script:
+    - apk add -U make
+    - make build_docker
+  tags:
+    - docker
