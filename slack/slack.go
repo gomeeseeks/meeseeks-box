@@ -216,12 +216,25 @@ func (c *Client) ListenMessages(ch chan<- message.Message) {
 	logrus.Infof("Stopped listening to messages")
 }
 
-// Reply replies to the user building a message with attachment
-func (c *Client) Reply(content, color, channel string) error {
+// Reply replies to the user building a regular message
+func (c *Client) Reply(content, channel string) error {
+	params := slack.PostMessageParameters{
+		AsUser: true,
+		Markdown: true,
+		UnfurlLinks: true,
+		UnfurlMedia: true,
+	}
+	logrus.Debugf("Replying in Slack %s with %#v and text: %s", channel, params, content)
+	_, _, err := c.apiClient.PostMessage(channel, content, params)
+	return err
+}
+
+// ReplyWithAttachment replies to the user building a message with attachment
+func (c *Client) ReplyWithAttachment(content, color, channel string) error {
 	params := slack.PostMessageParameters{
 		AsUser: true,
 		Attachments: []slack.Attachment{
-			slack.Attachment{
+			{
 				Text:       content,
 				Color:      color,
 				MarkdownIn: []string{"text"},
@@ -234,13 +247,23 @@ func (c *Client) Reply(content, color, channel string) error {
 }
 
 // ReplyIM sends a message to a user over an IM channel
-func (c *Client) ReplyIM(content, color, user string) error {
+func (c *Client) ReplyIM(content, user string) error {
+	_, _, channel, err := c.apiClient.OpenIMChannel(user)
+	if err != nil {
+		return fmt.Errorf("could not open IM with %s: %s", user, err)
+	}
+	logrus.Debugf("Replying in Slack IM with '%s'", content)
+	return c.Reply(content, channel)
+}
+
+// ReplyIMWithAttachment sends a message with attachment to a user over an IM channel
+func (c *Client) ReplyIMWithAttachment(content, color, user string) error {
 	_, _, channel, err := c.apiClient.OpenIMChannel(user)
 	if err != nil {
 		return fmt.Errorf("could not open IM with %s: %s", user, err)
 	}
 	logrus.Debugf("Replying in Slack IM with '%s' and color %s", content, color)
-	return c.Reply(content, color, channel)
+	return c.ReplyWithAttachment(content, color, channel)
 }
 
 // Message a chat message
