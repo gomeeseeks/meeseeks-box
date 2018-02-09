@@ -20,8 +20,10 @@ import (
 
 // ChatClient interface that provides a way of replying to messages on a channel
 type ChatClient interface {
-	Reply(text, color, channel string) error
-	ReplyIM(text, color, user string) error
+	Reply(text, channel string) error
+	ReplyWithAttachment(text, color, channel string) error
+	ReplyIM(text, user string) error
+	ReplyIMWithAttachment(text, color, user string) error
 }
 
 // Meeseeks is the command execution engine
