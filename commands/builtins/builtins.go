@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 
 	"github.com/gomeeseeks/meeseeks-box/jobs"
@@ -39,6 +40,10 @@ const (
 	BuiltinNewAPITokenCommand    = "token-new"
 	BuiltinListAPITokenCommand   = "tokens"
 	BuiltinRevokeAPITokenCommand = "token-revoke"
+
+	BuiltinAddAliasCommand    = "alias"
+	BuiltinDeleteAliasCommand = "unalias"
+	BuiltinGetAliasesCommand  = "aliases"
 )
 
 // Commands is the basic set of builtin commands
@@ -97,6 +102,18 @@ var Commands = map[string]command.Command{
 	BuiltinRevokeAPITokenCommand: revokeAPITokenCommand{
 		help: help{"revokes an API token"},
 		cmd:  cmd{BuiltinRevokeAPITokenCommand},
+	},
+	BuiltinAddAliasCommand: addAliasCommand{
+		help: help{"adds an alias for a command"},
+		cmd:  cmd{BuiltinAddAliasCommand},
+	},
+	BuiltinDeleteAliasCommand: deleteAliasCommand{
+		help: help{"deletes an alias for a command"},
+		cmd:  cmd{BuiltinDeleteAliasCommand},
+	},
+	BuiltinGetAliasesCommand: getAliasesCommand{
+		help: help{"list all the aliases for the current user"},
+		cmd:  cmd{BuiltinGetAliasesCommand},
 	},
 }
 
@@ -764,6 +781,81 @@ func (l listAPITokensCommand) Execute(_ context.Context, job jobs.Job) (string, 
 
 	return tmpl.Render(template.Payload{
 		"tokens": t,
+	})
+}
+
+type addAliasCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAll
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+func (l addAliasCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
+	if len(job.Request.Args) < 2 {
+		return "", fmt.Errorf("an alias requires at least two arguments: the alias and the command")
+	}
+
+	args := job.Request.Args
+	command := strings.Join(args[1:len(args)], " ")
+	if err := aliases.Add(job.Request.UserID, args[0], command); err != nil {
+		return fmt.Sprintf("failed to create the alias. Error: %s", err), err
+	}
+	return "alias created successfully", nil
+}
+
+type deleteAliasCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAll
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+func (l deleteAliasCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
+	if len(job.Request.Args) != 1 {
+		return "", fmt.Errorf("unalias requires only one argument: the alias to delete")
+	}
+
+	if err := aliases.Delete(job.Request.UserID, job.Request.Args[0]); err != nil {
+		return fmt.Sprintf("failed to delete the alias. Error: %s", err), err
+	}
+	return "alias deleted successfully", nil
+
+}
+
+type getAliasesCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAll
+	plainTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+var getAliasesTemplate = `{{ if eq (len .aliases) 0 }}No alias could be found{{ else }}{{ range $a, $c := .aliases }}- *{{ $a }}* - ` + "`" + `{{ $c }}` + "`" + `
+{{ end }}{{ end }}`
+
+func (l getAliasesCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
+	a, err := aliases.List(job.Request.UserID)
+	if err != nil {
+		return fmt.Sprintf("failed to load the aliases. Error: %s", err), err
+	}
+	tmpl, err := template.New("aliases", getAliasesTemplate)
+	if err != nil {
+		return "", err
+	}
+	return tmpl.Render(template.Payload{
+		"aliases": a,
 	})
 }
 
