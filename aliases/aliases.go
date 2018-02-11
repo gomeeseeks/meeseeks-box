@@ -1,13 +1,25 @@
 package aliases
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
 )
 
 var aliasesBucketKey = []byte("aliases")
+
+// ErrAliasNotFound is returned when an alias can't be found
+var ErrAliasNotFound = fmt.Errorf("alias not found")
+
+// Alias represent an alias for a command
+type Alias struct {
+	Alias   string
+	Command string
+	Args    []string
+}
 
 // Add adds a new alias for a user ID
 func Add(userID, alias, command string) error {
@@ -16,7 +28,17 @@ func Add(userID, alias, command string) error {
 		if err != nil {
 			return err
 		}
-		return bucket.Put([]byte(alias), []byte(command))
+		cmdChunks := strings.Split(command, " ")
+		a := Alias{
+			Alias:   alias,
+			Command: cmdChunks[0],
+			Args:    cmdChunks[1:len(cmdChunks)],
+		}
+		aj, err := json.Marshal(a)
+		if err != nil {
+			return fmt.Errorf("could not marshal alias: %s", err)
+		}
+		return bucket.Put([]byte(alias), aj)
 	})
 }
 
@@ -45,16 +67,18 @@ func Delete(userID, alias string) error {
 }
 
 // List returns all configured aliases for a user ID
-func List(userID string) (map[string]string, error) {
-	aliases := make(map[string]string)
+func List(userID string) ([]Alias, error) {
+	aliases := make([]Alias, 0)
 	err := db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)
 		if err != nil {
 			return err
 		}
 		cur := bucket.Cursor()
-		for a, c := cur.First(); a != nil; a, c = cur.Next() {
-			aliases[string(a[:])] = string(c[:])
+		a := Alias{}
+		for _, payload := cur.First(); payload != nil; _, payload = cur.Next() {
+			json.Unmarshal(payload, &a)
+			aliases = append(aliases, a)
 		}
 		return nil
 	})
@@ -62,6 +86,26 @@ func List(userID string) (map[string]string, error) {
 		return nil, err
 	}
 	return aliases, nil
+}
+
+// Get returns the command for an alias
+func Get(userID, alias string) (string, []string, error) {
+	var a Alias
+	err := db.Update(func(tx *bolt.Tx) error {
+		bucket, err := getAliasesBucket(userID, tx)
+		if err != nil {
+			return err
+		}
+		payload := bucket.Get([]byte(alias))
+		if payload == nil {
+			return ErrAliasNotFound
+		}
+		return json.Unmarshal(payload, &a)
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return a.Command, a.Args, nil
 }
 
 // getAliasesBucket returns the aliases for a user ID
