@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/sirupsen/logrus"
 
@@ -71,13 +70,7 @@ func (m *Meeseeks) Start() {
 			m.replyWithError(msg, err)
 			continue
 		}
-		c, args, _ := aliases.Get(req.UserID, req.Command)
-		if c != "" {
-			logrus.Debugf("Found alias for %s: %s %v", req.Command, c, args)
-			req.Command = c
-			req.Args = args
-		}
-		cmd, ok := commands.Find(req.Command)
+		cmd, ok := commands.Find(req)
 		if !ok {
 			m.replyWithUnknownCommand(req)
 			continue

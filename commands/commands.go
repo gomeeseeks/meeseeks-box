@@ -3,8 +3,11 @@ package commands
 import (
 	"sync"
 
+	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/command"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	"github.com/sirupsen/logrus"
 )
 
 var commands map[string]command.Command
@@ -31,8 +34,14 @@ func Reset() {
 //
 // This method implements the map interface as in returning true of false in the
 // case the command exists in the map
-func Find(name string) (command.Command, bool) {
-	cmd, ok := commands[name]
+func Find(req request.Request) (command.Command, bool) {
+	c, args, _ := aliases.Get(req.UserID, req.Command)
+	if c != "" {
+		logrus.Debugf("Found alias for %s: %s %v", req.Command, c, args)
+		req.Command = c
+		req.Args = args
+	}
+	cmd, ok := commands[req.Command]
 	return cmd, ok
 }
 
