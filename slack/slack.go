@@ -105,6 +105,7 @@ func Connect(opts ConnectionOpts) (*Client, error) {
 	go rtm.ManageConnection()
 
 	if opts.Stealth {
+		logrus.Info("Running in stealth mode")
 		rtm.SetUserPresence("away")
 	}
 
@@ -203,8 +204,8 @@ func (m *messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) 
 		return "", false
 	}
 	if m.shouldIgnoreUser(message.User) {
-		logrus.Debug("Received message from unknown user %s while in stealth mode, ignoring",
-			m.getUser(message.User))
+		logrus.Debugf("Received message '%s' from unknown user %s while in stealth mode, ignoring",
+			message.Text, m.getUser(message.User))
 		return "", false
 	}
 	if m.isIMChannel(message.Channel) {
