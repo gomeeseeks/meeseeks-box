@@ -11,6 +11,7 @@ type Groups struct {
 }
 
 var groups *Groups
+var knownUsers map[string]struct{}
 
 // Errors
 var (
@@ -25,11 +26,13 @@ func Configure(configuredGroups map[string][]string) {
 	g := Groups{
 		groups: map[string]map[string]bool{},
 	}
+	knownUsers = make(map[string]struct{})
 
 	for name, users := range configuredGroups {
 		group := make(map[string]bool)
 		for _, user := range users {
 			group[user] = true
+			knownUsers[user] = struct{}{}
 		}
 		g.groups[name] = group
 	}
@@ -61,4 +64,10 @@ func GetGroups() map[string][]string {
 		g[group] = groupUsers
 	}
 	return g
+}
+
+// IsKnownUser returns true if the user is configured in any group
+func IsKnownUser(username string) (ok bool) {
+	_, ok = knownUsers[username]
+	return
 }
