@@ -3,3 +3,11 @@ language: go
 go:
   - 1.9.x
   - master
+
+install:
+  - go get -u github.com/golang/dep/...
+  - dep ensure
+
+script:
+  - make test
+  - go build
