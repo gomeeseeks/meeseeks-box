@@ -151,6 +151,13 @@ func (m *messageMatcher) shouldIgnoreUser(userID string) bool {
 	return false
 }
 
+func (m *messageMatcher) shouldIgnoreChannel(channel string) bool {
+	if m.stealth {
+		return !m.isIMChannel(channel)
+	}
+	return false
+}
+
 // GetChannel returns a channel name given an ID
 func (m *messageMatcher) getChannel(channelID string) string {
 	if m.isIMChannel(channelID) {
@@ -206,6 +213,11 @@ func (m *messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) 
 	if m.shouldIgnoreUser(message.User) {
 		logrus.Debugf("Received message '%s' from unknown user %s while in stealth mode, ignoring",
 			message.Text, m.getUser(message.User))
+		return "", false
+	}
+	if m.shouldIgnoreChannel(message.Channel) {
+		logrus.Debugf("Received message '%s' in public channel %s while in stealth mode, ignoring",
+			message.Text, m.getChannel(message.Channel))
 		return "", false
 	}
 	if m.isIMChannel(message.Channel) {
