@@ -25,6 +25,7 @@ func main() {
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	apiAddress := flag.String("api-endpoint", ":9696", "api endpoint in which to listen for api calls")
 	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
+	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
 
 	flag.Parse()
 
@@ -47,7 +48,12 @@ func main() {
 
 	log.Info("Loaded configuration")
 
-	slackClient, err := slack.Connect(*debugSlack, os.Getenv("SLACK_TOKEN"))
+	slackClient, err := slack.Connect(
+		slack.ConnectionOpts{
+			Debug:   *debugSlack,
+			Token:   os.Getenv("SLACK_TOKEN"),
+			Stealth: *slackStealth,
+		})
 	if err != nil {
 		log.Fatalf("Could not connect to slack: %s", err)
 	}

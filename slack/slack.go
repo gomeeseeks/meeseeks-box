@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
 	"github.com/sirupsen/logrus"
 
@@ -76,14 +77,21 @@ func (c Client) IsIM(channelID string) bool {
 	return c.matcher.isIMChannel(channelID)
 }
 
+// ConnectionOpts groups all the conection options in a single struct
+type ConnectionOpts struct {
+	Debug   bool
+	Token   string
+	Stealth bool
+}
+
 // Connect builds a new chat client
-func Connect(debug bool, token string) (*Client, error) {
-	if token == "" {
+func Connect(opts ConnectionOpts) (*Client, error) {
+	if opts.Token == "" {
 		return nil, fmt.Errorf("could not connect to slack: SLACK_TOKEN env var is empty")
 	}
 
-	slackClient := slack.New(token)
-	slackClient.SetDebug(debug)
+	slackClient := slack.New(opts.Token)
+	slackClient.SetDebug(opts.Debug)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -96,10 +104,15 @@ func Connect(debug bool, token string) (*Client, error) {
 	rtm := slackClient.NewRTM()
 	go rtm.ManageConnection()
 
+	if opts.Stealth {
+		logrus.Info("Running in stealth mode")
+		rtm.SetUserPresence("away")
+	}
+
 	return &Client{
 		apiClient: slackClient,
 		rtm:       rtm,
-		matcher:   newMessageMatcher(rtm),
+		matcher:   newMessageMatcher(rtm, opts.Stealth),
 	}, nil
 }
 
@@ -107,11 +120,13 @@ type messageMatcher struct {
 	botID         string
 	prefixMatches []string
 	rtm           *slack.RTM
+	stealth       bool
 }
 
-func newMessageMatcher(rtm *slack.RTM) messageMatcher {
+func newMessageMatcher(rtm *slack.RTM, stealth bool) messageMatcher {
 	return messageMatcher{
-		rtm: rtm,
+		rtm:     rtm,
+		stealth: stealth,
 	}
 }
 
@@ -127,6 +142,13 @@ func (m *messageMatcher) getUser(userID string) string {
 
 func (m *messageMatcher) isIMChannel(channel string) bool {
 	return strings.HasPrefix(channel, "D")
+}
+
+func (m *messageMatcher) shouldIgnoreUser(userID string) bool {
+	if m.stealth {
+		return !auth.IsKnownUser(m.getUser(userID))
+	}
+	return false
 }
 
 // GetChannel returns a channel name given an ID
@@ -179,6 +201,11 @@ func (m *messageMatcher) isMyself(message *slack.MessageEvent) bool {
 func (m *messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) {
 	if m.isMyself(message) {
 		logrus.Debug("It's myself, ignoring message")
+		return "", false
+	}
+	if m.shouldIgnoreUser(message.User) {
+		logrus.Debugf("Received message '%s' from unknown user %s while in stealth mode, ignoring",
+			message.Text, m.getUser(message.User))
 		return "", false
 	}
 	if m.isIMChannel(message.Channel) {
