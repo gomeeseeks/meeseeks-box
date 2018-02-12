@@ -82,7 +82,7 @@ func main() {
 
 	log.Info("Started commands pipeline")
 
-	signalCh := make(chan os.Signal)
+	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
 	// Listen for a signal forever

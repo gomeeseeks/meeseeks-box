@@ -99,7 +99,7 @@ type Config struct {
 	Pool     int                 `yaml:"pool"`
 }
 
-// CommandConfig is the struct that handles a command configuration
+// Command is the struct that handles a command configuration
 type Command struct {
 	Cmd           string            `yaml:"command"`
 	Args          []string          `yaml:"args"`
