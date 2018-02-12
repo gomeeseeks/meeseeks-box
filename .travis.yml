@@ -3,6 +3,9 @@ language: go
 go:
   - 1.9.x
 
+matrix:
+  fast_finish: true
+
 before_script:
   - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/) # All the .go files, excluding vendor/
   - go get github.com/golang/lint/golint                        # Linter
@@ -14,7 +17,7 @@ install:
   - dep ensure
 
 script:
-	- test -z $(gofmt -s -l $GO_FILES)
+  - test -z $(gofmt -s -l $GO_FILES)
   - go test -v -race ./...
   - go vet ./...
   - megacheck ./...
