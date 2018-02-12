@@ -40,12 +40,12 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			message: "echo hello!",
 			channel: "general",
 			expected: []expectedMessage{
-				expectedMessage{
+				{
 					TextMatcher: handshakeMatcher,
 					Channel:     "generalID",
 					IsIM:        false,
 				},
-				expectedMessage{
+				{
 					TextMatcher: "^<@myuser> .*\n```\nhello!\n```$",
 					Channel:     "generalID",
 					IsIM:        false,
@@ -58,12 +58,12 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			message: "args-echo hello!",
 			channel: "general",
 			expected: []expectedMessage{
-				expectedMessage{
+				{
 					TextMatcher: handshakeMatcher,
 					Channel:     "generalID",
 					IsIM:        false,
 				},
-				expectedMessage{
+				{
 					TextMatcher: "^<@myuser> .*\n```\npre-message hello!\n```$",
 					Channel:     "generalID",
 					IsIM:        false,
@@ -76,7 +76,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			message: "unknown-command hello!",
 			channel: "general",
 			expected: []expectedMessage{
-				expectedMessage{
+				{
 					TextMatcher: "^<@myuser> Uuuh! no, I don't know how to do unknown-command$",
 					Channel:     "generalID",
 					IsIM:        false,
@@ -89,7 +89,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			message: "",
 			channel: "general",
 			expected: []expectedMessage{
-				expectedMessage{
+				{
 					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: No command to run$",
 					Channel:     "generalID",
 					IsIM:        false,
@@ -102,7 +102,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			message: "disallowed",
 			channel: "general",
 			expected: []expectedMessage{
-				expectedMessage{
+				{
 					TextMatcher: "<@myuser> Uuuuh, yeah! you are not allowed to do disallowed",
 					Channel:     "generalID",
 					IsIM:        false,
@@ -115,12 +115,12 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			message: "fail",
 			channel: "general",
 			expected: []expectedMessage{
-				expectedMessage{
+				{
 					TextMatcher: handshakeMatcher,
 					Channel:     "generalID",
 					IsIM:        false,
 				},
-				expectedMessage{
+				{
 					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: exit status 1$",
 					Channel:     "generalID",
 					IsIM:        false,

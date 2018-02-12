@@ -248,7 +248,7 @@ func (c *Client) Reply(content, color, channel string) error {
 	params := slack.PostMessageParameters{
 		AsUser: true,
 		Attachments: []slack.Attachment{
-			slack.Attachment{
+			{
 				Text:       content,
 				Color:      color,
 				MarkdownIn: []string{"text"},

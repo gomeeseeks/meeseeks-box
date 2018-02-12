@@ -142,7 +142,7 @@ func Test_ChangingTemplate(t *testing.T) {
 
 func Test_ChangingMessages(t *testing.T) {
 	templates := template.NewBuilder().WithMessages(map[string][]string{
-		template.HandshakeKey: []string{"yo!"},
+		template.HandshakeKey: {"yo!"},
 	}).Build()
 	out, err := templates.RenderHandshake("myuser")
 	stubs.Must(t, "can't render changed handshake tempalte", err)

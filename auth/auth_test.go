@@ -12,7 +12,7 @@ import (
 
 func Test_Auth(t *testing.T) {
 	auth.Configure(map[string][]string{
-		auth.AdminGroup: []string{"admin_user"},
+		auth.AdminGroup: {"admin_user"},
 	})
 	commands.Add("any", shell.New(shell.CommandOpts{
 		Cmd:          "any",
@@ -104,14 +104,14 @@ func Test_Auth(t *testing.T) {
 func Test_Groups(t *testing.T) {
 	auth.Configure(
 		map[string][]string{
-			auth.AdminGroup: []string{"user1", "user2"},
-			"developer":     []string{"user1"},
+			auth.AdminGroup: {"user1", "user2"},
+			"developer":     {"user1"},
 		},
 	)
 	stubs.AssertEquals(t,
 		map[string][]string{
-			"developer":     []string{"user1"},
-			auth.AdminGroup: []string{"user1", "user2"},
+			"developer":     {"user1"},
+			auth.AdminGroup: {"user1", "user2"},
 		},
 		auth.GetGroups())
 }
