@@ -41,7 +41,7 @@ const (
 	BuiltinListAPITokenCommand   = "tokens"
 	BuiltinRevokeAPITokenCommand = "token-revoke"
 
-	BuiltinAddAliasCommand    = "alias"
+	BuiltinNewAliasCommand    = "alias"
 	BuiltinDeleteAliasCommand = "unalias"
 	BuiltinGetAliasesCommand  = "aliases"
 )
@@ -103,9 +103,9 @@ var Commands = map[string]command.Command{
 		help: help{"revokes an API token"},
 		cmd:  cmd{BuiltinRevokeAPITokenCommand},
 	},
-	BuiltinAddAliasCommand: addAliasCommand{
+	BuiltinNewAliasCommand: newAliasCommand{
 		help: help{"adds an alias for a command"},
-		cmd:  cmd{BuiltinAddAliasCommand},
+		cmd:  cmd{BuiltinNewAliasCommand},
 	},
 	BuiltinDeleteAliasCommand: deleteAliasCommand{
 		help: help{"deletes an alias for a command"},
@@ -784,7 +784,7 @@ func (l listAPITokensCommand) Execute(_ context.Context, job jobs.Job) (string, 
 	})
 }
 
-type addAliasCommand struct {
+type newAliasCommand struct {
 	cmd
 	help
 	noHandshake
@@ -795,14 +795,14 @@ type addAliasCommand struct {
 	defaultTimeout
 }
 
-func (l addAliasCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
+func (l newAliasCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	if len(job.Request.Args) < 2 {
 		return "", fmt.Errorf("an alias requires at least two arguments: the alias and the command")
 	}
 
 	args := job.Request.Args
 	command := strings.Join(args[1:], " ")
-	if err := aliases.Add(job.Request.UserID, args[0], command); err != nil {
+	if err := aliases.Create(job.Request.UserID, args[0], command); err != nil {
 		return fmt.Sprintf("failed to create the alias. Error: %s", err), err
 	}
 	return "alias created successfully", nil

@@ -22,7 +22,7 @@ type Alias struct {
 }
 
 // Add adds a new alias for a user ID
-func Add(userID, alias, command string) error {
+func Create(userID, alias, command string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)
 		if err != nil {
@@ -32,7 +32,7 @@ func Add(userID, alias, command string) error {
 		a := Alias{
 			Alias:   alias,
 			Command: cmdChunks[0],
-			Args:    cmdChunks[1:len(cmdChunks)],
+			Args:    cmdChunks[1:],
 		}
 		aj, err := json.Marshal(a)
 		if err != nil {

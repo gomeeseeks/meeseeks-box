@@ -18,8 +18,8 @@ import (
 )
 
 var basicGroups = map[string][]string{
-	"admins": []string{"admin_user"},
-	"other":  []string{"user_one", "user_two"},
+	"admins": {"admin_user"},
+	"other":  {"user_one", "user_two"},
 }
 
 var req = request.Request{
@@ -242,10 +242,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				},
 			},
 			setup: func() {
-				err := aliases.Add("userid", "first", "command -with args")
+				err := aliases.Create("userid", "first", "command -with args")
 				stubs.Must(t, "create first alias", err)
 
-				err = aliases.Add("userid", "second", "another -command")
+				err = aliases.Create("userid", "second", "another -command")
 				stubs.Must(t, "create second alias", err)
 			},
 			expected: "- *first* - `command -with args`\n- *second* - `another -command`\n",
