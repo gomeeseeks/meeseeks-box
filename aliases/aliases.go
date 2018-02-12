@@ -3,7 +3,6 @@ package aliases
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
@@ -21,18 +20,17 @@ type Alias struct {
 	Args    []string
 }
 
-// Add adds a new alias for a user ID
-func Create(userID, alias, command string) error {
+// Create adds a new alias for a user ID
+func Create(userID, alias, command string, args ...string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)
 		if err != nil {
 			return err
 		}
-		cmdChunks := strings.Split(command, " ")
 		a := Alias{
 			Alias:   alias,
-			Command: cmdChunks[0],
-			Args:    cmdChunks[1:],
+			Command: command,
+			Args:    args,
 		}
 		aj, err := json.Marshal(a)
 		if err != nil {

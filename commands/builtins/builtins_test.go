@@ -216,7 +216,7 @@ func Test_BuiltinCommands(t *testing.T) {
 		{
 			name: "test alias command",
 			req: request.Request{
-				Command: builtins.BuiltinAddAliasCommand,
+				Command: builtins.BuiltinNewAliasCommand,
 				UserID:  "userid",
 			},
 
@@ -242,10 +242,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				},
 			},
 			setup: func() {
-				err := aliases.Create("userid", "first", "command -with args")
+				err := aliases.Create("userid", "first", "command", []string{"-with args"}...)
 				stubs.Must(t, "create first alias", err)
 
-				err = aliases.Create("userid", "second", "another -command")
+				err = aliases.Create("userid", "second", "another", []string{"-command"}...)
 				stubs.Must(t, "create second alias", err)
 			},
 			expected: "- *first* - `command -with args`\n- *second* - `another -command`\n",
@@ -264,10 +264,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				},
 			},
 			setup: func() {
-				err := aliases.Add("userid", "command", "command -with args")
+				err := aliases.Create("userid", "command", "command", []string{"-with", "args"}...)
 				stubs.Must(t, "create first alias", err)
 
-				err = aliases.Add("userid", "second", "another -command")
+				err = aliases.Create("userid", "second", "another", []string{"-command"}...)
 				stubs.Must(t, "create second alias", err)
 
 				err = aliases.Delete("userid", "command")

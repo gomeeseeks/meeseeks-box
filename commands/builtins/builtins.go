@@ -801,8 +801,7 @@ func (l newAliasCommand) Execute(_ context.Context, job jobs.Job) (string, error
 	}
 
 	args := job.Request.Args
-	command := strings.Join(args[1:], " ")
-	if err := aliases.Create(job.Request.UserID, args[0], command); err != nil {
+	if err := aliases.Create(job.Request.UserID, args[0], args[1], args[2:]...); err != nil {
 		return fmt.Sprintf("failed to create the alias. Error: %s", err), err
 	}
 	return "alias created successfully", nil
