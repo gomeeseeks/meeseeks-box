@@ -801,7 +801,7 @@ func (l addAliasCommand) Execute(_ context.Context, job jobs.Job) (string, error
 	}
 
 	args := job.Request.Args
-	command := strings.Join(args[1:len(args)], " ")
+	command := strings.Join(args[1:], " ")
 	if err := aliases.Add(job.Request.UserID, args[0], command); err != nil {
 		return fmt.Sprintf("failed to create the alias. Error: %s", err), err
 	}
@@ -842,7 +842,7 @@ type getAliasesCommand struct {
 	defaultTimeout
 }
 
-var getAliasesTemplate = `{{ if eq (len .aliases) 0 }}No alias could be found{{ else }}{{ range $a := .aliases }}- *{{ $a.Alias }}* - ` + "`" + `{{ $a.Command }} {{ range $arg := $a.Args }}{{ $arg }} {{ end }}` + "`" + `
+var getAliasesTemplate = `{{ if eq (len .aliases) 0 }}No alias could be found{{ else }}{{ range $a := .aliases }}- *{{ $a.Alias }}* - ` + "`" + `{{ $a.Command }}{{ range $arg := $a.Args }} {{ $arg }}{{ end }}` + "`" + `
 {{ end }}{{ end }}`
 
 func (l getAliasesCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
