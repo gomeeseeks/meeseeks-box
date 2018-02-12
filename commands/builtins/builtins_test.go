@@ -35,16 +35,10 @@ var req = request.Request{
 func Test_BuiltinCommands(t *testing.T) {
 	auth.Configure(basicGroups)
 
-	var jobID uint64
-
 	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(
-		func(j uint64) {
-			jobID = j
-		}))
+		func(_ uint64) {}))
 	commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(
-		func(j uint64) {
-			jobID = j
-		}))
+		func(_ uint64) {}))
 
 	tt := []struct {
 		name          string
