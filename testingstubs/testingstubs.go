@@ -71,7 +71,7 @@ func (h Harness) WithDBPath(dbpath string) Harness {
 	return h
 }
 
-// Build creates a clientStub and a configuration based on the provided one
+// Load creates a clientStub and a configuration based on the provided one
 func (h Harness) Load() (ClientStub, config.Config) {
 	c, err := config.New(strings.NewReader(h.cnf))
 	if err != nil {
@@ -227,42 +227,52 @@ func WithTmpDB(f func(dbpath string)) error {
 	return nil
 }
 
+// MetadataStub provides a stub object that implements the Metadata interface
 type MetadataStub struct {
 	IM bool
 }
 
+// ParseChannelLink implements the Metadata interface
 func (m MetadataStub) ParseChannelLink(channelLink string) (string, error) {
 	return strings.Replace(channelLink, "Link", "", -1), nil
 }
 
+// ParseUserLink implements the Metadata interface
 func (m MetadataStub) ParseUserLink(userLink string) (string, error) {
 	return strings.Replace(userLink, "Link", "", -1), nil
 }
 
+// GetChannelLink implements the Metadata interface
 func (m MetadataStub) GetChannelLink(channelID string) string {
 	return fmt.Sprintf("<#%s>", channelID)
 }
 
+// GetChannelID implements the Metadata interface
 func (m MetadataStub) GetChannelID(channelID string) string {
 	return channelID
 }
 
+// GetChannel implements the Metadata interface
 func (m MetadataStub) GetChannel(channelID string) string {
 	return fmt.Sprintf("name: %s", channelID)
 }
 
+// GetUserLink implements the Metadata interface
 func (m MetadataStub) GetUserLink(userID string) string {
 	return fmt.Sprintf("<@%s>", userID)
 }
 
+// GetUserID implements the Metadata interface
 func (m MetadataStub) GetUserID(userID string) string {
 	return userID
 }
 
+// GetUsername implements the Metadata interface
 func (m MetadataStub) GetUsername(userID string) string {
 	return fmt.Sprintf("name: %s", userID)
 }
 
+// IsIM implements the Metadata interface
 func (m MetadataStub) IsIM(_ string) bool {
 	return m.IM
 }
