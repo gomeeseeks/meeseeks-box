@@ -75,8 +75,8 @@ func List(userID string) ([]Alias, error) {
 			return err
 		}
 		cur := bucket.Cursor()
-		a := Alias{}
 		for _, payload := cur.First(); payload != nil; _, payload = cur.Next() {
+			a := Alias{}
 			json.Unmarshal(payload, &a)
 			aliases = append(aliases, a)
 		}
