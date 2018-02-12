@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
@@ -47,7 +48,7 @@ func Test_BuiltinCommands(t *testing.T) {
 
 	tt := []struct {
 		name          string
-		cmd           string
+		req           request.Request
 		job           jobs.Job
 		setup         func()
 		expected      string
@@ -55,16 +56,26 @@ func Test_BuiltinCommands(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name:     "version command",
-			cmd:      builtins.BuiltinVersionCommand,
+			name: "version command",
+			req: request.Request{
+				Command: builtins.BuiltinVersionCommand,
+				UserID:  "userid",
+			},
+
 			job:      jobs.Job{},
 			expected: "meeseeks-box version , commit , built at ",
 		},
 		{
 			name: "help command",
-			cmd:  builtins.BuiltinHelpCommand,
-			job:  jobs.Job{},
+			req: request.Request{
+				Command: builtins.BuiltinHelpCommand,
+				UserID:  "userid",
+			},
+
+			job: jobs.Job{},
 			expected: dedent.Dedent(`
+				- alias: adds an alias for a command
+				- aliases: list all the aliases for the current user
 				- audit: lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter.
 				- auditjob: shows a command metadata by job ID from any user (admin only)
 				- auditlogs: shows the logs of any command by job ID (admin only)
@@ -80,13 +91,18 @@ func Test_BuiltinCommands(t *testing.T) {
 				- token-new: creates a new API token for the calling user, channel and command with args, requires at least #channel and command
 				- token-revoke: revokes an API token
 				- tokens: lists the API tokens
+				- unalias: deletes an alias for a command
 				- version: prints the running meeseeks version
 				`),
 		},
 		{
 			name: "groups command",
-			cmd:  builtins.BuiltinGroupsCommand,
-			job:  jobs.Job{},
+			req: request.Request{
+				Command: builtins.BuiltinGroupsCommand,
+				UserID:  "userid",
+			},
+
+			job: jobs.Job{},
 			expected: dedent.Dedent(`
 					- admins: admin_user
 					- other: user_one, user_two
@@ -94,7 +110,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test jobs command",
-			cmd:  builtins.BuiltinJobsCommand,
+			req: request.Request{
+				Command: builtins.BuiltinJobsCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone"},
 			},
@@ -107,7 +127,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test audit command",
-			cmd:  builtins.BuiltinAuditCommand,
+			req: request.Request{
+				Command: builtins.BuiltinAuditCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{},
 			},
@@ -120,7 +144,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test jobs command with limit",
-			cmd:  builtins.BuiltinJobsCommand,
+			req: request.Request{
+				Command: builtins.BuiltinJobsCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"-limit=1"}},
 			},
@@ -132,7 +160,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test jobs command on IM",
-			cmd:  builtins.BuiltinJobsCommand,
+			req: request.Request{
+				Command: builtins.BuiltinJobsCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone"},
 			},
@@ -150,7 +182,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test last command",
-			cmd:  builtins.BuiltinLastCommand,
+			req: request.Request{
+				Command: builtins.BuiltinLastCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone"},
 			},
@@ -163,7 +199,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test find command",
-			cmd:  builtins.BuiltinFindJobCommand,
+			req: request.Request{
+				Command: builtins.BuiltinFindJobCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"1"}},
 			},
@@ -174,8 +214,75 @@ func Test_BuiltinCommands(t *testing.T) {
 			expected: "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
 		},
 		{
+			name: "test alias command",
+			req: request.Request{
+				Command: builtins.BuiltinAddAliasCommand,
+				UserID:  "userid",
+			},
+
+			job: jobs.Job{
+				Request: request.Request{
+					Command: "alias",
+					Args:    []string{"command", "for", "-add", "alias"},
+					UserID:  "userid",
+				}},
+			expected: "alias created successfully",
+		},
+		{
+			name: "test aliases command",
+			req: request.Request{
+				Command: builtins.BuiltinGetAliasesCommand,
+				UserID:  "userid",
+			},
+
+			job: jobs.Job{
+				Request: request.Request{
+					Command: "aliases",
+					UserID:  "userid",
+				},
+			},
+			setup: func() {
+				err := aliases.Add("userid", "first", "command -with args")
+				stubs.Must(t, "create first alias", err)
+
+				err = aliases.Add("userid", "second", "another -command")
+				stubs.Must(t, "create second alias", err)
+			},
+			expected: "- *first* - `command -with args`\n- *second* - `another -command`\n",
+		},
+		{
+			name: "test unalias command",
+			req: request.Request{
+				Command: builtins.BuiltinGetAliasesCommand,
+				UserID:  "userid",
+			},
+
+			job: jobs.Job{
+				Request: request.Request{
+					Command: "aliases",
+					UserID:  "userid",
+				},
+			},
+			setup: func() {
+				err := aliases.Add("userid", "command", "command -with args")
+				stubs.Must(t, "create first alias", err)
+
+				err = aliases.Add("userid", "second", "another -command")
+				stubs.Must(t, "create second alias", err)
+
+				err = aliases.Delete("userid", "command")
+				stubs.Must(t, "delete first alias", err)
+
+			},
+			expected: "- *second* - `another -command`\n",
+		},
+		{
 			name: "test auditjob command",
-			cmd:  builtins.BuiltinAuditJobCommand,
+			req: request.Request{
+				Command: builtins.BuiltinAuditJobCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"1"}},
 			},
@@ -187,7 +294,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test tail command",
-			cmd:  builtins.BuiltinTailCommand,
+			req: request.Request{
+				Command: builtins.BuiltinTailCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone"},
 			},
@@ -204,7 +315,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test logs command",
-			cmd:  builtins.BuiltinLogsCommand,
+			req: request.Request{
+				Command: builtins.BuiltinLogsCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"1"}},
 			},
@@ -221,7 +336,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test auditlogs command",
-			cmd:  builtins.BuiltinAuditLogsCommand,
+			req: request.Request{
+				Command: builtins.BuiltinAuditLogsCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "admin_user", Args: []string{"1"}},
 			},
@@ -238,7 +357,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test token-new command",
-			cmd:  builtins.BuiltinNewAPITokenCommand,
+			req: request.Request{
+				Command: builtins.BuiltinNewAPITokenCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "admin_user", IsIM: true, Args: []string{"admin_user", "yolo", "rm", "-rf"}},
 			},
@@ -246,7 +369,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test tokens command",
-			cmd:  builtins.BuiltinListAPITokenCommand,
+			req: request.Request{
+				Command: builtins.BuiltinListAPITokenCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "admin_user", IsIM: true},
 			},
@@ -263,7 +390,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test kill job command",
-			cmd:  builtins.BuiltinKillJobCommand,
+			req: request.Request{
+				Command: builtins.BuiltinKillJobCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"1"}},
 			},
@@ -278,7 +409,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test cancel job command",
-			cmd:  builtins.BuiltinCancelJobCommand,
+			req: request.Request{
+				Command: builtins.BuiltinCancelJobCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone", Args: []string{"2"}},
 			},
@@ -293,7 +428,11 @@ func Test_BuiltinCommands(t *testing.T) {
 		},
 		{
 			name: "test cancel job command with wrong user",
-			cmd:  builtins.BuiltinCancelJobCommand,
+			req: request.Request{
+				Command: builtins.BuiltinCancelJobCommand,
+				UserID:  "userid",
+			},
+
 			job: jobs.Job{
 				Request: request.Request{Username: "someone_else", Args: []string{"2"}},
 			},
@@ -314,9 +453,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				if tc.setup != nil {
 					tc.setup()
 				}
-				cmd, ok := commands.Find(tc.cmd)
+				cmd, ok := commands.Find(tc.req)
 				if !ok {
-					t.Fatalf("could not find command %s", tc.cmd)
+					t.Fatalf("could not find command %s", tc.req.Command)
 				}
 
 				out, err := cmd.Execute(context.Background(), tc.job)
@@ -363,7 +502,10 @@ func Test_FilterJobsAudit(t *testing.T) {
 		jobs.Create(r1)
 		jobs.Create(r2)
 
-		cmd, ok := commands.Find("audit")
+		cmd, ok := commands.Find(request.Request{
+			Command: "audit",
+			UserID:  "userid",
+		})
 		if !ok {
 			t.Fatalf("could not find command %s", "audit")
 		}
