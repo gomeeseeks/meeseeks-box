@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -108,7 +109,7 @@ func (s *Server) Shutdown() error {
 	defer s.listener.Shutdown()
 	logrus.Infof("Shutting down API server")
 
-	return s.httpServer.Shutdown(nil)
+	return s.httpServer.Shutdown(context.TODO())
 }
 
 // HandlePostToken handles a request

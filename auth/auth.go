@@ -6,10 +6,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// AdminGroup is the name of the admin group
+// AdminGroup points to the "admin" group, the only hard coded one
 const AdminGroup = "admin"
 
-// CommandAuthorization is the interface for the command authorization
+// CommandAuthorization represents the authorization model for a command
 type CommandAuthorization interface {
 	AuthStrategy() string
 	AllowedGroups() []string

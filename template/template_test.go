@@ -175,7 +175,6 @@ func Test_DefaultTemplates(t *testing.T) {
 	tt := []struct {
 		name     string
 		renderer func() (string, error)
-		expected string
 		matcher  *regexp.Regexp
 	}{
 		{

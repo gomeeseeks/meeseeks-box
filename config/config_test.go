@@ -46,7 +46,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				`),
 			config.Config{
 				Messages: map[string][]string{
-					"handshake": []string{"hallo"},
+					"handshake": {"hallo"},
 				},
 				Colors:   defaultColors,
 				Database: defaultDatabase,
@@ -82,7 +82,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				`),
 			config.Config{
 				Commands: map[string]config.Command{
-					"something": config.Command{
+					"something": {
 						Cmd:  "ssh",
 						Args: []string{"none"},
 					},

@@ -224,5 +224,5 @@ func (r Renderer) Render(data Payload) (string, error) {
 		return "", fmt.Errorf("failed to execute template %s: %s", r.template.Name(), err)
 	}
 
-	return string(b.Bytes()), nil
+	return b.String(), nil
 }
