@@ -70,7 +70,7 @@ func (m *Meeseeks) Start() {
 			m.replyWithError(msg, err)
 			continue
 		}
-		cmd, ok := commands.Find(req)
+		cmd, ok := commands.Find(&req)
 		if !ok {
 			m.replyWithUnknownCommand(req)
 			continue

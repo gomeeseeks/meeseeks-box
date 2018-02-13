@@ -453,7 +453,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				if tc.setup != nil {
 					tc.setup()
 				}
-				cmd, ok := commands.Find(tc.req)
+				cmd, ok := commands.Find(&tc.req)
 				if !ok {
 					t.Fatalf("could not find command %s", tc.req.Command)
 				}
@@ -502,7 +502,7 @@ func Test_FilterJobsAudit(t *testing.T) {
 		jobs.Create(r1)
 		jobs.Create(r2)
 
-		cmd, ok := commands.Find(request.Request{
+		cmd, ok := commands.Find(&request.Request{
 			Command: "audit",
 			UserID:  "userid",
 		})

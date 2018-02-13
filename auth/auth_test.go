@@ -91,7 +91,7 @@ func Test_Auth(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			stubs.Must(t, tc.name, stubs.WithTmpDB(func(_ string) {
-				cmd, ok := commands.Find(tc.req)
+				cmd, ok := commands.Find(&tc.req)
 				stubs.AssertEquals(t, true, ok)
 				if actual := auth.Check(tc.username, cmd); actual != tc.expected {
 					t.Fatalf("Check failed with %s", actual)
