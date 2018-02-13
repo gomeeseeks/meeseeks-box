@@ -3,6 +3,7 @@ package aliases
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
@@ -88,6 +89,7 @@ func List(userID string) ([]Alias, error) {
 
 // Get returns the command for an alias
 func Get(userID, alias string) (string, []string, error) {
+	logrus.Debugf("looking up command %s", alias)
 	var a Alias
 	err := db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)

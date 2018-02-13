@@ -5,6 +5,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/request/parser"
+	"github.com/sirupsen/logrus"
 )
 
 // ErrNoCommandToRun is returned when a request can't identify a command to run
@@ -26,6 +27,8 @@ type Request struct {
 // FromMessage gets a message and generates a valid request from it
 func FromMessage(msg message.Message) (Request, error) {
 	args, err := parser.Parse(msg.GetText())
+	logrus.Debugf("Command %s parsed as %s", msg.GetText(), args)
+
 	if err != nil {
 		return Request{}, err
 	}

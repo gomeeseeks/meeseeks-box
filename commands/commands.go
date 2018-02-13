@@ -30,25 +30,31 @@ func Reset() {
 	builtins.AddHelpCommand(commands)
 }
 
-// Find looks up the given command by name and returns.
-//
-// This method implements the map interface as in returning true of false in the
-// case the command exists in the map
-func Find(req request.Request) (command.Command, bool) {
-	c, args, _ := aliases.Get(req.UserID, req.Command)
-	if c != "" {
-		logrus.Debugf("Found alias for %s: %s %v", req.Command, c, args)
-		req.Command = c
-		req.Args = args
-	}
-	cmd, ok := commands[req.Command]
-	return cmd, ok
-}
-
 // Add adds a new command to the map
 func Add(name string, cmd command.Command) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	commands[name] = cmd
+}
+
+// Find looks up the given command by name and returns.
+//
+// This method implements the map interface as in returning true of false in the
+// case the command exists in the map
+func Find(req *request.Request) (command.Command, bool) {
+	aliasedCommand, args, err := aliases.Get(req.UserID, req.Command)
+	if err != nil {
+		logrus.Errorf("Failed to get alias %s", req.Command)
+	}
+
+	if cmd, ok := commands[aliasedCommand]; ok {
+		logrus.Infof("Command %s is an alias", aliasedCommand)
+		req.Args = append(args, req.Args...)
+
+		return cmd, ok
+	}
+
+	cmd, ok := commands[req.Command]
+	return cmd, ok
 }

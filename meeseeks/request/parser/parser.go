@@ -20,7 +20,7 @@ func Parse(command string) ([]string, error) {
 	state := startState
 	current := ""
 	quote := "\""
-	escapeNext := true
+	escapeNext := false
 
 	command = strings.TrimSpace(command)
 
@@ -55,7 +55,7 @@ func Parse(command string) ([]string, error) {
 			continue
 		}
 
-		if state == "arg" {
+		if state == argState {
 			if c == ' ' || c == '\t' {
 				args = append(args, current)
 				current = ""

@@ -40,6 +40,7 @@ type shellCommand struct {
 // Execute implements Command.Execute for the ShellCommand
 func (c shellCommand) Execute(ctx context.Context, job jobs.Job) (string, error) {
 	cmdArgs := append(c.Args(), job.Request.Args...)
+	logrus.Debugf("Calling command %s with args %#v", c.Cmd(), cmdArgs)
 
 	ctx, cancelFunc := context.WithTimeout(ctx, c.Timeout())
 	defer cancelFunc()
@@ -123,6 +124,7 @@ func (c shellCommand) AllowedGroups() []string {
 }
 
 func (c shellCommand) Args() []string {
+	logrus.Debug("Returning shell command args ", c.opts.Args)
 	if c.opts.Args == nil {
 		return []string{}
 	}
