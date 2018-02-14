@@ -9,6 +9,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
+	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
@@ -275,6 +276,39 @@ func Test_BuiltinCommands(t *testing.T) {
 
 			},
 			expected: "- *second* - `another -command`\n",
+		},
+		{
+			name: "test alias execution",
+			req: request.Request{
+				Command: "testalias",
+				UserID:  "userid",
+			},
+
+			job: jobs.Job{
+				Request: request.Request{
+					Command: "testalias",
+					UserID:  "userid",
+				},
+			},
+			setup: func() {
+				err := aliases.Create("userid", "testalias", "audit", []string{"-limit", "1"}...)
+				stubs.Must(t, "create an alias", err)
+
+				commands.Add("noop", shell.New(shell.CommandOpts{
+					AuthStrategy: "any",
+					Cmd:          "true",
+					Help:         "No-op",
+				}))
+
+				_, err = jobs.Create(
+					request.Request{
+						Command: "noop",
+						UserID:  "userid",
+					})
+				stubs.Must(t, "do nothing", err)
+
+			},
+			expected: "*1* - now - *noop* by ** in ** - *Running*\n",
 		},
 		{
 			name: "test auditjob command",
