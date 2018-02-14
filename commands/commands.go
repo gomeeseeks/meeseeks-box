@@ -45,11 +45,11 @@ func Add(name string, cmd command.Command) {
 func Find(req *request.Request) (command.Command, bool) {
 	aliasedCommand, args, err := aliases.Get(req.UserID, req.Command)
 	if err != nil {
-		logrus.Errorf("Failed to get alias %s", req.Command)
+		logrus.Debugf("Failed to get alias %s", req.Command)
 	}
 
 	if cmd, ok := commands[aliasedCommand]; ok {
-		logrus.Infof("Command %s is an alias", aliasedCommand)
+		logrus.Infof("Command %s is an alias", req.Command)
 		req.Args = append(args, req.Args...)
 
 		return cmd, ok
