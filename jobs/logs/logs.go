@@ -7,6 +7,7 @@ import (
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/sirupsen/logrus"
 )
 
 var logsBucketKey = []byte("logs")
@@ -71,18 +72,8 @@ func SetError(jobID uint64, jobErr error) error {
 // Get returns the JobLog for the given Job
 func Get(jobID uint64) (JobLog, error) {
 	job := &JobLog{}
-	err := db.View(func(tx *bolt.Tx) error {
-		logsBucket := tx.Bucket(logsBucketKey)
-		if logsBucket == nil {
-			return ErrNoLogsForJob
-		}
-
-		jobBucket := logsBucket.Bucket(db.IDToBytes(jobID))
-		if jobBucket == nil {
-			return ErrNoLogsForJob
-		}
-
-		c := jobBucket.Cursor()
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+		c := j.Cursor()
 		_, line := c.First()
 		out := bytes.NewBufferString("")
 		for {
@@ -94,7 +85,31 @@ func Get(jobID uint64) (JobLog, error) {
 		}
 		job.Output = out.String()
 
-		errorBucket := jobBucket.Bucket(errorKey)
+		errorBucket := j.Bucket(errorKey)
+		if errorBucket != nil {
+			job.Error = string(errorBucket.Get(errorKey))
+		}
+		return nil
+	})
+	return *job, err
+}
+
+// Head returns the top <limit> log lines
+func Head(jobID uint64, limit int) (JobLog, error) {
+	job := &JobLog{}
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+		c := j.Cursor()
+		out := bytes.NewBufferString("")
+
+		_, line := c.First()
+		for i := 0; i < limit && line != nil; i++ {
+			logrus.Infof("Head appending line %d/%d '%s'", i, limit, line)
+			out.Write(line)
+			_, line = c.Next()
+		}
+		job.Output = out.String()
+
+		errorBucket := j.Bucket(errorKey)
 		if errorBucket != nil {
 			job.Error = string(errorBucket.Get(errorKey))
 		}
@@ -110,4 +125,20 @@ func getJobBucket(jobID uint64, tx *bolt.Tx) (*bolt.Bucket, error) {
 	}
 	return logsBucket.CreateBucketIfNotExists(db.IDToBytes(jobID))
 
+}
+
+func readLogBucket(jobID uint64, f func(*bolt.Bucket) error) error {
+	return db.View(func(tx *bolt.Tx) error {
+		logsBucket := tx.Bucket(logsBucketKey)
+		if logsBucket == nil {
+			return ErrNoLogsForJob
+		}
+
+		jobBucket := logsBucket.Bucket(db.IDToBytes(jobID))
+		if jobBucket == nil {
+			return ErrNoLogsForJob
+		}
+
+		return f(jobBucket)
+	})
 }

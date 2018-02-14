@@ -76,6 +76,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				- auditlogs: shows the logs of any command by job ID (admin only)
 				- cancel: cancels a jobs owned by the calling user that is currently running
 				- groups: prints the configured groups
+				- head: returns the top N log lines of a command output or error
 				- help: prints all the kwnown commands and its associated help
 				- job: find one job by id
 				- jobs: shows the last executed jobs for the calling user, accepts -limit
@@ -340,6 +341,28 @@ func Test_BuiltinCommands(t *testing.T) {
 				logs.Append(j.ID, "something to say 2")
 			},
 			expected: "something to say 2",
+		},
+		{
+			name: "test head command",
+			req: request.Request{
+				Command: builtins.BuiltinHeadCommand,
+				UserID:  "userid",
+			},
+			job: jobs.Job{
+				Request: request.Request{Username: "someone", Args: []string{"-limit", "2"}},
+			},
+			setup: func() {
+				j, err := jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "line 1.1\nline 1.2\nsomething to say 1")
+
+				j, err = jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "line 2.1\n")
+				logs.Append(j.ID, "line 2.2\n")
+				logs.Append(j.ID, "something to say 2\n")
+			},
+			expected: "line 2.1\nline 2.2\n",
 		},
 		{
 			name: "test logs command",
