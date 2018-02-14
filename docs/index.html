@@ -235,6 +235,7 @@
         }
     }
 </style>
+
 </head>
 
 <body>
@@ -253,6 +254,8 @@
             <a href="#getting-started">Getting Started</a>
         
             <a href="#configuring-shell-commands">Configuring Shell Commands</a>
+        
+            <a href="#alias-commands-family">Alias Commands Family</a>
         
             <a href="#auditory-commands-family">Auditory Commands Family</a>
         
@@ -507,6 +510,74 @@ command, so if a command is defined such that an argument is an environment<br /
 variable it will simply not work. If you need to use environment variables to<br />
 call a specific executable somehow consider wrapping it with a bash command<br />
 where the expansion will happen.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="alias-commands-family">
+
+        <h1><a href="#alias-commands-family">Alias Commands Family</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Aliases are a convenient way to create shortcuts for complex commands. Instead of typing all the flags, which can be prone to typos, one can simply add an alias for the whole command and that can be as short as a single letter.</p>
+
+<p>Aliases are set per-user. This means you can&rsquo;t see other users&rsquo; aliases nor there are global shared aliases. Two users can set the same alias without collisions.</p>
+
+<h2 id="user-commands">User Commands</h2>
+
+<p>The set of commands that control aliases are:</p>
+
+<h3 id="alias-alias-full-command"><code>alias &lt;alias&gt; &lt;full command&gt;</code></h3>
+
+<p>Sets an alias for a command, including flags.</p>
+
+<p>Sample:</p>
+
+<blockquote>
+<p>omame [11:27]<br /><br />
+@marvin alias ps audit -status running</p>
+
+<p>marvin APP [11:27]<br /><br />
+@omame Mr Meeseeks<br /><br />
+alias created successfully</p>
+
+<p>omame [11:27]<br /><br />
+@marvin ps</p>
+
+<p>marvin APP [11:27]<br /><br />
+@omame All done!<br /><br />
+<em>44</em> - 3 days ago - <em>wait</em> by <em>omame</em> in <em>DM</em> - &gt;<em>Running</em></p>
+</blockquote>
+
+<h3 id="unalias-alias"><code>unalias &lt;alias&gt;</code></h3>
+
+<p>Remove an alias.</p>
+
+<p>Sample:</p>
+
+<blockquote>
+<p>omame [11:28]<br /><br />
+@marvin unalias ps</p>
+
+<p>marvin APP [11:28]<br /><br />
+@omame All done!<br /><br />
+- <em>pablo-failed</em> - <code>audit -status failed -user pablo</code><br /><br />
+- <em>ps</em> - <code>audit -status running</code></p>
+</blockquote>
+
+<h2 id="admin-commands">Admin commands</h2>
+
+<p>There are no admin commands for aliases.</p>
+
+<h2 id="not-recorded-commands">Not recorded commands</h2>
+
+<ul>
+<li>Builtin commands are not recorded, on purpose (they would simply be noise)<br /></li>
+<li>Rejected commands are not recorded.<br /></li>
+</ul>
 
 
     </section>
