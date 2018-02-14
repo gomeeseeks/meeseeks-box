@@ -49,7 +49,7 @@ func Find(req *request.Request) (command.Command, bool) {
 	}
 
 	if cmd, ok := commands[aliasedCommand]; ok {
-		logrus.Infof("Command %s is an alias", aliasedCommand)
+		logrus.Infof("Command %s is an alias", req.Command)
 		req.Args = append(args, req.Args...)
 
 		return cmd, ok
