@@ -52,68 +52,119 @@ var Commands = map[string]command.Command{
 	// because of this it is added as the last one when building the whole command
 	// map
 	BuiltinVersionCommand: versionCommand{
-		help: help{"prints the running meeseeks version"},
-		cmd:  cmd{BuiltinVersionCommand},
+		help: newHelp(
+			"prints the running meeseeks version",
+		),
+		cmd: cmd{BuiltinVersionCommand},
 	},
 	BuiltinGroupsCommand: groupsCommand{
-		help: help{"prints the configured groups"},
-		cmd:  cmd{BuiltinGroupsCommand},
+		help: newHelp(
+			"prints the configured groups",
+		),
+		cmd: cmd{BuiltinGroupsCommand},
 	},
 	BuiltinJobsCommand: jobsCommand{
-		help: help{"shows the last executed jobs for the calling user, accepts -limit"},
-		cmd:  cmd{BuiltinJobsCommand},
+		help: newHelp(
+			"shows the last executed jobs for the calling user",
+			"-limit: how many jobs to show, 5 by default",
+		),
+		cmd: cmd{BuiltinJobsCommand},
 	},
 	BuiltinAuditCommand: auditCommand{
-		help: help{"lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter."},
-		cmd:  cmd{BuiltinAuditCommand},
+		help: newHelp(
+			"lists jobs from all users or a specific one (admin only)",
+			"-user: user to filter for",
+			"-limit: how many jobs to show, 5 by default",
+		),
+		cmd: cmd{BuiltinAuditCommand},
 	},
 	BuiltinAuditJobCommand: auditJobCommand{
-		help: help{"shows a command metadata by job ID from any user (admin only)"},
-		cmd:  cmd{BuiltinAuditJobCommand},
+		help: newHelp(
+			"shows a command metadata by job ID (admin only)",
+			"-user: user to filter for",
+			"job ID to look up for, mandatory",
+		),
+		cmd: cmd{BuiltinAuditJobCommand},
 	},
 	BuiltinAuditLogsCommand: auditLogsCommand{
-		help: help{"shows the logs of any command by job ID (admin only)"},
-		cmd:  cmd{BuiltinAuditLogsCommand},
+		help: newHelp(
+			"shows the logs of a job by ID (admin only)",
+			"job ID to look up for, mandatory",
+		),
+		cmd: cmd{BuiltinAuditLogsCommand},
 	},
 	BuiltinLastCommand: lastCommand{
-		help: help{"shows the last executed command by the calling user"},
-		cmd:  cmd{BuiltinLastCommand},
+		help: newHelp(
+			"shows the last job metadata executed by the current user",
+		),
+		cmd: cmd{BuiltinLastCommand},
 	},
 	BuiltinFindJobCommand: findJobCommand{
-		help: help{"find one job by id"},
-		cmd:  cmd{BuiltinFindJobCommand},
+		help: newHelp(
+			"show metadata of one job by id",
+			"job ID to look for, mandatory",
+		),
+		cmd: cmd{BuiltinFindJobCommand},
 	},
 	BuiltinTailCommand: tailCommand{
-		help: help{"returns the last command output or error"},
-		cmd:  cmd{BuiltinTailCommand},
+		help: newHelp(
+			"returns the last lines of the last executed job, or one selected by job ID",
+			"-limit: how many lines to show",
+			"job ID to look for, optional, if not provided the last executed one will be lookup",
+		),
+		cmd: cmd{BuiltinTailCommand},
 	},
 	BuiltinLogsCommand: logsCommand{
-		help: help{"returns the logs of the command id passed as argument"},
-		cmd:  cmd{BuiltinLogsCommand},
+		help: newHelp(
+			"returns the full output of the job passed as argument",
+			"job ID to look for, mandatory",
+		),
+		cmd: cmd{BuiltinLogsCommand},
 	},
 	BuiltinNewAPITokenCommand: newAPITokenCommand{
-		help: help{"creates a new API token for the calling user, channel and command with args, requires at least #channel and command"},
-		cmd:  cmd{BuiltinNewAPITokenCommand},
+		help: newHelp(
+			"creates a new API token",
+			"user that will be impersonated by the api, mandatory",
+			"channel that will be used as the one in which the job was called",
+			"command the token will be calling",
+			"arguments to pass to the command",
+		),
+		cmd: cmd{BuiltinNewAPITokenCommand},
 	},
 	BuiltinListAPITokenCommand: listAPITokensCommand{
-		help: help{"lists the API tokens"},
-		cmd:  cmd{BuiltinListAPITokenCommand},
+		help: newHelp(
+			"lists the API tokens",
+		),
+		cmd: cmd{BuiltinListAPITokenCommand},
 	},
 	BuiltinRevokeAPITokenCommand: revokeAPITokenCommand{
-		help: help{"revokes an API token"},
-		cmd:  cmd{BuiltinRevokeAPITokenCommand},
+		help: newHelp(
+			"revokes an API token",
+			"api token to revoke, mandatory",
+		),
+		cmd: cmd{BuiltinRevokeAPITokenCommand},
 	},
 	BuiltinNewAliasCommand: newAliasCommand{
-		help: help{"adds an alias for a command"},
-		cmd:  cmd{BuiltinNewAliasCommand},
+		help: newHelp(
+			"adds an alias for a command for the current user",
+			"alias itself, mandatory",
+			"command to alias, mandatory",
+			"arguments to pass to the command when invoking the alias, optional",
+		),
+		cmd: cmd{BuiltinNewAliasCommand},
 	},
 	BuiltinDeleteAliasCommand: deleteAliasCommand{
-		help: help{"deletes an alias for a command"},
-		cmd:  cmd{BuiltinDeleteAliasCommand},
+		help: newHelp(
+			"deletes an alias",
+			"alias to delete, mandatory",
+		),
+		cmd: cmd{BuiltinDeleteAliasCommand},
 	},
 	BuiltinGetAliasesCommand: getAliasesCommand{
-		help: help{"list all the aliases for the current user"},
-		cmd:  cmd{BuiltinGetAliasesCommand},
+		help: newHelp(
+			"list all the aliases for the current user",
+		),
+		cmd: cmd{BuiltinGetAliasesCommand},
 	},
 
 	// Added as a placeholder so they are recognized as a builtin command
@@ -127,7 +178,11 @@ func AddHelpCommand(c map[string]command.Command) {
 	c[BuiltinHelpCommand] = helpCommand{
 		commands: c,
 		cmd:      cmd{BuiltinHelpCommand},
-		help:     help{"prints all the kwnown commands and its associated help"},
+		help: newHelp(
+			"shows the help for all the commands, or a single one",
+			"-all: includes the builtin commands in the list",
+			"command, optional, shows the extended help for a single command",
+		),
 	}
 }
 
@@ -191,14 +246,6 @@ func (b noHandshake) HasHandshake() bool {
 	return false
 }
 
-type help struct {
-	help string
-}
-
-func (h help) Help() string {
-	return h.help
-}
-
 type cmd struct {
 	cmd string
 }
@@ -219,8 +266,38 @@ type versionCommand struct {
 }
 
 func (v versionCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	return fmt.Sprintf("meeseeks-box version %s, commit %s, built at %s",
-		version.Version, version.Commit, version.Date), nil
+	return fmt.Sprintf("%s version %s, commit %s, built on %s",
+		version.Name, version.Version, version.Commit, version.Date), nil
+}
+
+func newHelp(summary string, args ...string) help {
+	return help{
+		commandHelp{
+			summary: summary,
+			args:    append([]string{}, args...),
+		},
+	}
+}
+
+type help struct {
+	commandHelp commandHelp
+}
+
+func (h help) Help() command.CommandHelp {
+	return h.commandHelp
+}
+
+type commandHelp struct {
+	summary string
+	args    []string
+}
+
+func (h commandHelp) GetSummary() string {
+	return h.summary
+}
+
+func (h commandHelp) GetArgs() []string {
+	return h.args
 }
 
 type helpCommand struct {
@@ -235,9 +312,14 @@ type helpCommand struct {
 	commands map[string]command.Command
 }
 
-var helpListTemplate = dedent.Dedent(`
-	{{ range $name, $cmd := .commands }}- {{ $name }}: {{ $cmd.Help }}
-	{{ end }}`)
+var helpListTemplate = `{{ range $name, $c := .commands }}- {{ $name }}: {{ $c.Help.GetSummary }}
+{{ end }}`
+
+var helpCommandTemplate = `*{{ .name }}* - {{ .help.GetSummary }}
+{{ if gt ( len .help.GetArgs ) 0 }}
+*Arguments*{{ range $a := .help.GetArgs }}
+- {{ $a }}{{ end }}{{ end }}
+`
 
 func (h helpCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("help", flag.ContinueOnError)
@@ -245,22 +327,41 @@ func (h helpCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 
 	flags.Parse(job.Request.Args)
 
-	tmpl, err := template.New("help", helpListTemplate)
-	if err != nil {
-		return "", err
-	}
-
-	commands := make(map[string]command.Command)
-	for k, c := range h.commands {
-		if _, isBuiltin := Commands[k]; isBuiltin && !*all {
-			continue
+	switch flags.NArg() {
+	case 0:
+		tmpl, err := template.New("help", helpListTemplate)
+		if err != nil {
+			return "", err
 		}
-		commands[k] = c
-	}
 
-	return tmpl.Render(template.Payload{
-		"commands": commands,
-	})
+		commands := make(map[string]command.Command)
+		for k, c := range h.commands {
+			if _, isBuiltin := Commands[k]; isBuiltin && !*all {
+				continue
+			}
+			commands[k] = c
+		}
+
+		return tmpl.Render(template.Payload{
+			"commands": commands,
+		})
+
+	case 1:
+		if cmd, ok := h.commands[flags.Arg(0)]; ok {
+			tmpl, err := template.New("help", helpCommandTemplate)
+			if err != nil {
+				return "", err
+			}
+			return tmpl.Render(template.Payload{
+				"name": flags.Arg(0),
+				"help": cmd.Help(),
+			})
+		}
+		return "", fmt.Errorf("Could not find command %s", flags.Arg(0))
+
+	default:
+		return "", fmt.Errorf("Too many arguments")
+	}
 }
 
 type cancelJobCommand struct {
@@ -278,7 +379,10 @@ type cancelJobCommand struct {
 // NewCancelJobCommand creates a command that will invoke the passed cancel job function when executed
 func NewCancelJobCommand(f func(jobID uint64)) command.Command {
 	return cancelJobCommand{
-		help:       help{"cancels a jobs owned by the calling user that is currently running"},
+		help: newHelp(
+			"sends a cancellation signal to a job owned by the current user",
+			"job ID to send the signal to",
+		),
 		cancelFunc: f,
 	}
 }
@@ -314,7 +418,10 @@ type killJobCommand struct {
 // NewKillJobCommand creates a command that will invoke the passed cancel job function when executed
 func NewKillJobCommand(f func(jobID uint64)) command.Command {
 	return killJobCommand{
-		help:       help{"cancels a jobs that is currently running, from any user"},
+		help: newHelp(
+			"sends a cancellation signal to a job, admin only",
+			"job ID to send the signal to",
+		),
 		cancelFunc: f,
 	}
 }
@@ -823,6 +930,7 @@ func (l newAliasCommand) Execute(_ context.Context, job jobs.Job) (string, error
 	if err := aliases.Create(job.Request.UserID, args[0], args[1], args[2:]...); err != nil {
 		return fmt.Sprintf("failed to create the alias. Error: %s", err), err
 	}
+
 	return "alias created successfully", nil
 }
 
