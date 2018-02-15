@@ -55,6 +55,9 @@ func IDFromBytes(ID []byte) uint64 {
 
 // WithDB invokes the passed function with a valid DB object
 func WithDB(f func(db *bolt.DB) error) error {
+	if database == nil {
+		return fmt.Errorf("database is not initialized")
+	}
 	return f(database)
 }
 
