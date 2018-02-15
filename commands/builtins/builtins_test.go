@@ -61,13 +61,23 @@ func Test_BuiltinCommands(t *testing.T) {
 			expected: "meeseeks-box version , commit , built at ",
 		},
 		{
-			name: "help command",
+			name: "help non builtins command",
 			req: request.Request{
 				Command: builtins.BuiltinHelpCommand,
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{},
+			job:      jobs.Job{Request: request.Request{Args: []string{}}},
+			expected: "",
+		},
+		{
+			name: "help all command",
+			req: request.Request{
+				Command: builtins.BuiltinHelpCommand,
+				UserID:  "userid",
+			},
+
+			job: jobs.Job{Request: request.Request{Args: []string{"-all"}}},
 			expected: dedent.Dedent(`
 				- alias: adds an alias for a command
 				- aliases: list all the aliases for the current user

@@ -115,6 +115,11 @@ var Commands = map[string]command.Command{
 		help: help{"list all the aliases for the current user"},
 		cmd:  cmd{BuiltinGetAliasesCommand},
 	},
+
+	// Added as a placeholder so they are recognized as a builtin command
+	BuiltinHelpCommand:      nil,
+	BuiltinCancelJobCommand: nil,
+	BuiltinKillJobCommand:   nil,
 }
 
 // AddHelpCommand creates a new help command and adds it to the map
@@ -230,17 +235,31 @@ type helpCommand struct {
 	commands map[string]command.Command
 }
 
-var helpTemplate = dedent.Dedent(`
+var helpListTemplate = dedent.Dedent(`
 	{{ range $name, $cmd := .commands }}- {{ $name }}: {{ $cmd.Help }}
 	{{ end }}`)
 
 func (h helpCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	tmpl, err := template.New("help", helpTemplate)
+	flags := flag.NewFlagSet("help", flag.ContinueOnError)
+	all := flags.Bool("all", false, "show help for all commands, including builtins")
+
+	flags.Parse(job.Request.Args)
+
+	tmpl, err := template.New("help", helpListTemplate)
 	if err != nil {
 		return "", err
 	}
+
+	commands := make(map[string]command.Command)
+	for k, c := range h.commands {
+		if _, isBuiltin := Commands[k]; isBuiltin && !*all {
+			continue
+		}
+		commands[k] = c
+	}
+
 	return tmpl.Render(template.Payload{
-		"commands": h.commands,
+		"commands": commands,
 	})
 }
 
