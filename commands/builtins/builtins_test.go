@@ -322,25 +322,56 @@ func Test_BuiltinCommands(t *testing.T) {
 			expected: "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
 		},
 		{
-			name: "test tail command",
+			name: "test tail command with jobID",
 			req: request.Request{
 				Command: builtins.BuiltinTailCommand,
-				UserID:  "userid",
+				UserID:  "someone",
 			},
-
 			job: jobs.Job{
-				Request: request.Request{Username: "someone"},
+				Request: request.Request{
+					Username: "someone",
+					Args:     []string{"-limit", "1", "1"}},
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
 				stubs.Must(t, "create job", err)
-				logs.Append(j.ID, "something to say 1")
+				logs.Append(j.ID, "line 1.1")
+				logs.Append(j.ID, "line 1.2")
+				logs.Append(j.ID, "line 1.3")
+				logs.Append(j.ID, "line 1.4")
 
 				j, err = jobs.Create(req)
 				stubs.Must(t, "create job", err)
-				logs.Append(j.ID, "something to say 2")
+				logs.Append(j.ID, "line 2.1")
+				logs.Append(j.ID, "line 2.2")
+				logs.Append(j.ID, "line 2.3")
 			},
-			expected: "something to say 2",
+			expected: "line 1.4",
+		},
+		{
+			name: "test tail command",
+			req: request.Request{
+				Command: builtins.BuiltinTailCommand,
+				UserID:  "someone",
+			},
+
+			job: jobs.Job{
+				Request: request.Request{Username: "someone", Args: []string{"-limit", "2"}},
+			},
+			setup: func() {
+				j, err := jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "line 1.1")
+				logs.Append(j.ID, "line 1.2")
+				logs.Append(j.ID, "line 1.3")
+
+				j, err = jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "line 2.1")
+				logs.Append(j.ID, "line 2.2")
+				logs.Append(j.ID, "line 2.3")
+			},
+			expected: "line 2.2\nline 2.3",
 		},
 		{
 			name: "test head command",
@@ -358,11 +389,35 @@ func Test_BuiltinCommands(t *testing.T) {
 
 				j, err = jobs.Create(req)
 				stubs.Must(t, "create job", err)
-				logs.Append(j.ID, "line 2.1\n")
-				logs.Append(j.ID, "line 2.2\n")
-				logs.Append(j.ID, "something to say 2\n")
+				logs.Append(j.ID, "line 2.1")
+				logs.Append(j.ID, "line 2.2")
+				logs.Append(j.ID, "something to say 2")
 			},
-			expected: "line 2.1\nline 2.2\n",
+			expected: "line 2.1\nline 2.2",
+		},
+		{
+			name: "test head command with jobID",
+			req: request.Request{
+				Command: builtins.BuiltinHeadCommand,
+				UserID:  "userid",
+			},
+			job: jobs.Job{
+				Request: request.Request{Username: "someone", Args: []string{"-limit", "1", "1"}},
+			},
+			setup: func() {
+				j, err := jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "line 1.1")
+				logs.Append(j.ID, "line 1.2")
+				logs.Append(j.ID, "something to say 1")
+
+				j, err = jobs.Create(req)
+				stubs.Must(t, "create job", err)
+				logs.Append(j.ID, "line 2.1")
+				logs.Append(j.ID, "line 2.2")
+				logs.Append(j.ID, "something to say 2")
+			},
+			expected: "line 1.1",
 		},
 		{
 			name: "test logs command",
@@ -483,9 +538,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				Command: builtins.BuiltinCancelJobCommand,
 				UserID:  "userid",
 			},
-
 			job: jobs.Job{
-				Request: request.Request{Username: "someone_else", Args: []string{"2"}},
+				Request: request.Request{Username: "someone_else",
+					Args: []string{"2"},
+				},
 			},
 			setup: func() {
 				_, err := jobs.Create(req)

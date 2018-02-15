@@ -28,7 +28,7 @@ func Test_Logs(t *testing.T) {
 		{
 			name:  "with multiple lines",
 			jobID: 2,
-			logs:  []string{"something", "\n", "something else"},
+			logs:  []string{"something", "something else"},
 			err:   nil,
 			expected: logs.JobLog{
 				Output: "something\nsomething else",

@@ -1,13 +1,12 @@
 package logs
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
-	"github.com/sirupsen/logrus"
 )
 
 var logsBucketKey = []byte("logs")
@@ -75,15 +74,15 @@ func Get(jobID uint64) (JobLog, error) {
 	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 		_, line := c.First()
-		out := bytes.NewBufferString("")
+		lines := make([]string, 0)
 		for {
 			if line == nil {
 				break
 			}
-			out.Write(line)
+			lines = append(lines, string(line))
 			_, line = c.Next()
 		}
-		job.Output = out.String()
+		job.Output = strings.Join(lines, "\n")
 
 		errorBucket := j.Bucket(errorKey)
 		if errorBucket != nil {
@@ -99,15 +98,14 @@ func Head(jobID uint64, limit int) (JobLog, error) {
 	job := &JobLog{}
 	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
-		out := bytes.NewBufferString("")
 
+		lines := make([]string, 0)
 		_, line := c.First()
 		for i := 0; i < limit && line != nil; i++ {
-			logrus.Infof("Head appending line %d/%d '%s'", i, limit, line)
-			out.Write(line)
+			lines = append(lines, string(line))
 			_, line = c.Next()
 		}
-		job.Output = out.String()
+		job.Output = strings.Join(lines, "\n")
 
 		errorBucket := j.Bucket(errorKey)
 		if errorBucket != nil {
@@ -118,6 +116,28 @@ func Head(jobID uint64, limit int) (JobLog, error) {
 	return *job, err
 }
 
+// Tail returns the bottm <limit> log lines
+func Tail(jobID uint64, limit int) (JobLog, error) {
+	job := &JobLog{}
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+		c := j.Cursor()
+		lines := make([]string, 0)
+
+		_, line := c.Last()
+		for i := 0; i < limit && line != nil; i++ {
+			lines = append([]string{string(line)}, lines...)
+			_, line = c.Prev()
+		}
+		job.Output = strings.Join(lines, "\n")
+
+		errorBucket := j.Bucket(errorKey)
+		if errorBucket != nil {
+			job.Error = string(errorBucket.Get(errorKey))
+		}
+		return nil
+	})
+	return *job, err
+}
 func getJobBucket(jobID uint64, tx *bolt.Tx) (*bolt.Bucket, error) {
 	logsBucket, err := tx.CreateBucketIfNotExists(logsBucketKey)
 	if err != nil {
