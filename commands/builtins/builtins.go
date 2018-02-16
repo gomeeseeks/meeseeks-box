@@ -9,14 +9,12 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/aliases"
-	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
-
-	"github.com/gomeeseeks/meeseeks-box/jobs"
-	"github.com/gomeeseeks/meeseeks-box/tokens"
-
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/command"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/template"
+	"github.com/gomeeseeks/meeseeks-box/tokens"
 	"github.com/gomeeseeks/meeseeks-box/version"
 	"github.com/renstrom/dedent"
 )
@@ -33,6 +31,7 @@ const (
 	BuiltinAuditLogsCommand = "auditlogs"
 	BuiltinLastCommand      = "last"
 	BuiltinTailCommand      = "tail"
+	BuiltinHeadCommand      = "head"
 	BuiltinLogsCommand      = "logs"
 	BuiltinCancelJobCommand = "cancel"
 	BuiltinKillJobCommand   = "kill"
@@ -110,9 +109,17 @@ var Commands = map[string]command.Command{
 		help: newHelp(
 			"returns the last lines of the last executed job, or one selected by job ID",
 			"-limit: how many lines to show",
-			"job ID to look for, optional, if not provided the last executed one will be lookup",
+			"job ID to look for, optional, if not provided the last executed one will be looked up",
 		),
 		cmd: cmd{BuiltinTailCommand},
+	},
+	BuiltinHeadCommand: headCommand{
+		help: newHelp(
+			"returns the top N log lines of a command output or error",
+			"-limit: how many lines to show",
+			"job ID to look for, optional, if not provided the last executed one will be looked up",
+		),
+		cmd: cmd{BuiltinHeadCommand},
 	},
 	BuiltinLogsCommand: logsCommand{
 		help: newHelp(
@@ -172,6 +179,8 @@ var Commands = map[string]command.Command{
 	BuiltinCancelJobCommand: nil,
 	BuiltinKillJobCommand:   nil,
 }
+
+var errNoJobIDAsArgument = fmt.Errorf("no job id passed")
 
 // AddHelpCommand creates a new help command and adds it to the map
 func AddHelpCommand(c map[string]command.Command) {
@@ -388,7 +397,7 @@ func NewCancelJobCommand(f func(jobID uint64)) command.Command {
 }
 
 func (c cancelJobCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	jobID, err := parseJobID(job)
+	jobID, err := parseJobID(job.Request.Args)
 	if err != nil {
 		return "", err
 	}
@@ -427,7 +436,7 @@ func NewKillJobCommand(f func(jobID uint64)) command.Command {
 }
 
 func (k killJobCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	jobID, err := parseJobID(job)
+	jobID, err := parseJobID(job.Request.Args)
 	if err != nil {
 		return "", err
 	}
@@ -623,7 +632,7 @@ type findJobCommand struct {
 }
 
 func (l findJobCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	id, err := parseJobID(job)
+	id, err := parseJobID(job.Request.Args)
 	if err != nil {
 		return "", err
 	}
@@ -663,7 +672,7 @@ type auditJobCommand struct {
 }
 
 func (l auditJobCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	id, err := parseJobID(job)
+	id, err := parseJobID(job.Request.Args)
 	if err != nil {
 		return "", err
 	}
@@ -700,7 +709,7 @@ type auditLogsCommand struct {
 }
 
 func (t auditLogsCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	id, err := parseJobID(job)
+	id, err := parseJobID(job.Request.Args)
 	if err != nil {
 		return "", err
 	}
@@ -737,20 +746,54 @@ type tailCommand struct {
 }
 
 func (t tailCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	callingUser := job.Request.Username
-	jobs, err := jobs.Find(jobs.JobFilter{
-		Limit: 1,
-		Match: isUser(callingUser),
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to get the last job: %s", err)
-	}
-	if len(jobs) == 0 {
-		return "", fmt.Errorf("No last command for current user")
-	}
-	j := jobs[0]
+	flags := flag.NewFlagSet("tail", flag.ContinueOnError)
+	limit := flags.Int("limit", 5, "how many lines to return")
 
-	jobLogs, err := logs.Get(j.ID)
+	flags.Parse(job.Request.Args)
+
+	jobID, err := parseJobID(flags.Args())
+
+	if err == errNoJobIDAsArgument {
+		jobID, err = findLastJobIDForUser(job.Request.Username)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	jobLogs, err := logs.Tail(jobID, *limit)
+	if err != nil {
+		return "", err
+	}
+	return jobLogs.Output, jobLogs.GetError()
+}
+
+type headCommand struct {
+	cmd
+	help
+	noHandshake
+	noRecord
+	allowAll
+	defaultTemplates
+	emptyArgs
+	defaultTimeout
+}
+
+func (h headCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
+	flags := flag.NewFlagSet("head", flag.ContinueOnError)
+	limit := flags.Int("limit", 5, "how many lines to return")
+
+	flags.Parse(job.Request.Args)
+
+	jobID, err := parseJobID(flags.Args())
+
+	if err == errNoJobIDAsArgument {
+		jobID, err = findLastJobIDForUser(job.Request.Username)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	jobLogs, err := logs.Head(jobID, *limit)
 	if err != nil {
 		return "", err
 	}
@@ -769,7 +812,7 @@ type logsCommand struct {
 }
 
 func (t logsCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
-	id, err := parseJobID(job)
+	id, err := parseJobID(job.Request.Args)
 	if err != nil {
 		return "", err
 	}
@@ -985,13 +1028,13 @@ func (l getAliasesCommand) Execute(_ context.Context, job jobs.Job) (string, err
 	})
 }
 
-func parseJobID(job jobs.Job) (uint64, error) {
-	if len(job.Request.Args) == 0 {
-		return 0, fmt.Errorf("no job id passed")
+func parseJobID(args []string) (uint64, error) {
+	if len(args) == 0 {
+		return 0, errNoJobIDAsArgument
 	}
-	id, err := strconv.ParseUint(job.Request.Args[0], 10, 64)
+	id, err := strconv.ParseUint(args[0], 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid job ID %s: %s", job.Request.Args[0], err)
+		return 0, fmt.Errorf("invalid job ID %s: %s", args[0], err)
 	}
 
 	return id, nil
@@ -1016,4 +1059,19 @@ func isStatusOrEmpty(status string) func(jobs.Job) bool {
 		}
 		return j.Status == status
 	}
+}
+
+func findLastJobIDForUser(callingUser string) (uint64, error) {
+	jobs, err := jobs.Find(jobs.JobFilter{
+		Limit: 1,
+		Match: isUser(callingUser),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get the last job: %s", err)
+	}
+	if len(jobs) == 0 {
+		return 0, fmt.Errorf("No last command for current user")
+	}
+	return jobs[0].ID, nil
+
 }

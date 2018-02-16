@@ -1,9 +1,9 @@
 package logs
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
@@ -71,7 +71,84 @@ func SetError(jobID uint64, jobErr error) error {
 // Get returns the JobLog for the given Job
 func Get(jobID uint64) (JobLog, error) {
 	job := &JobLog{}
-	err := db.View(func(tx *bolt.Tx) error {
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+		c := j.Cursor()
+		_, line := c.First()
+		lines := make([]string, 0)
+		for {
+			if line == nil {
+				break
+			}
+			lines = append(lines, string(line))
+			_, line = c.Next()
+		}
+		job.Output = strings.Join(lines, "\n")
+
+		errorBucket := j.Bucket(errorKey)
+		if errorBucket != nil {
+			job.Error = string(errorBucket.Get(errorKey))
+		}
+		return nil
+	})
+	return *job, err
+}
+
+// Head returns the top <limit> log lines
+func Head(jobID uint64, limit int) (JobLog, error) {
+	job := &JobLog{}
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+		c := j.Cursor()
+
+		lines := make([]string, 0)
+		_, line := c.First()
+		for i := 0; i < limit && line != nil; i++ {
+			lines = append(lines, string(line))
+			_, line = c.Next()
+		}
+		job.Output = strings.Join(lines, "\n")
+
+		errorBucket := j.Bucket(errorKey)
+		if errorBucket != nil {
+			job.Error = string(errorBucket.Get(errorKey))
+		}
+		return nil
+	})
+	return *job, err
+}
+
+// Tail returns the bottm <limit> log lines
+func Tail(jobID uint64, limit int) (JobLog, error) {
+	job := &JobLog{}
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+		c := j.Cursor()
+		lines := make([]string, 0)
+
+		_, line := c.Last()
+		for i := 0; i < limit && line != nil; i++ {
+			lines = append([]string{string(line)}, lines...)
+			_, line = c.Prev()
+		}
+		job.Output = strings.Join(lines, "\n")
+
+		errorBucket := j.Bucket(errorKey)
+		if errorBucket != nil {
+			job.Error = string(errorBucket.Get(errorKey))
+		}
+		return nil
+	})
+	return *job, err
+}
+func getJobBucket(jobID uint64, tx *bolt.Tx) (*bolt.Bucket, error) {
+	logsBucket, err := tx.CreateBucketIfNotExists(logsBucketKey)
+	if err != nil {
+		return nil, fmt.Errorf("could not get logs bucket: %s", err)
+	}
+	return logsBucket.CreateBucketIfNotExists(db.IDToBytes(jobID))
+
+}
+
+func readLogBucket(jobID uint64, f func(*bolt.Bucket) error) error {
+	return db.View(func(tx *bolt.Tx) error {
 		logsBucket := tx.Bucket(logsBucketKey)
 		if logsBucket == nil {
 			return ErrNoLogsForJob
@@ -82,32 +159,6 @@ func Get(jobID uint64) (JobLog, error) {
 			return ErrNoLogsForJob
 		}
 
-		c := jobBucket.Cursor()
-		_, line := c.First()
-		out := bytes.NewBufferString("")
-		for {
-			if line == nil {
-				break
-			}
-			out.Write(line)
-			_, line = c.Next()
-		}
-		job.Output = out.String()
-
-		errorBucket := jobBucket.Bucket(errorKey)
-		if errorBucket != nil {
-			job.Error = string(errorBucket.Get(errorKey))
-		}
-		return nil
+		return f(jobBucket)
 	})
-	return *job, err
-}
-
-func getJobBucket(jobID uint64, tx *bolt.Tx) (*bolt.Bucket, error) {
-	logsBucket, err := tx.CreateBucketIfNotExists(logsBucketKey)
-	if err != nil {
-		return nil, fmt.Errorf("could not get logs bucket: %s", err)
-	}
-	return logsBucket.CreateBucketIfNotExists(db.IDToBytes(jobID))
-
 }
