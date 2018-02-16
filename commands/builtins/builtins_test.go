@@ -3,6 +3,7 @@ package builtins_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/aliases"
@@ -576,5 +577,63 @@ func Test_FilterJobsAudit(t *testing.T) {
 			t.Fatalf("Failed to execute audit: %s", err)
 		}
 		stubs.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n", limit)
+	}))
+}
+
+func TestAPITokenLifecycle(t *testing.T) {
+
+	exec := func(r request.Request) (string, error) {
+		cmd, ok := commands.Find(&r)
+		if !ok {
+			t.Fatalf("could not find command %s", r.Command)
+		}
+
+		return cmd.Execute(context.Background(), jobs.NullJob(r))
+	}
+
+	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func(_ string) {
+
+		out, err := exec(request.Request{
+			Command: builtins.BuiltinListAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+		})
+		stubs.Must(t, "can't list api tokens:", err)
+		stubs.AssertEquals(t, "No tokens could be found", out)
+
+		out, err = exec(request.Request{
+			Command: builtins.BuiltinNewAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+			Args:    []string{"apiuser", "yolo", "rm", "-rf"},
+		})
+		stubs.Must(t, "can't create an api token:", err)
+
+		token := strings.Split(out, " ")[2]
+
+		out, err = exec(request.Request{
+			Command: builtins.BuiltinListAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+		})
+		stubs.Must(t, "can't list api tokens:", err)
+		stubs.AssertEquals(t, fmt.Sprintf("- *%s* apiuser at yolo _rm -rf_\n", token), out)
+
+		out, err = exec(request.Request{
+			Command: builtins.BuiltinRevokeAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+			Args:    []string{token},
+		})
+		stubs.Must(t, "can't revoke an api token:", err)
+		stubs.AssertEquals(t, fmt.Sprintf("Token *%s* has been revoked", token), out)
+
+		out, err = exec(request.Request{
+			Command: builtins.BuiltinListAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+		})
+		stubs.Must(t, "can't list api tokens:", err)
+		stubs.AssertEquals(t, "No tokens could be found", out)
 	}))
 }
