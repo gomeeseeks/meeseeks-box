@@ -33,7 +33,10 @@ func Test_ConfigurationReading(t *testing.T) {
 			"Default configuration",
 			"",
 			config.Config{
-				Colors:   defaultColors,
+				Format: config.Format{
+					Colors:     defaultColors,
+					ReplyStyle: map[string]string{},
+				},
 				Database: defaultDatabase,
 				Pool:     20,
 			},
@@ -48,7 +51,10 @@ func Test_ConfigurationReading(t *testing.T) {
 				Messages: map[string][]string{
 					"handshake": {"hallo"},
 				},
-				Colors:   defaultColors,
+				Format: config.Format{
+					Colors:     defaultColors,
+					ReplyStyle: map[string]string{},
+				},
 				Database: defaultDatabase,
 				Pool:     20,
 			},
@@ -56,16 +62,20 @@ func Test_ConfigurationReading(t *testing.T) {
 		{
 			"With colors",
 			dedent.Dedent(`
-				colors:
-				  info: "#FFFFFF"
-				  success: "#CCCCCC"
-				  error: "#000000"
+				format:
+				  colors:
+				    info: "#FFFFFF"
+				    success: "#CCCCCC"
+				    error: "#000000"
 				`),
 			config.Config{
-				Colors: config.MessageColors{
-					Info:    "#FFFFFF",
-					Success: "#CCCCCC",
-					Error:   "#000000",
+				Format: config.Format{
+					Colors: config.MessageColors{
+						Info:    "#FFFFFF",
+						Success: "#CCCCCC",
+						Error:   "#000000",
+					},
+					ReplyStyle: map[string]string{},
 				},
 				Database: defaultDatabase,
 				Pool:     20,
@@ -87,7 +97,10 @@ func Test_ConfigurationReading(t *testing.T) {
 						Args: []string{"none"},
 					},
 				},
-				Colors:   defaultColors,
+				Format: config.Format{
+					Colors:     defaultColors,
+					ReplyStyle: map[string]string{},
+				},
 				Database: defaultDatabase,
 				Pool:     20,
 			},
