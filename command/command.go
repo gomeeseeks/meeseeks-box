@@ -23,12 +23,12 @@ type Command interface {
 	AllowedGroups() []string
 	Args() []string
 	Timeout() time.Duration
-	Help() CommandHelp
+	Help() Help
 	Record() bool
 }
 
-// CommandHelp is the base interface for any command help
-type CommandHelp interface {
+// Help is the base interface for any command help
+type Help interface {
 	GetSummary() string
 	GetArgs() []string
 }

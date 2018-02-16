@@ -283,7 +283,7 @@ type help struct {
 	commandHelp commandHelp
 }
 
-func (h help) Help() command.CommandHelp {
+func (h help) Help() command.Help {
 	return h.commandHelp
 }
 

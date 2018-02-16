@@ -23,7 +23,7 @@ type CommandOpts struct {
 	AuthStrategy  string
 	Timeout       time.Duration
 	Templates     map[string]string
-	Help          command.CommandHelp
+	Help          command.Help
 }
 
 // New return a new ShellCommand based on the passed in opts
@@ -142,7 +142,7 @@ func (c shellCommand) Cmd() string {
 	return c.opts.Cmd
 }
 
-func (c shellCommand) Help() command.CommandHelp {
+func (c shellCommand) Help() command.Help {
 	return c.opts.Help
 }
 
@@ -164,7 +164,7 @@ func (h shellHelp) GetArgs() []string {
 }
 
 // NewHelp returns a new command help implementation for the shell command
-func NewHelp(summary string, args ...string) command.CommandHelp {
+func NewHelp(summary string, args ...string) command.Help {
 	return shellHelp{
 		summary,
 		append([]string{}, args...),
