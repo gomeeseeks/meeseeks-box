@@ -66,7 +66,7 @@ func (m *Meeseeks) Start() {
 		req, err := request.FromMessage(msg)
 		if err != nil {
 			logrus.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
-			m.client.Reply(m.formatter.ErrorReply(formatter.ReplyTo{
+			m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, err))
@@ -93,7 +93,7 @@ func (m *Meeseeks) Start() {
 
 		t, err := m.createTask(req, cmd)
 		if err != nil {
-			m.client.Reply(m.formatter.ErrorReply(formatter.ReplyTo{
+			m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, fmt.Errorf("could not create task: %s", err)).WithCommand(cmd))
@@ -151,7 +151,7 @@ func (m *Meeseeks) loop() {
 				logrus.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 					req.Command, req.Username, err)
 
-				m.client.Reply(m.formatter.ErrorReply(formatter.ReplyTo{
+				m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
 					UserLink:  req.UserLink,
 					ChannelID: req.ChannelID,
 				}, err).WithCommand(cmd).WithOutput(out))

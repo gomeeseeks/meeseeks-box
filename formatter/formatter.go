@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/gomeeseeks/meeseeks-box/command"
@@ -11,17 +12,21 @@ import (
 
 // Formatter keeps the colors and templates used to format a reply message
 type Formatter struct {
-	colors    config.MessageColors
-	templates *template.TemplatesBuilder
+	colors     config.MessageColors
+	templates  *template.TemplatesBuilder
+	replyStyle ReplyStyle
 }
 
 // New returns a new Formatter
 func New(cnf config.Config) *Formatter {
 	builder := template.NewBuilder().WithMessages(cnf.Messages)
-	return &Formatter{
-		colors:    cnf.Colors,
-		templates: builder,
+	f := Formatter{
+		replyStyle: ReplyStyle{cnf.Format.ReplyStyle},
+		colors:     cnf.Format.Colors,
+		templates:  builder,
 	}
+	logrus.Debugf("Building new formatter %#v", f)
+	return &f
 }
 
 // Templates returns a clone of the default templates ready to be consumed
@@ -35,40 +40,34 @@ func (f Formatter) WithTemplates(templates map[string]string) template.Templates
 	return f.templates.Clone().WithTemplates(templates).Build()
 }
 
-const (
-	Handshake           = "handshake"
-	UnknownCommand      = "unknown"
-	UnauthorizedCommand = "unauthorized"
-	Error               = "error"
-	Success             = "success"
-)
-
 func (f Formatter) HandshakeReply(to ReplyTo) Reply {
-	return f.newReplier(Handshake, to)
+	return f.newReplier(template.Handshake, to)
 }
 
 func (f Formatter) UnknownCommandReply(to ReplyTo, cmd string) Reply {
-	return f.newReplier(UnknownCommand, to).WithOutput(cmd)
+	return f.newReplier(template.UnknownCommand, to).WithOutput(cmd)
 }
 
 func (f Formatter) UnauthorizedCommandReply(to ReplyTo, cmd string) Reply {
-	return f.newReplier(UnauthorizedCommand, to).WithOutput(cmd)
+	return f.newReplier(template.Unauthorized, to).WithOutput(cmd)
 }
 
-func (f Formatter) ErrorReply(to ReplyTo, err error) Reply {
-	return f.newReplier(Error, to).WithError(err)
+func (f Formatter) FailureReply(to ReplyTo, err error) Reply {
+	return f.newReplier(template.Failure, to).WithError(err)
 }
 
 func (f Formatter) SuccessReply(to ReplyTo) Reply {
-	return f.newReplier(Success, to)
+	return f.newReplier(template.Success, to)
 }
 
-func (f Formatter) newReplier(kind string, to ReplyTo) Reply {
-	tmpls := f.templates.Clone()
+func (f Formatter) newReplier(mode string, to ReplyTo) Reply {
 	return Reply{
-		kind:      kind,
-		to:        to,
-		templates: tmpls,
+		mode: mode,
+		to:   to,
+
+		templates: f.templates.Clone(),
+		style:     f.replyStyle.Get(mode),
+		colors:    f.colors,
 	}
 }
 
@@ -77,8 +76,27 @@ type ReplyTo struct {
 	ChannelID string
 }
 
+type ReplyStyle struct {
+	styles map[string]string
+}
+
+func (r ReplyStyle) Get(mode string) string {
+	switch mode {
+	case template.Handshake,
+		template.UnknownCommand,
+		template.Unauthorized,
+		template.Failure,
+		template.Success:
+
+		if style, ok := r.styles[mode]; ok {
+			return style
+		}
+	}
+	return ""
+}
+
 type Reply struct {
-	kind    string
+	mode    string
 	to      ReplyTo
 	command string
 	output  string
@@ -86,11 +104,8 @@ type Reply struct {
 
 	colors    config.MessageColors
 	templates *template.TemplatesBuilder
+	style     string
 }
-
-// func (r Reply) Output() string {
-// 	return r.output
-// }
 
 func (r Reply) WithCommand(cmd command.Command) Reply {
 	if r.templates == nil {
@@ -116,20 +131,25 @@ func (r Reply) WithError(err error) Reply {
 	return r
 }
 
+func (r Reply) WithStyle(style string) Reply {
+	r.style = style
+	return r
+}
+
 func (r Reply) Render() (string, error) {
-	switch r.kind {
-	case Handshake:
+	switch r.mode {
+	case template.Handshake:
 		return r.templates.Build().RenderHandshake(r.to.UserLink)
-	case UnknownCommand:
+	case template.UnknownCommand:
 		return r.templates.Build().RenderUnknownCommand(r.to.UserLink, r.output)
-	case UnauthorizedCommand:
+	case template.Unauthorized:
 		return r.templates.Build().RenderUnauthorizedCommand(r.to.UserLink, r.output)
-	case Error:
+	case template.Failure:
 		return r.templates.Build().RenderFailure(r.to.UserLink, r.err.Error(), r.output)
-	case Success:
+	case template.Success:
 		return r.templates.Build().RenderSuccess(r.to.UserLink, r.output)
 	default:
-		return "", fmt.Errorf("Don't know how to render kind '%s'", r.kind)
+		return "", fmt.Errorf("Don't know how to render mode '%s'", r.mode)
 	}
 }
 
@@ -137,15 +157,15 @@ func (r Reply) Channel() string {
 	return r.to.ChannelID
 }
 
-func (r Reply) Kind() string {
-	return r.kind
+func (r Reply) ReplyStyle() string {
+	return r.style
 }
 
 func (r Reply) Color() string {
-	switch r.kind {
-	case Handshake:
+	switch r.mode {
+	case template.Handshake:
 		return r.colors.Info
-	case UnknownCommand, UnauthorizedCommand, Error:
+	case template.UnknownCommand, template.Unauthorized, template.Failure:
 		return r.colors.Error
 	default:
 		return r.colors.Success

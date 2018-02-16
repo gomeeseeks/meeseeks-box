@@ -199,7 +199,7 @@ type plainTemplates struct{}
 
 func (p plainTemplates) Templates() map[string]string {
 	return map[string]string{
-		template.SuccessKey: fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}{{ with $out := .output }}\n{{ $out }}{{ end }}", template.SuccessKey),
+		template.Success: fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}{{ with $out := .output }}\n{{ $out }}{{ end }}", template.Success),
 	}
 }
 

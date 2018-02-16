@@ -70,10 +70,13 @@ func New(r io.Reader) (Config, error) {
 			Mode:    0600,
 			Timeout: 2 * time.Second,
 		},
-		Colors: MessageColors{
-			Info:    DefaultInfoColorMessage,
-			Success: DefaultSuccessColorMessage,
-			Error:   DefaultErrColorMessage,
+		Format: Format{
+			Colors: MessageColors{
+				Info:    DefaultInfoColorMessage,
+				Success: DefaultSuccessColorMessage,
+				Error:   DefaultErrColorMessage,
+			},
+			ReplyStyle: map[string]string{},
 		},
 		Pool: 20,
 	}
@@ -96,9 +99,9 @@ type Config struct {
 	Database db.DatabaseConfig   `yaml:"database"`
 	Messages map[string][]string `yaml:"messages"`
 	Commands map[string]Command  `yaml:"commands"`
-	Colors   MessageColors       `yaml:"colors"`
 	Groups   map[string][]string `yaml:"groups"`
 	Pool     int                 `yaml:"pool"`
+	Format   Format              `yaml:"format"`
 }
 
 // Command is the struct that handles a command configuration
@@ -124,4 +127,10 @@ type MessageColors struct {
 	Info    string `yaml:"info"`
 	Success string `yaml:"success"`
 	Error   string `yaml:"error"`
+}
+
+// Format contains the formatting configurations
+type Format struct {
+	Colors     MessageColors     `yaml:"colors"`
+	ReplyStyle map[string]string `yaml:"reply_styles"`
 }
