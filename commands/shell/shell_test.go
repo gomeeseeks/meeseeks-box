@@ -14,18 +14,18 @@ import (
 
 var echoCommand = shell.New(shell.CommandOpts{
 	Cmd:  "echo",
-	Help: "command that prints back the arguments passed",
+	Help: shell.NewHelp("command that prints back the arguments passed"),
 })
 
 var failCommand = shell.New(shell.CommandOpts{
 	Cmd:  "false",
-	Help: "command that fails",
+	Help: shell.NewHelp("command that fails"),
 })
 
 var sleepCommand = shell.New(shell.CommandOpts{
 	Cmd:  "sleep",
 	Args: []string{"10"},
-	Help: "command that sleeps",
+	Help: shell.NewHelp("command that sleeps"),
 })
 
 func TestShellCommand(t *testing.T) {
@@ -36,7 +36,8 @@ func TestShellCommand(t *testing.T) {
 	stubs.AssertEquals(t, true, echoCommand.Record())
 	stubs.AssertEquals(t, map[string]string{}, echoCommand.Templates())
 	stubs.AssertEquals(t, command.DefaultCommandTimeout, echoCommand.Timeout())
-	stubs.AssertEquals(t, "command that prints back the arguments passed", echoCommand.Help())
+	stubs.AssertEquals(t, "command that prints back the arguments passed", echoCommand.Help().GetSummary())
+	stubs.AssertEquals(t, []string{}, echoCommand.Help().GetArgs())
 }
 
 func TestExecuteEcho(t *testing.T) {

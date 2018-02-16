@@ -3,6 +3,7 @@ package builtins_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/aliases"
@@ -58,23 +59,31 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 
 			job:      jobs.Job{},
-			expected: "meeseeks-box version , commit , built at ",
+			expected: "meeseeks-box version , commit , built on ",
 		},
 		{
-			name: "help command",
+			name: "help non builtins command",
 			req: request.Request{
 				Command: builtins.BuiltinHelpCommand,
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{},
-			expected: dedent.Dedent(`
-				- alias: adds an alias for a command
+			job:      jobs.Job{Request: request.Request{Args: []string{}}},
+			expected: "",
+		},
+		{
+			name: "help all command",
+			req: request.Request{
+				Command: builtins.BuiltinHelpCommand,
+				UserID:  "userid",
+			},
+			job: jobs.Job{Request: request.Request{Args: []string{"-all"}}},
+			expected: dedent.Dedent(`- alias: adds an alias for a command for the current user
 				- aliases: list all the aliases for the current user
-				- audit: lists jobs from all users or a specific one (admin only), accepts -user and -limit to filter.
-				- auditjob: shows a command metadata by job ID from any user (admin only)
-				- auditlogs: shows the logs of any command by job ID (admin only)
-				- cancel: cancels a jobs owned by the calling user that is currently running
+				- audit: lists jobs from all users or a specific one (admin only)
+				- auditjob: shows a command metadata by job ID (admin only)
+				- auditlogs: shows the logs of a job by ID (admin only)
+				- cancel: sends a cancellation signal to a job owned by the current user
 				- groups: prints the configured groups
 				- head: returns the top N log lines of a command output or error
 				- help: prints all the kwnown commands and its associated help
@@ -87,8 +96,24 @@ func Test_BuiltinCommands(t *testing.T) {
 				- token-new: creates a new API token for the calling user, channel and command with args, requires at least #channel and command
 				- token-revoke: revokes an API token
 				- tokens: lists the API tokens
-				- unalias: deletes an alias for a command
+				- unalias: deletes an alias
 				- version: prints the running meeseeks version
+				`),
+		},
+		{
+			name: "help one command",
+			req: request.Request{
+				Command: builtins.BuiltinHelpCommand,
+				UserID:  "userid",
+			},
+			job: jobs.Job{Request: request.Request{Args: []string{"token-new"}}},
+			expected: dedent.Dedent(`*token-new* - creates a new API token
+				
+				*Arguments*
+				- user that will be impersonated by the api, mandatory
+				- channel that will be used as the one in which the job was called
+				- command the token will be calling
+				- arguments to pass to the command
 				`),
 		},
 		{
@@ -292,7 +317,6 @@ func Test_BuiltinCommands(t *testing.T) {
 				commands.Add("noop", shell.New(shell.CommandOpts{
 					AuthStrategy: "any",
 					Cmd:          "true",
-					Help:         "No-op",
 				}))
 
 				_, err = jobs.Create(
@@ -632,5 +656,63 @@ func Test_FilterJobsAudit(t *testing.T) {
 			t.Fatalf("Failed to execute audit: %s", err)
 		}
 		stubs.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n", limit)
+	}))
+}
+
+func TestAPITokenLifecycle(t *testing.T) {
+
+	exec := func(r request.Request) (string, error) {
+		cmd, ok := commands.Find(&r)
+		if !ok {
+			t.Fatalf("could not find command %s", r.Command)
+		}
+
+		return cmd.Execute(context.Background(), jobs.NullJob(r))
+	}
+
+	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func(_ string) {
+
+		out, err := exec(request.Request{
+			Command: builtins.BuiltinListAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+		})
+		stubs.Must(t, "can't list api tokens:", err)
+		stubs.AssertEquals(t, "No tokens could be found", out)
+
+		out, err = exec(request.Request{
+			Command: builtins.BuiltinNewAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+			Args:    []string{"apiuser", "yolo", "rm", "-rf"},
+		})
+		stubs.Must(t, "can't create an api token:", err)
+
+		token := strings.Split(out, " ")[2]
+
+		out, err = exec(request.Request{
+			Command: builtins.BuiltinListAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+		})
+		stubs.Must(t, "can't list api tokens:", err)
+		stubs.AssertEquals(t, fmt.Sprintf("- *%s* apiuser at yolo _rm -rf_\n", token), out)
+
+		out, err = exec(request.Request{
+			Command: builtins.BuiltinRevokeAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+			Args:    []string{token},
+		})
+		stubs.Must(t, "can't revoke an api token:", err)
+		stubs.AssertEquals(t, fmt.Sprintf("Token *%s* has been revoked", token), out)
+
+		out, err = exec(request.Request{
+			Command: builtins.BuiltinListAPITokenCommand,
+			UserID:  "apiuser",
+			IsIM:    true,
+		})
+		stubs.Must(t, "can't list api tokens:", err)
+		stubs.AssertEquals(t, "No tokens could be found", out)
 	}))
 }

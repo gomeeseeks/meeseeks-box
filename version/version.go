@@ -1,5 +1,8 @@
 package version
 
+// Name is the application name
+var Name = "meeseeks-box"
+
 // Version is the application Version
 var Version string
 
