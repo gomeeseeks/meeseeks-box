@@ -116,7 +116,7 @@ func (c ClientStub) Reply(r formatter.Reply) {
 	if err != nil {
 		logrus.Error(err)
 	}
-	c.MessagesSent <- SentMessage{Text: text, Channel: r.Channel()}
+	c.MessagesSent <- SentMessage{Text: text, Channel: r.ChannelID()}
 }
 
 // MessagesCh implements meeseeks.Client.MessagesCh interface

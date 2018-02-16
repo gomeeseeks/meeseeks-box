@@ -14,14 +14,14 @@ import (
 type Formatter struct {
 	colors     config.MessageColors
 	templates  *template.TemplatesBuilder
-	replyStyle ReplyStyle
+	replyStyle replyStyle
 }
 
 // New returns a new Formatter
 func New(cnf config.Config) *Formatter {
 	builder := template.NewBuilder().WithMessages(cnf.Messages)
 	f := Formatter{
-		replyStyle: ReplyStyle{cnf.Format.ReplyStyle},
+		replyStyle: replyStyle{cnf.Format.ReplyStyle},
 		colors:     cnf.Format.Colors,
 		templates:  builder,
 	}
@@ -40,22 +40,27 @@ func (f Formatter) WithTemplates(templates map[string]string) template.Templates
 	return f.templates.Clone().WithTemplates(templates).Build()
 }
 
+// HandshakeReply creates a reply for a handshake message
 func (f Formatter) HandshakeReply(to ReplyTo) Reply {
 	return f.newReplier(template.Handshake, to)
 }
 
+// UnknownCommandReply creates a reply for an UnknownCommand error message
 func (f Formatter) UnknownCommandReply(to ReplyTo, cmd string) Reply {
 	return f.newReplier(template.UnknownCommand, to).WithOutput(cmd)
 }
 
+// UnauthorizedCommandReply creates a reply for an unauthorized command error message
 func (f Formatter) UnauthorizedCommandReply(to ReplyTo, cmd string) Reply {
 	return f.newReplier(template.Unauthorized, to).WithOutput(cmd)
 }
 
+// FailureReply creates a reply for a generic command error message
 func (f Formatter) FailureReply(to ReplyTo, err error) Reply {
 	return f.newReplier(template.Failure, to).WithError(err)
 }
 
+// SuccessReply creates a reply for a generic command success message
 func (f Formatter) SuccessReply(to ReplyTo) Reply {
 	return f.newReplier(template.Success, to)
 }
@@ -71,16 +76,17 @@ func (f Formatter) newReplier(mode string, to ReplyTo) Reply {
 	}
 }
 
+// ReplyTo holds the information of who and where to reply
 type ReplyTo struct {
 	UserLink  string
 	ChannelID string
 }
 
-type ReplyStyle struct {
+type replyStyle struct {
 	styles map[string]string
 }
 
-func (r ReplyStyle) Get(mode string) string {
+func (r replyStyle) Get(mode string) string {
 	switch mode {
 	case template.Handshake,
 		template.UnknownCommand,
@@ -95,6 +101,7 @@ func (r ReplyStyle) Get(mode string) string {
 	return ""
 }
 
+// Reply represents all the data necessary to send a reply message
 type Reply struct {
 	mode   string
 	to     ReplyTo
@@ -106,6 +113,7 @@ type Reply struct {
 	style     string
 }
 
+// WithCommand receives a command and pulls all the specific command configuration
 func (r Reply) WithCommand(cmd command.Command) Reply {
 	if r.templates == nil {
 		logrus.Info("templates are nil in the current reply??")
@@ -120,21 +128,19 @@ func (r Reply) WithCommand(cmd command.Command) Reply {
 	return r
 }
 
+// WithOutput stores the text payload to render in the reply
 func (r Reply) WithOutput(output string) Reply {
 	r.output = output
 	return r
 }
 
+// WithError stores an error to render
 func (r Reply) WithError(err error) Reply {
 	r.err = err
 	return r
 }
 
-func (r Reply) WithStyle(style string) Reply {
-	r.style = style
-	return r
-}
-
+// Render renders the message returning the rendered text, or an error if something goes wrong.
 func (r Reply) Render() (string, error) {
 	switch r.mode {
 	case template.Handshake:
@@ -152,14 +158,17 @@ func (r Reply) Render() (string, error) {
 	}
 }
 
-func (r Reply) Channel() string {
+// ChannelID returns the channel ID in which to reply
+func (r Reply) ChannelID() string {
 	return r.to.ChannelID
 }
 
+// ReplyStyle returns the style to use to reply
 func (r Reply) ReplyStyle() string {
 	return r.style
 }
 
+// Color returns the color to use when decorating the reply
 func (r Reply) Color() string {
 	switch r.mode {
 	case template.Handshake:

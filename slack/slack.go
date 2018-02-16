@@ -303,9 +303,9 @@ func (a attachmentReplyStyle) Reply(r formatter.Reply) {
 			},
 		},
 	}
-	logrus.Debugf("Replying in Slack %s with %#v", r.Channel(), params)
-	if _, _, err = a.client.PostMessage(r.Channel(), "", params); err != nil {
-		logrus.Errorf("failed post attachment message %s on %s: %s", content, r.Channel(), err)
+	logrus.Debugf("Replying in Slack %s with %#v", r.ChannelID(), params)
+	if _, _, err = a.client.PostMessage(r.ChannelID(), "", params); err != nil {
+		logrus.Errorf("failed post attachment message %s on %s: %s", content, r.ChannelID(), err)
 	}
 }
 
@@ -326,9 +326,9 @@ func (t textReplyStyle) Reply(r formatter.Reply) {
 		UnfurlLinks: true,
 		UnfurlMedia: true,
 	}
-	logrus.Debugf("Replying in Slack %s with %#v and text: %s", r.Channel(), params, content)
-	if _, _, err = t.client.PostMessage(r.Channel(), content, params); err != nil {
-		logrus.Errorf("failed post message %s on %s: %s", content, r.Channel(), err)
+	logrus.Debugf("Replying in Slack %s with %#v and text: %s", r.ChannelID(), params, content)
+	if _, _, err = t.client.PostMessage(r.ChannelID(), content, params); err != nil {
+		logrus.Errorf("failed post message %s on %s: %s", content, r.ChannelID(), err)
 	}
 }
 
