@@ -26,6 +26,7 @@ func main() {
 	apiAddress := flag.String("api-endpoint", ":9696", "api endpoint in which to listen for api calls")
 	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
+	slackText := flag.Bool("simple-text", false, "Use simple text format instead of attachments")
 
 	flag.Parse()
 
@@ -50,9 +51,10 @@ func main() {
 
 	slackClient, err := slack.Connect(
 		slack.ConnectionOpts{
-			Debug:   *debugSlack,
-			Token:   os.Getenv("SLACK_TOKEN"),
-			Stealth: *slackStealth,
+			Debug:      *debugSlack,
+			Token:      os.Getenv("SLACK_TOKEN"),
+			Stealth:    *slackStealth,
+			RenderText: *slackText,
 		})
 	if err != nil {
 		log.Fatalf("Could not connect to slack: %s", err)

@@ -2,6 +2,7 @@ package testingstubs
 
 import (
 	"fmt"
+	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"io/ioutil"
 	"os"
 	"path"
@@ -15,7 +16,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // SentMessage is a message that has been sent through a client
@@ -41,7 +42,7 @@ func NewHarness() Harness {
 func (h Harness) WithConfigFile(f string) Harness {
 	s, err := ioutil.ReadFile(f)
 	if err != nil {
-		log.Fatalf("Failed to read configuration file %s: %s", f, err)
+		logrus.Fatalf("Failed to read configuration file %s: %s", f, err)
 	}
 	h.cnf = string(s)
 	return h
@@ -75,7 +76,7 @@ func (h Harness) WithDBPath(dbpath string) Harness {
 func (h Harness) Load() (ClientStub, config.Config) {
 	c, err := config.New(strings.NewReader(h.cnf))
 	if err != nil {
-		log.Fatalf("Could not build test harness: %s", err)
+		logrus.Fatalf("Could not build test harness: %s", err)
 	}
 	if h.dbpath != "" {
 		c.Database = db.DatabaseConfig{
@@ -109,27 +110,13 @@ func newClientStub() ClientStub {
 }
 
 // Reply implements the meeseeks.Client.Reply interface
-func (c ClientStub) Reply(text, channel string) error {
-	c.MessagesSent <- SentMessage{Text: text, Channel: channel}
-	return nil
-}
-
-// ReplyWithAttachment implements the meeseeks.Client.ReplyWithAttachment interface
-func (c ClientStub) ReplyWithAttachment(text, color, channel string) error {
-	c.MessagesSent <- SentMessage{Text: text, Color: color, Channel: channel}
-	return nil
-}
-
-// ReplyIM implements the meeseeks.Client.ReplyIM interface
-func (c ClientStub) ReplyIM(text, user string) error {
-	c.MessagesSent <- SentMessage{Text: text, Channel: user, IsIM: true}
-	return nil
-}
-
-// ReplyIMWithAttachment implements the meeseeks.Client.ReplyIMWithAttachment interface
-func (c ClientStub) ReplyIMWithAttachment(text, color, user string) error {
-	c.MessagesSent <- SentMessage{Text: text, Color: color, Channel: user, IsIM: true}
-	return nil
+func (c ClientStub) Reply(r formatter.Reply) {
+	logrus.Infof("sending reply %#v to client", r)
+	text, err := r.Render()
+	if err != nil {
+		logrus.Error(err)
+	}
+	c.MessagesSent <- SentMessage{Text: text, Channel: r.Channel()}
 }
 
 // MessagesCh implements meeseeks.Client.MessagesCh interface

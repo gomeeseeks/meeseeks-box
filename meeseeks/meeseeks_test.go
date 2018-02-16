@@ -2,20 +2,17 @@ package meeseeks_test
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/messenger"
-
 	"github.com/gomeeseeks/meeseeks-box/formatter"
-
-	"github.com/renstrom/dedent"
-
-	"regexp"
-
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/messenger"
 	"github.com/gomeeseeks/meeseeks-box/template"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
+	"github.com/renstrom/dedent"
+	"github.com/sirupsen/logrus"
 )
 
 type expectedMessage struct {
@@ -160,18 +157,22 @@ func Test_MeeseeksInteractions(t *testing.T) {
 
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
-				t.Logf("starting test %s", tc.name)
+				logrus.Infof("starting test %s", tc.name)
 				client.MessagesCh() <- stubs.MessageStub{
 					Text:      tc.message,
 					Channel:   tc.channel,
 					ChannelID: tc.channel + "ID",
 					User:      tc.user,
 				}
-				t.Logf("message sent to channel on %s", tc.name)
+				logrus.Infof("message sent to channel on %s", tc.name)
 
+				logrus.Infof("reading replies from client on %s", tc.name)
 				for _, expected := range tc.expected {
-					t.Logf("reading replies from client on %s", tc.name)
+					logrus.Infof("expecting message %#v", expected)
+
 					actual := <-client.MessagesSent
+
+					logrus.Infof("got message %#v", actual)
 
 					r, err := regexp.Compile(expected.TextMatcher)
 					stubs.Must(t, "could not compile regex", err, expected.TextMatcher)
