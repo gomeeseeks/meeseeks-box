@@ -86,14 +86,14 @@ func Test_BuiltinCommands(t *testing.T) {
 				- cancel: sends a cancellation signal to a job owned by the current user
 				- groups: prints the configured groups
 				- head: returns the top N log lines of a command output or error
-				- help: prints all the kwnown commands and its associated help
-				- job: find one job by id
-				- jobs: shows the last executed jobs for the calling user, accepts -limit
-				- kill: cancels a jobs that is currently running, from any user
-				- last: shows the last executed command by the calling user
-				- logs: returns the logs of the command id passed as argument
-				- tail: returns the last command output or error
-				- token-new: creates a new API token for the calling user, channel and command with args, requires at least #channel and command
+				- help: shows the help for all the commands, or a single one
+				- job: show metadata of one job by id
+				- jobs: shows the last executed jobs for the calling user
+				- kill: sends a cancellation signal to a job, admin only
+				- last: shows the last job metadata executed by the current user
+				- logs: returns the full output of the job passed as argument
+				- tail: returns the last lines of the last executed job, or one selected by job ID
+				- token-new: creates a new API token
 				- token-revoke: revokes an API token
 				- tokens: lists the API tokens
 				- unalias: deletes an alias

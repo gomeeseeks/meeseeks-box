@@ -9,14 +9,12 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/aliases"
-	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
-
-	"github.com/gomeeseeks/meeseeks-box/jobs"
-	"github.com/gomeeseeks/meeseeks-box/tokens"
-
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/command"
+	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/template"
+	"github.com/gomeeseeks/meeseeks-box/tokens"
 	"github.com/gomeeseeks/meeseeks-box/version"
 	"github.com/renstrom/dedent"
 )
@@ -111,13 +109,17 @@ var Commands = map[string]command.Command{
 		help: newHelp(
 			"returns the last lines of the last executed job, or one selected by job ID",
 			"-limit: how many lines to show",
-			"job ID to look for, optional, if not provided the last executed one will be lookup",
+			"job ID to look for, optional, if not provided the last executed one will be looked up",
 		),
 		cmd: cmd{BuiltinTailCommand},
 	},
 	BuiltinHeadCommand: headCommand{
-		help: help{"returns the top N log lines of a command output or error"},
-		cmd:  cmd{BuiltinHeadCommand},
+		help: newHelp(
+			"returns the top N log lines of a command output or error",
+			"-limit: how many lines to show",
+			"job ID to look for, optional, if not provided the last executed one will be looked up",
+		),
+		cmd: cmd{BuiltinHeadCommand},
 	},
 	BuiltinLogsCommand: logsCommand{
 		help: newHelp(
