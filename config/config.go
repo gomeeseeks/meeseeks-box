@@ -52,9 +52,11 @@ func LoadConfig(cnf Config) error {
 			Args:          cmd.Args,
 			AuthStrategy:  cmd.AuthStrategy,
 			Cmd:           cmd.Cmd,
-			Help:          cmd.Help,
-			Templates:     cmd.Templates,
-			Timeout:       cmd.Timeout * time.Second,
+			Help: shell.NewHelp(
+				cmd.Help.Summary,
+				cmd.Help.Args...),
+			Templates: cmd.Templates,
+			Timeout:   cmd.Timeout * time.Second,
 		}))
 	}
 	return nil
@@ -107,8 +109,14 @@ type Command struct {
 	AuthStrategy  string            `yaml:"auth_strategy"`
 	Timeout       time.Duration     `yaml:"timeout"`
 	Templates     map[string]string `yaml:"templates"`
-	Help          string            `yaml:"help"`
+	Help          CommandHelp       `yaml:"help"`
 	Type          int
+}
+
+// CommandHelp is the struct that handles the help of a command
+type CommandHelp struct {
+	Summary string   `yaml:"summary"`
+	Args    []string `yaml:"args"`
 }
 
 // MessageColors contains the configured reply message colora
