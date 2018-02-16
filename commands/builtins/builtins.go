@@ -619,6 +619,7 @@ type tailCommand struct {
 
 func (t tailCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 	flags := flag.NewFlagSet("tail", flag.ContinueOnError)
+	limit := flags.Int("limit", 5, "how many lines to return")
 
 	flags.Parse(job.Request.Args)
 
@@ -631,7 +632,7 @@ func (t tailCommand) Execute(_ context.Context, job jobs.Job) (string, error) {
 		return "", err
 	}
 
-	jobLogs, err := logs.Get(jobID)
+	jobLogs, err := logs.Tail(jobID, *limit)
 	if err != nil {
 		return "", err
 	}
