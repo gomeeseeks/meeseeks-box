@@ -109,13 +109,25 @@ func newClientStub() ClientStub {
 }
 
 // Reply implements the meeseeks.Client.Reply interface
-func (c ClientStub) Reply(text, color, channel string) error {
+func (c ClientStub) Reply(text, channel string) error {
+	c.MessagesSent <- SentMessage{Text: text, Channel: channel}
+	return nil
+}
+
+// ReplyWithAttachment implements the meeseeks.Client.ReplyWithAttachment interface
+func (c ClientStub) ReplyWithAttachment(text, color, channel string) error {
 	c.MessagesSent <- SentMessage{Text: text, Color: color, Channel: channel}
 	return nil
 }
 
 // ReplyIM implements the meeseeks.Client.ReplyIM interface
-func (c ClientStub) ReplyIM(text, color, user string) error {
+func (c ClientStub) ReplyIM(text, user string) error {
+	c.MessagesSent <- SentMessage{Text: text, Channel: user, IsIM: true}
+	return nil
+}
+
+// ReplyIMWithAttachment implements the meeseeks.Client.ReplyIMWithAttachment interface
+func (c ClientStub) ReplyIMWithAttachment(text, color, user string) error {
 	c.MessagesSent <- SentMessage{Text: text, Color: color, Channel: user, IsIM: true}
 	return nil
 }

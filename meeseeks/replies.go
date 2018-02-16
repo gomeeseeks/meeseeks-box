@@ -13,7 +13,7 @@ func (m *Meeseeks) replyWithError(msg message.Message, err error) {
 		log.Fatalf("could not render failure template: %s", err)
 	}
 
-	if err = m.client.Reply(content, m.formatter.ErrorColor(), msg.GetChannelID()); err != nil {
+	if err = m.client.ReplyWithAttachment(content, m.formatter.ErrorColor(), msg.GetChannelID()); err != nil {
 		log.Errorf("Failed to reply: %s", err)
 	}
 }
@@ -26,7 +26,7 @@ func (m *Meeseeks) replyWithUnknownCommand(req request.Request) {
 		log.Fatalf("could not render unknown command template: %s", err)
 	}
 
-	if err = m.client.Reply(msg, m.formatter.ErrorColor(), req.ChannelID); err != nil {
+	if err = m.client.ReplyWithAttachment(msg, m.formatter.ErrorColor(), req.ChannelID); err != nil {
 		log.Errorf("Failed to reply: %s", err)
 	}
 }
@@ -40,7 +40,7 @@ func (m *Meeseeks) replyWithHandshake(req request.Request, cmd command.Command) 
 		log.Fatalf("could not render unknown command template: %s", err)
 	}
 
-	if err = m.client.Reply(msg, m.formatter.InfoColor(), req.ChannelID); err != nil {
+	if err = m.client.ReplyWithAttachment(msg, m.formatter.InfoColor(), req.ChannelID); err != nil {
 		log.Errorf("Failed to reply: %s", err)
 	}
 }
@@ -54,7 +54,7 @@ func (m *Meeseeks) replyWithUnauthorizedCommand(req request.Request, cmd command
 		log.Fatalf("could not render unathorized command template %s", err)
 	}
 
-	if err = m.client.Reply(msg, m.formatter.ErrorColor(), req.ChannelID); err != nil {
+	if err = m.client.ReplyWithAttachment(msg, m.formatter.ErrorColor(), req.ChannelID); err != nil {
 		log.Errorf("Failed to reply: %s", err)
 	}
 }
@@ -65,7 +65,7 @@ func (m *Meeseeks) replyWithCommandFailed(req request.Request, cmd command.Comma
 		log.Fatalf("could not render failure template %s", err)
 	}
 
-	if err = m.client.Reply(msg, m.formatter.ErrorColor(), req.ChannelID); err != nil {
+	if err = m.client.ReplyWithAttachment(msg, m.formatter.ErrorColor(), req.ChannelID); err != nil {
 		log.Errorf("Failed to reply: %s", err)
 	}
 }
@@ -77,7 +77,7 @@ func (m *Meeseeks) replyWithSuccess(req request.Request, cmd command.Command, ou
 		log.Fatalf("could not render success template %s", err)
 	}
 
-	if err = m.client.Reply(msg, m.formatter.SuccessColor(), req.ChannelID); err != nil {
+	if err = m.client.Reply(msg, req.ChannelID); err != nil {
 		log.Errorf("Failed to reply: %s", err)
 	}
 }
