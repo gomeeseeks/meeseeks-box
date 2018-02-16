@@ -96,11 +96,10 @@ func (r ReplyStyle) Get(mode string) string {
 }
 
 type Reply struct {
-	mode    string
-	to      ReplyTo
-	command string
-	output  string
-	err     error
+	mode   string
+	to     ReplyTo
+	output string
+	err    error
 
 	colors    config.MessageColors
 	templates *template.TemplatesBuilder

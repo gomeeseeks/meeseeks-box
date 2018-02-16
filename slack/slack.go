@@ -18,8 +18,7 @@ import (
 var errIgnoredMessage = fmt.Errorf("Ignore this message")
 
 const (
-	textStyle       = "text"
-	attachmentStyle = "attachment"
+	textStyle = "text"
 )
 
 // Client is a chat client
