@@ -16,7 +16,6 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
-	"github.com/renstrom/dedent"
 )
 
 var basicGroups = map[string][]string{
@@ -78,27 +77,27 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 			job: jobs.Job{Request: request.Request{Args: []string{"-all"}}},
-			expected: dedent.Dedent(`- alias: adds an alias for a command for the current user
-				- aliases: list all the aliases for the current user
-				- audit: lists jobs from all users or a specific one (admin only)
-				- auditjob: shows a command metadata by job ID (admin only)
-				- auditlogs: shows the logs of a job by ID (admin only)
-				- cancel: sends a cancellation signal to a job owned by the current user
-				- groups: prints the configured groups
-				- head: returns the top N log lines of a command output or error
-				- help: shows the help for all the commands, or a single one
-				- job: show metadata of one job by id
-				- jobs: shows the last executed jobs for the calling user
-				- kill: sends a cancellation signal to a job, admin only
-				- last: shows the last job metadata executed by the current user
-				- logs: returns the full output of the job passed as argument
-				- tail: returns the last lines of the last executed job, or one selected by job ID
-				- token-new: creates a new API token
-				- token-revoke: revokes an API token
-				- tokens: lists the API tokens
-				- unalias: deletes an alias
-				- version: prints the running meeseeks version
-				`),
+			expected: `- alias: adds an alias for a command for the current user
+- aliases: list all the aliases for the current user
+- audit: lists jobs from all users or a specific one (admin only)
+- auditjob: shows a command metadata by job ID (admin only)
+- auditlogs: shows the logs of a job by ID (admin only)
+- cancel: sends a cancellation signal to a job owned by the current user
+- groups: prints the configured groups
+- head: returns the top N log lines of a command output or error
+- help: shows the help for all the commands, or a single one
+- job: show metadata of one job by id
+- jobs: shows the last executed jobs for the calling user
+- kill: sends a cancellation signal to a job, admin only
+- last: shows the last job metadata executed by the current user
+- logs: returns the full output of the job passed as argument
+- tail: returns the last lines of the last executed job, or one selected by job ID
+- token-new: creates a new API token
+- token-revoke: revokes an API token
+- tokens: lists the API tokens
+- unalias: deletes an alias
+- version: prints the running meeseeks version
+`,
 		},
 		{
 			name: "help one command",
@@ -107,14 +106,14 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 			job: jobs.Job{Request: request.Request{Args: []string{"token-new"}}},
-			expected: dedent.Dedent(`*token-new* - creates a new API token
-				
-				*Arguments*
-				- user that will be impersonated by the api, mandatory
-				- channel that will be used as the one in which the job was called
-				- command the token will be calling
-				- arguments to pass to the command
-				`),
+			expected: `*token-new* - creates a new API token
+
+*Arguments*
+- user that will be impersonated by the api, mandatory
+- channel that will be used as the one in which the job was called
+- command the token will be calling
+- arguments to pass to the command
+`,
 		},
 		{
 			name: "groups command",
@@ -124,10 +123,10 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 
 			job: jobs.Job{},
-			expected: dedent.Dedent(`
-					- admins: admin_user
-					- other: user_one, user_two
-					`),
+			expected: `
+- admins: admin_user
+- other: user_one, user_two
+`,
 		},
 		{
 			name: "test jobs command",

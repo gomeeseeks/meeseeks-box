@@ -91,7 +91,7 @@ func (c Client) getReplyStyle(style string) replyStyle {
 	}
 }
 
-// ConnectionOpts groups all the conection options in a single struct
+// ConnectionOpts groups all the connection options in a single struct
 type ConnectionOpts struct {
 	Debug   bool
 	Token   string
