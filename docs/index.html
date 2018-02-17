@@ -259,6 +259,12 @@
         
             <a href="#auditory-commands-family">Auditory Commands Family</a>
         
+            <a href="#cancelling-jobs">Cancelling job</a>
+        
+            <a href="#commands-api">Commands Api</a>
+        
+            <a href="#formatting">Formatting</a>
+        
         </nav>
     </section>
     
@@ -420,7 +426,7 @@ auto-remediation.</p>
 
 <p>If you are talking in a public channel you will need to start any message with the bot handle for it to pay attention to you, if you are talking in DM you don&rsquo;t need to say the name.</p>
 
-<p>Go ahead and try issuing <code>help</code> to get a list of commands supported, or <code>version</code> to see what version have you installed.</p>
+<p>Go ahead and try issuing <code>help -all</code> to get a list of commands supported, or <code>version</code> to see what version have you installed.</p>
 
 
     </section>
@@ -441,7 +447,10 @@ commands:
     command: &quot;echo&quot;
       auth_strategy: any
       timeout: 5
-      help: command that prints back the arguments passed
+      help:
+        summary: &quot;command that prints back the arguments passed&quot;
+        args:
+        - &quot;any argument that is passed will be echoed back&quot;
 </code></pre>
 
 <p>Add as many commands as you need, with the only caveat tha they each command needs to have a different name.</p>
@@ -470,7 +479,7 @@ permissions have to be explicit and conscious)<br /></li>
 <li><code>group</code>: use <code>allowed_groups</code> to control who has access to this command<br /></li>
 </ul></li>
 <li><code>allowed_groups</code>: list of groups allowed to run this command<br /></li>
-<li><code>help</code>: help to be printed when using the builtin <code>help</code> command<br /></li>
+<li><code>help</code>: help structure to be printed when using the builtin <code>help</code> command<br /></li>
 <li><code>templates</code>: adds the capacity to change how the replies from this command<br />
 are represented, check the Templating help for more details.<br />
 <br /></li>
@@ -491,7 +500,11 @@ commands:
       - &quot;container-image:latest&quot;
     auth_strategy: group
     allowed_groups: [&quot;docker&quot;]
-    help: &quot;Run the container-image docker image passing arguments in&quot;
+    help:
+      summary: &quot;Run the container-image docker image passing arguments in&quot;
+      args:
+      - &quot;docker image to run&quot;
+      - &quot;arguments to pass to docker...&quot;
 </code></pre>
 
 <p>This will launch a container image every time the command in invoked.</p>
@@ -537,18 +550,18 @@ where the expansion will happen.</p>
 <p>Sample:</p>
 
 <blockquote>
-<p>omame [11:27]<br /><br />
+<p>omame [11:27]<br />
 @marvin alias ps audit -status running</p>
 
-<p>marvin APP [11:27]<br /><br />
-@omame Mr Meeseeks<br /><br />
+<p>marvin APP [11:27]<br />
+@omame Mr Meeseeks<br />
 alias created successfully</p>
 
-<p>omame [11:27]<br /><br />
+<p>omame [11:27]<br />
 @marvin ps</p>
 
-<p>marvin APP [11:27]<br /><br />
-@omame All done!<br /><br />
+<p>marvin APP [11:27]<br />
+@omame All done!<br />
 <em>44</em> - 3 days ago - <em>wait</em> by <em>omame</em> in <em>DM</em> - &gt;<em>Running</em></p>
 </blockquote>
 
@@ -559,12 +572,12 @@ alias created successfully</p>
 <p>Sample:</p>
 
 <blockquote>
-<p>omame [11:28]<br /><br />
+<p>omame [11:28]<br />
 @marvin unalias ps</p>
 
-<p>marvin APP [11:28]<br /><br />
-@omame All done!<br /><br />
-- <em>pablo-failed</em> - <code>audit -status failed -user pablo</code><br /><br />
+<p>marvin APP [11:28]<br />
+@omame All done!<br />
+- <em>pablo-failed</em> - <code>audit -status failed -user pablo</code><br />
 - <em>ps</em> - <code>audit -status running</code></p>
 </blockquote>
 
@@ -730,6 +743,239 @@ is left this way because it makes sense.</p>
 
 <p>This means that an admin is able to see the command details, or the logs, but<br />
 it will not be able to see who was in the private channel.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="cancelling-jobs">
+
+        <h1><a href="#cancelling-jobs">Cancelling job</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Once jobs are running the user has total control over them. This means that at<br />
+any time a job can be queried for status, get the logs as they are being<br />
+streamed, and of course, they can be cancelled.</p>
+
+<p>Job cancellation internally works the same way a timeout is handled. This means<br />
+that the job will get a kill signal, and as a result it will error out, leaving<br />
+the final state of the job as failed.</p>
+
+<p>Still, any log that was streamed up to that point will be recorded, meaning<br />
+that the user can evaluate how far the command reached.</p>
+
+<h2 id="cancelling-a-job">Cancelling a job</h2>
+
+<ul>
+<li><p><code>cancel &lt;job id&gt;</code> cancels a job owned by the calling user that is currently running</p></li>
+
+<li><p><code>kill &lt;job id&gt;</code> cancels a job owned by any user. This commands requires the calling user to be in the admin group.</p></li>
+</ul>
+
+<p>Both commands behave the same way, with the only caveat of permissions and<br />
+scope.</p>
+
+<h2 id="sample">Sample</h2>
+
+<blockquote>
+<p>pablo [12:13 PM]<br />
+cancel 4</p>
+
+<p>marvin APP [12:13 PM]<br />
+@pablo Ok<br />
+Issued command cancellation to job 4</p>
+</blockquote>
+
+<p>This will issue a command cancellation to job 4, independently, job 4 should have failed.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="commands-api">
+
+        <h1><a href="#commands-api">Commands Api</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Meeseeks support commands to be invoked using a http API endpoint.</p>
+
+<p>This can be particularly useful when wired to an alerting system as this can be<br />
+the seed to auto-remediation.</p>
+
+<p>Tokens can only be managed in a direct message conversation, because otherwise<br />
+they would be leaking to any user who has access the used channel. Any attempt<br />
+to invoke any token command in an open channel will be rejected by the<br />
+meesseeks.</p>
+
+<h2 id="creating-an-api-token">Creating an api token</h2>
+
+<ul>
+<li><code>token-new @user #channel command [args...]</code><br />
+<br /></li>
+</ul>
+
+<p>This invokation will then return a UUID which is the API token. This UUID will<br />
+be linked to the command with the proposed arguments. The command will be<br />
+executed as the <code>@user</code> in the <code>#channel</code>. The command can be also an<br />
+<a href="#alias-commands-family">alias</a>.</p>
+
+<p>Permissions-wise, the command access level will be evaluated when it is being<br />
+invoked. This means that an admin can create a token for a user who does not<br />
+have access to the requested command, or the user can lose access to the command<br />
+afterwards. In both cases, the token can be used but the command will simply be<br />
+rejected at execution time, resulting in an error in the registered <code>#channel</code>.</p>
+
+<h2 id="using-an-api-token">Using an API token</h2>
+
+<p>To use a token, you should invoke the HTTP API endpoint with a HTTP<br />
+POST method. For example, using curl:</p>
+
+<p><code>curl -X POST -H &quot;TOKEN: &lt;UUID&gt;&quot; localhost:9696/message</code></p>
+
+<p>By default meeseeks-box HTTP API listens on <code>0.0.0.0:9696</code>.</p>
+
+<p>Additionally, it is possible to add more arguments to the invocation by adding<br />
+them as an HTTP form, like this:</p>
+
+<p><code>curl -F 'message=arg1+arg2' -X POST -H &quot;TOKEN: &lt;UUID&gt;&quot; localhost:9696/message</code></p>
+
+<p>This will result in the command being called appending the <em>message</em> value to<br />
+the tail of the command execution text.</p>
+
+<h2 id="listing-api-tokens">Listing api tokens</h2>
+
+<ul>
+<li><code>tokens</code><br />
+<br /></li>
+</ul>
+
+<p>This will return a list of the existing tokens with the following format:</p>
+
+<blockquote>
+<ul>
+<li><em>UUID</em> @user at #channel <em>command args&hellip;</em><br /></li>
+</ul>
+</blockquote>
+
+<h2 id="revoking-api-tokens">Revoking api tokens</h2>
+
+<ul>
+<li><code>token-revoke &lt;UUID&gt;</code><br />
+<br /></li>
+</ul>
+
+<p>This will destroy the token and it will not be available anymore.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="formatting">
+
+        <h1><a href="#formatting">Formatting</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>There are multiple formatting options to customize your meeseeks experience.</p>
+
+<h2 id="messages">Messages</h2>
+
+<p>The messages used to reply in a conversation can be changed. To do so add a<br />
+messages section in the configuration file.</p>
+
+<pre><code class="language-yaml">messages:
+  handshake:
+  - &quot;Message that will be shown when the bot accepts a job&quot;
+  failure:
+  - &quot;Message that will be shown when the job fails&quot;
+  success:
+  - &quot;Message that will be shown when the job succeeds&quot;
+  unknowncommand:
+  - &quot;Message that will be shown when the requested
+    command is not registered&quot;
+  unauthorized:
+  - &quot;Message that will be shown when the user
+    requesting a command is not authorized to run it&quot;
+</code></pre>
+
+<p>There can be more than 1 message on each section, they will be picked randomly<br />
+when replying.</p>
+
+<h2 id="colors">Colors</h2>
+
+<p>By default messages in attachment mode will show colors for errors, success and<br />
+info. These can be changed by adding a format section to the configuration file.</p>
+
+<pre><code class="language-yaml">format:
+  colors:
+    info: &quot;#FFFFFF&quot;
+    success: &quot;#CCCCCC&quot;
+    error: &quot;#000000&quot;
+</code></pre>
+
+<h2 id="reply-style">Reply Style</h2>
+
+<p>The slack client supports sending messages with 2 styles:</p>
+
+<ul>
+<li><code>text</code> this will be a plain message without any decoration in which urls and<br />
+media will be unfurled by default.<br /></li>
+<li><code>attachment</code> this is the default, in which the message is posted as an<br />
+attachment, using a color decoration depending on what kind of message it is.<br />
+<br /></li>
+</ul>
+
+<p>This can be changed in a case by case by adding a formatting section to the<br />
+configuration file.</p>
+
+<pre><code class="language-yaml">format:
+  reply_styles:
+    handshake: text
+    failure: attachment
+    success: text
+    unknowncommand: attachment
+    unauthorized: attachment
+</code></pre>
+
+<h2 id="command-templates">Command Templates</h2>
+
+<p>Commands can be templated using go <a href="https://golang.org/pkg/text/template/">text/template</a> language.</p>
+
+<p>This is done through the configuration.</p>
+
+<p>These are the default ones.</p>
+
+<pre><code class="language-yaml">messages:
+  handshake: &quot;{{ AnyValue handshake . }}&quot;
+  failure: |
+    &quot;{{ .user }} {{ AnyValue failure . }} :disappointed: {{ .error }}
+    {{ with $out := .output }}\n```\n{{ $out }}```{{ end }}&quot;
+  success: |
+    &quot;{{ .user }} {{ AnyValue success . }}
+    {{ with $out := .output }}\n```\n{{ $out }}```{{ end }}&quot;
+  unknowncommand: |
+    &quot;{{ .user }} {{ AnyValue unknowncommand . }} {{ .command }}&quot;
+  unauthorized: |
+    &quot;{{ .user }} {{ AnyValue unauthorized . }} {{ .command }}&quot;
+</code></pre>
+
+<h3 id="helper-functions">Helper functions</h3>
+
+<p>There are a couple of functions that are added when rendering templates, these are useful to handle arrays, texts and some values.</p>
+
+<ul>
+<li><code>AnyValue</code> will pick a random value from a string slice.<br /></li>
+<li><code>HumanizeTime</code> will print a time in human readable format, ex. <em>6 hours ago</em><br /></li>
+<li><code>HumanizeSize</code> will print a size in human readable format, ex. <em>100Mb</em><br /></li>
+<li><code>HumanizeNumber</code> will pring a float in a human readable format, removing long trails of decimals.<br /></li>
+<li><code>Join</code> joins a string slice into a single string using a joining char.<br />
+<br /></li>
+</ul>
 
 
     </section>
