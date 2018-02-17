@@ -136,7 +136,7 @@ func Test_ChangingTemplate(t *testing.T) {
 		template.HandshakeKey: "hello!",
 	}).Build()
 	out, err := templates.RenderHandshake("myuser")
-	stubs.Must(t, "can't render changed handshake tempalte", err)
+	stubs.Must(t, "can't render changed handshake template", err)
 	stubs.AssertEquals(t, "hello!", out)
 }
 
@@ -145,7 +145,7 @@ func Test_ChangingMessages(t *testing.T) {
 		template.HandshakeKey: {"yo!"},
 	}).Build()
 	out, err := templates.RenderHandshake("myuser")
-	stubs.Must(t, "can't render changed handshake tempalte", err)
+	stubs.Must(t, "can't render changed handshake template", err)
 	stubs.AssertEquals(t, "yo!", out)
 }
 func Test_DefaultTemplates(t *testing.T) {
