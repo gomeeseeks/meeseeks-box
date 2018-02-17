@@ -6,46 +6,50 @@
 >
 > And then it stops existing
 
-[Meeseeks-box](https://github.com/gomeeseeks/meeseeks-box) is a ChatOps Construction Kit that allows anyone to build your own automations following the UNIX principle of using small tools that know how to do 1 thing right.
+[Meeseeks](https://github.com/gomeeseeks/) is a ChatOps Construction Kit that allows anyone to build their own automations following the UNIX principle of using small tools that know how to do one thing right.
 
-In the case of the Meeseeks-Box itself, it knows how to talk to Slack, listen for messages and dispatch jobs to be executed as if it was being executed by a user in bash.
+Meeseeks-Box is the component that knows how to talk to Slack, listen for messages and dispatch jobs to be executed as if it was being executed by a user in a shell.
 
-The core tenets of the tool are simplicity, Security, and Flexibility.
+The core tenets of the tool are simplicity, security and flexibility.
 
 
 ## FAQ
 
-> So... what is this?
+###So... what is this?
 
-The meeseeks are a way of running any executable in a host, through Slack, while keeping things simple and secure.
+Meeseeks is a way of running any executable on a host through Slack while keeping things simple and secure.
 
-They are born from the fact that the world isn't pretty, and as much as we would like to have great elegant resilient systems, sometimes we just need to run some bash scripts (or curl, or whatever) somewhere in the fleet to keep things working.
+The project is based on the fact that server infrastructures aren't pretty. As much as we would like to have great elegant, resilient systems, oftentimes all we really need is to simply run some shell scripts (or curl, or a db query, or whatever) somewhere in the fleet to perform a job.
 
-So, instead of building ambitious projects that will never be coded, let alone deployed, you can start automating your toil away right now.
+So, instead of building ambitious projects that will never reach stability (let alone be deployed) you can start automating your toil away right now.
 
-> What do I need to start using the meeseeks and automate my toil away?
+###What do I need to start using the Meeseeks and automate my toil away?
 
-Downloading a single binary file, and a slack api token
+Download a single binary file and create a Slack API token. That's pretty much it.
 
-> What language can I use to automate my toil?
+###What languages can I use to automate my toil?
 
-Any language, the meeseeks run commands using `fork+exec`, you can use anything that can be executed by a shell.
+Any language.
 
-> What is the command API that I have to implement in my scripts?
+The Meeseeks run commands using `fork+exec` so you can use anything that can be executed from a shell.
 
-None, or better said, just POSIX, write whatever you want to stdout, that's the text that will be transported back to the chat. Return an error code different than 0 and it will be a command failing.
+###What is the command API that I have to implement in my scripts?
 
-> Can I have long running commands? What sort of timeout commands have?
+None. Or better said, POSIX.
 
-Yes, the meeseeks are built for an imperfect world in which things can take a long time. Default timeout is 60 seconds, but it can be configured per command, without a limit.
+Write what you want to read to stdout: that's the text that will be transported back to the chat. Returning an exit code different than 0 will be interpreted as a command failure but the output will still be transported back.
 
-> Can I kill a command while it's running?
+###Can I have long running commands? What sort of timeout do commands have?
 
-Yes, you can cancel the ones you own with `cancel job_id`, and admins can cancel any job with `kill job_id`. This will send a kill signal to the running command.
+The Meeseeks are built for an imperfect world in which things can take a long time. The default timeout is 60 seconds but it can be configured on a per command basis. You can even spawn commands without a time limit.
 
-> Can I see the output of a command while it's running?
+###Can I kill a command while it's running?
 
-Yes, use `tail` to show the last 5 output lines from the last command that you launched.
+Yes. You can cancel your own jobs with `cancel job_id`. Admins can cancel any job with `kill job_id`: this will send a kill signal to the running command.
+
+###Can I see the output of a command while it's running?
+
+Yes. Use `tail` to show the last output lines from the last command that you launched.
 
 ## Documentation
 
