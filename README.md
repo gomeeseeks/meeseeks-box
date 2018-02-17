@@ -1,5 +1,7 @@
 # Meeseeks Box
 
+[![Build Status](https://travis-ci.org/gomeeseeks/meeseeks-box.svg?branch=master)](https://travis-ci.org/gomeeseeks/meeseeks-box)
+
 [![Go Report Card](http://goreportcard.com/badge/github.com/gomeeseeks/meeseeks-box)](https://goreportcard.com/report/github.com/gomeeseeks/meeseeks-box)
 
 > You make a request
