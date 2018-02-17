@@ -19,7 +19,7 @@ The core tenets of the tool are simplicity, security and flexibility.
 
 ## FAQ
 
-###So... what is this?
+### So... what is this?
 
 Meeseeks is a way of running any executable on a host through Slack while keeping things simple and secure.
 
@@ -27,31 +27,31 @@ The project is based on the fact that server infrastructures aren't pretty. As m
 
 So, instead of building ambitious projects that will never reach stability (let alone be deployed) you can start automating your toil away right now.
 
-###What do I need to start using the Meeseeks and automate my toil away?
+### What do I need to start using the Meeseeks and automate my toil away?
 
 Download a single binary file and create a Slack API token. That's pretty much it.
 
-###What languages can I use to automate my toil?
+### What languages can I use to automate my toil?
 
 Any language.
 
 The Meeseeks run commands using `fork+exec` so you can use anything that can be executed from a shell.
 
-###What is the command API that I have to implement in my scripts?
+### What is the command API that I have to implement in my scripts?
 
 None. Or better said, POSIX.
 
 Write what you want to read to stdout: that's the text that will be transported back to the chat. Returning an exit code different than 0 will be interpreted as a command failure but the output will still be transported back.
 
-###Can I have long running commands? What sort of timeout do commands have?
+### Can I have long running commands? What sort of timeout do commands have?
 
 The Meeseeks are built for an imperfect world in which things can take a long time. The default timeout is 60 seconds but it can be configured on a per command basis. You can even spawn commands without a time limit.
 
-###Can I kill a command while it's running?
+### Can I kill a command while it's running?
 
 Yes. You can cancel your own jobs with `cancel job_id`. Admins can cancel any job with `kill job_id`: this will send a kill signal to the running command.
 
-###Can I see the output of a command while it's running?
+### Can I see the output of a command while it's running?
 
 Yes. Use `tail` to show the last output lines from the last command that you launched.
 
