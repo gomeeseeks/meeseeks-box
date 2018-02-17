@@ -1,5 +1,7 @@
 # Meeseeks Box
 
+[![Go Report Card](http://goreportcard.com/badge/github.com/gomeeseeks/meeseeks-box)](https://goreportcard.com/report/github.com/gomeeseeks/meeseeks-box)
+
 > You make a request
 >
 > The Meeseek fulfills the request

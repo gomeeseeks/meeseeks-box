@@ -73,7 +73,7 @@ type Templates struct {
 	defaultPayload Payload
 }
 
-// TemplatesBuilder is a helper object that is used to build the template renderes
+// TemplatesBuilder is a helper object that is used to build the template renderers
 type TemplatesBuilder struct {
 	messages  map[string][]string
 	templates map[string]string
@@ -108,7 +108,7 @@ func (b *TemplatesBuilder) Clone() *TemplatesBuilder {
 	return NewBuilder().WithMessages(b.messages).WithTemplates(b.templates)
 }
 
-// Build creates a Templates object will all the necessary renderes initialized
+// Build creates a Templates object will all the necessary renderers initialized
 func (b *TemplatesBuilder) Build() Templates {
 	renderers := make(map[string]Renderer)
 	for name, template := range b.templates {

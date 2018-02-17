@@ -77,7 +77,7 @@ func (c Client) IsIM(channelID string) bool {
 	return c.matcher.isIMChannel(channelID)
 }
 
-// ConnectionOpts groups all the conection options in a single struct
+// ConnectionOpts groups all the connection options in a single struct
 type ConnectionOpts struct {
 	Debug   bool
 	Token   string
