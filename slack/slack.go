@@ -8,13 +8,18 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
-	"github.com/sirupsen/logrus"
 
 	"github.com/nlopes/slack"
+	"github.com/sirupsen/logrus"
 )
 
 var errIgnoredMessage = fmt.Errorf("Ignore this message")
+
+const (
+	textStyle = "text"
+)
 
 // Client is a chat client
 type Client struct {
@@ -75,6 +80,15 @@ func (c Client) GetChannelLink(channelID string) string {
 // IsIM implements the messenger.MessengerClient interface
 func (c Client) IsIM(channelID string) bool {
 	return c.matcher.isIMChannel(channelID)
+}
+
+func (c Client) getReplyStyle(style string) replyStyle {
+	switch style {
+	case textStyle:
+		return textReplyStyle{client: c.apiClient}
+	default:
+		return attachmentReplyStyle{client: c.apiClient}
+	}
 }
 
 // ConnectionOpts groups all the connection options in a single struct
@@ -255,8 +269,30 @@ func (c *Client) ListenMessages(ch chan<- message.Message) {
 	logrus.Infof("Stopped listening to messages")
 }
 
-// Reply replies to the user building a message with attachment
-func (c *Client) Reply(content, color, channel string) error {
+// Reply replies to the user building a regular message
+func (c *Client) Reply(r formatter.Reply) {
+
+	c.getReplyStyle(r.ReplyStyle()).Reply(r)
+}
+
+type replyStyle interface {
+	Reply(formatter.Reply)
+}
+
+type attachmentReplyStyle struct {
+	client *slack.Client
+}
+
+func (a attachmentReplyStyle) Reply(r formatter.Reply) {
+	content, err := r.Render()
+	if err != nil {
+		logrus.Errorf("failed to render reply %#v: %s", r, err)
+		return
+	}
+	color := r.Color()
+
+	logrus.Debugf("Rendering attachment with content %s with color %s", content, color)
+
 	params := slack.PostMessageParameters{
 		AsUser: true,
 		Attachments: []slack.Attachment{
@@ -267,19 +303,33 @@ func (c *Client) Reply(content, color, channel string) error {
 			},
 		},
 	}
-	logrus.Debugf("Replying in Slack %s with %#v", channel, params)
-	_, _, err := c.apiClient.PostMessage(channel, "", params)
-	return err
+	logrus.Debugf("Replying in Slack %s with %#v", r.ChannelID(), params)
+	if _, _, err = a.client.PostMessage(r.ChannelID(), "", params); err != nil {
+		logrus.Errorf("failed post attachment message %s on %s: %s", content, r.ChannelID(), err)
+	}
 }
 
-// ReplyIM sends a message to a user over an IM channel
-func (c *Client) ReplyIM(content, color, user string) error {
-	_, _, channel, err := c.apiClient.OpenIMChannel(user)
+type textReplyStyle struct {
+	client *slack.Client
+}
+
+func (t textReplyStyle) Reply(r formatter.Reply) {
+	content, err := r.Render()
 	if err != nil {
-		return fmt.Errorf("could not open IM with %s: %s", user, err)
+		logrus.Errorf("failed to render reply %#v: %s", r, err)
+		return
 	}
-	logrus.Debugf("Replying in Slack IM with '%s' and color %s", content, color)
-	return c.Reply(content, color, channel)
+
+	params := slack.PostMessageParameters{
+		AsUser:      true,
+		Markdown:    true,
+		UnfurlLinks: true,
+		UnfurlMedia: true,
+	}
+	logrus.Debugf("Replying in Slack %s with %#v and text: %s", r.ChannelID(), params, content)
+	if _, _, err = t.client.PostMessage(r.ChannelID(), content, params); err != nil {
+		logrus.Errorf("failed post message %s on %s: %s", content, r.ChannelID(), err)
+	}
 }
 
 // Message a chat message

@@ -14,34 +14,34 @@ import (
 
 // Template names used for rendering
 const (
-	HandshakeKey      = "handshake"
-	SuccessKey        = "success"
-	FailureKey        = "failure"
-	UnknownCommandKey = "unknowncommand"
-	UnauthorizedKey   = "unauthorized"
+	Handshake      = "handshake"
+	Success        = "success"
+	Failure        = "failure"
+	UnknownCommand = "unknowncommand"
+	Unauthorized   = "unauthorized"
 )
 
 // Default command templates
 var (
-	DefaultHandshakeTemplate = fmt.Sprintf("{{ AnyValue \"%s\" . }}", HandshakeKey)
+	DefaultHandshakeTemplate = fmt.Sprintf("{{ AnyValue \"%s\" . }}", Handshake)
 	DefaultSuccessTemplate   = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}"+
-		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", SuccessKey)
+		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", Success)
 	DefaultFailureTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} :disappointed: {{ .error }}"+
-		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", FailureKey)
+		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", Failure)
 	DefaultUnknownCommandTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}",
-		UnknownCommandKey)
+		UnknownCommand)
 	DefaultUnauthorizedTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}",
-		UnauthorizedKey)
+		Unauthorized)
 )
 
 // GetDefaultTemplates returns a map with the default templates
 func GetDefaultTemplates() map[string]string {
 	return map[string]string{
-		HandshakeKey:      DefaultHandshakeTemplate,
-		SuccessKey:        DefaultSuccessTemplate,
-		FailureKey:        DefaultFailureTemplate,
-		UnknownCommandKey: DefaultUnknownCommandTemplate,
-		UnauthorizedKey:   DefaultUnauthorizedTemplate,
+		Handshake:      DefaultHandshakeTemplate,
+		Success:        DefaultSuccessTemplate,
+		Failure:        DefaultFailureTemplate,
+		UnknownCommand: DefaultUnknownCommandTemplate,
+		Unauthorized:   DefaultUnauthorizedTemplate,
 	}
 }
 
@@ -59,11 +59,11 @@ var (
 // GetDefaultMessages returns a map with the default messages
 func GetDefaultMessages() map[string][]string {
 	return map[string][]string{
-		HandshakeKey:      DefaultHandshakeMessages,
-		SuccessKey:        DefaultSuccessMessages,
-		FailureKey:        DefaultFailedMessages,
-		UnknownCommandKey: DefaultUnknownCommandMessages,
-		UnauthorizedKey:   DefaultUnauthorizedMessages,
+		Handshake:      DefaultHandshakeMessages,
+		Success:        DefaultSuccessMessages,
+		Failure:        DefaultFailedMessages,
+		UnknownCommand: DefaultUnknownCommandMessages,
+		Unauthorized:   DefaultUnauthorizedMessages,
 	}
 }
 
@@ -134,7 +134,7 @@ func (b *TemplatesBuilder) Build() Templates {
 func (t Templates) RenderHandshake(user string) (string, error) {
 	p := t.newPayload()
 	p["user"] = user
-	return t.renderers[HandshakeKey].Render(p)
+	return t.renderers[Handshake].Render(p)
 }
 
 // RenderUnknownCommand renders an unknown command message
@@ -142,7 +142,7 @@ func (t Templates) RenderUnknownCommand(user, cmd string) (string, error) {
 	p := t.newPayload()
 	p["user"] = user
 	p["command"] = cmd
-	return t.renderers[UnknownCommandKey].Render(p)
+	return t.renderers[UnknownCommand].Render(p)
 }
 
 // RenderUnauthorizedCommand renders an unauthorized command message
@@ -150,7 +150,7 @@ func (t Templates) RenderUnauthorizedCommand(user, cmd string) (string, error) {
 	p := t.newPayload()
 	p["user"] = user
 	p["command"] = cmd
-	return t.renderers[UnauthorizedKey].Render(p)
+	return t.renderers[Unauthorized].Render(p)
 }
 
 // RenderSuccess renders a success message
@@ -158,7 +158,7 @@ func (t Templates) RenderSuccess(user, output string) (string, error) {
 	p := t.newPayload()
 	p["user"] = user
 	p["output"] = output
-	return t.renderers[SuccessKey].Render(p)
+	return t.renderers[Success].Render(p)
 }
 
 // RenderFailure renders a failure message
@@ -167,7 +167,7 @@ func (t Templates) RenderFailure(user, err, output string) (string, error) {
 	p["user"] = user
 	p["error"] = err
 	p["output"] = output
-	return t.renderers[FailureKey].Render(p)
+	return t.renderers[Failure].Render(p)
 }
 
 func (t Templates) newPayload() Payload {

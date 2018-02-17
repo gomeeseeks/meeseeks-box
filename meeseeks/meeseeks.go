@@ -20,8 +20,7 @@ import (
 
 // ChatClient interface that provides a way of replying to messages on a channel
 type ChatClient interface {
-	Reply(text, color, channel string) error
-	ReplyIM(text, color, user string) error
+	Reply(formatter.Reply)
 }
 
 // Meeseeks is the command execution engine
@@ -67,16 +66,25 @@ func (m *Meeseeks) Start() {
 		req, err := request.FromMessage(msg)
 		if err != nil {
 			logrus.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
-			m.replyWithError(msg, err)
+			m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
+				UserLink:  msg.GetUserLink(),
+				ChannelID: msg.GetChannelID(),
+			}, err))
 			continue
 		}
 		cmd, ok := commands.Find(&req)
 		if !ok {
-			m.replyWithUnknownCommand(req)
+			m.client.Reply(m.formatter.UnknownCommandReply(formatter.ReplyTo{
+				UserLink:  msg.GetUserLink(),
+				ChannelID: msg.GetChannelID(),
+			}, req.Command))
 			continue
 		}
 		if err = auth.Check(req.Username, cmd); err != nil {
-			m.replyWithUnauthorizedCommand(req, cmd)
+			m.client.Reply(m.formatter.UnauthorizedCommandReply(formatter.ReplyTo{
+				UserLink:  msg.GetUserLink(),
+				ChannelID: msg.GetChannelID(),
+			}, req.Command).WithCommand(cmd))
 			continue
 		}
 
@@ -85,7 +93,10 @@ func (m *Meeseeks) Start() {
 
 		t, err := m.createTask(req, cmd)
 		if err != nil {
-			m.replyWithError(msg, fmt.Errorf("could not create job: %s", err))
+			m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
+				UserLink:  msg.GetUserLink(),
+				ChannelID: msg.GetChannelID(),
+			}, fmt.Errorf("could not create task: %s", err)).WithCommand(cmd))
 			continue
 		}
 
@@ -125,7 +136,12 @@ func (m *Meeseeks) loop() {
 			req := job.Request
 			cmd := t.cmd
 
-			m.replyWithHandshake(req, cmd)
+			if cmd.HasHandshake() {
+				m.client.Reply(m.formatter.HandshakeReply(formatter.ReplyTo{
+					UserLink:  req.UserLink,
+					ChannelID: req.ChannelID,
+				}).WithCommand(cmd))
+			}
 
 			ctx := m.activeCommands.Add(t)
 			defer m.activeCommands.Cancel(job.ID)
@@ -134,12 +150,22 @@ func (m *Meeseeks) loop() {
 			if err != nil {
 				logrus.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 					req.Command, req.Username, err)
-				m.replyWithCommandFailed(req, cmd, err, out)
+
+				m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
+					UserLink:  req.UserLink,
+					ChannelID: req.ChannelID,
+				}, err).WithCommand(cmd).WithOutput(out))
+
 				job.Finish(jobs.FailedStatus)
 			} else {
 				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 					req.Username)
-				m.replyWithSuccess(job.Request, cmd, out)
+
+				m.client.Reply(m.formatter.SuccessReply(formatter.ReplyTo{
+					UserLink:  req.UserLink,
+					ChannelID: req.ChannelID,
+				}).WithCommand(cmd).WithOutput(out))
+
 				job.Finish(jobs.SuccessStatus)
 			}
 			m.wg.Done()
