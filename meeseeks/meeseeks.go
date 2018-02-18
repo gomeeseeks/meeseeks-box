@@ -2,6 +2,7 @@ package meeseeks
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -54,6 +55,20 @@ type APIToken struct {
 	ChannelLink string    `json:"channelLink"`
 	Text        string    `json:"text"`
 	CreatedOn   time.Time `json:"created_on"`
+}
+
+// JobLog represents all the logging information of a given Job
+type JobLog struct {
+	Error  string
+	Output string
+}
+
+// GetError returns nil or an error depending on the current JobLog setup
+func (j JobLog) GetError() error {
+	if j.Error == "" {
+		return nil
+	}
+	return errors.New(j.Error)
 }
 
 // Defaults for commands

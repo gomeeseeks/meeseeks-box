@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
@@ -14,14 +15,14 @@ func Test_Logs(t *testing.T) {
 		jobID    uint64
 		logs     []string
 		err      error
-		expected logs.JobLog
+		expected meeseeks.JobLog
 	}{
 		{
 			name:  "with one line",
 			jobID: 1,
 			logs:  []string{"something"},
 			err:   nil,
-			expected: logs.JobLog{
+			expected: meeseeks.JobLog{
 				Output: "something",
 			},
 		},
@@ -30,7 +31,7 @@ func Test_Logs(t *testing.T) {
 			jobID: 2,
 			logs:  []string{"something", "something else"},
 			err:   nil,
-			expected: logs.JobLog{
+			expected: meeseeks.JobLog{
 				Output: "something\nsomething else",
 			},
 		},
@@ -39,7 +40,7 @@ func Test_Logs(t *testing.T) {
 			jobID: 3,
 			logs:  []string{"bla"},
 			err:   errors.New("something bad happened"),
-			expected: logs.JobLog{
+			expected: meeseeks.JobLog{
 				Output: "bla",
 				Error:  "something bad happened",
 			},
@@ -75,6 +76,6 @@ func Test_ErredOutJobHasError(t *testing.T) {
 		logs.SetError(1, errors.New("nasty error"))
 		l, err := logs.Get(1)
 		stubs.Must(t, "should be able to get a job with only an error", err)
-		stubs.AssertEquals(t, logs.JobLog{Error: "nasty error"}, l)
+		stubs.AssertEquals(t, meeseeks.JobLog{Error: "nasty error"}, l)
 	})
 }

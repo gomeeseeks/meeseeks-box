@@ -7,6 +7,7 @@ import (
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 )
 
 var logsBucketKey = []byte("logs")
@@ -14,20 +15,6 @@ var errorKey = []byte("error")
 
 // ErrNoLogsForJob is returned when we try to extract the logs of a non existing job
 var ErrNoLogsForJob = errors.New("No logs for job")
-
-// JobLog represents all the logging information of a given Job
-type JobLog struct {
-	Error  string
-	Output string
-}
-
-// GetError returns nil or an error depending on the current JobLog setup
-func (j JobLog) GetError() error {
-	if j.Error == "" {
-		return nil
-	}
-	return errors.New(j.Error)
-}
 
 // Append adds a new line to the logs of the given Job
 func Append(jobID uint64, content string) error {
@@ -69,8 +56,8 @@ func SetError(jobID uint64, jobErr error) error {
 }
 
 // Get returns the JobLog for the given Job
-func Get(jobID uint64) (JobLog, error) {
-	job := &JobLog{}
+func Get(jobID uint64) (meeseeks.JobLog, error) {
+	job := &meeseeks.JobLog{}
 	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 		_, line := c.First()
@@ -94,8 +81,8 @@ func Get(jobID uint64) (JobLog, error) {
 }
 
 // Head returns the top <limit> log lines
-func Head(jobID uint64, limit int) (JobLog, error) {
-	job := &JobLog{}
+func Head(jobID uint64, limit int) (meeseeks.JobLog, error) {
+	job := &meeseeks.JobLog{}
 	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 
@@ -117,8 +104,8 @@ func Head(jobID uint64, limit int) (JobLog, error) {
 }
 
 // Tail returns the bottm <limit> log lines
-func Tail(jobID uint64, limit int) (JobLog, error) {
-	job := &JobLog{}
+func Tail(jobID uint64, limit int) (meeseeks.JobLog, error) {
+	job := &meeseeks.JobLog{}
 	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 		lines := make([]string, 0)
