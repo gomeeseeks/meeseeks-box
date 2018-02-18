@@ -923,19 +923,19 @@ func (l listAPITokensCommand) Execute(_ context.Context, job meeseeks.Job) (stri
 		return "", err
 	}
 
-	matchers := []func(tokens.Token) bool{}
+	matchers := []func(meeseeks.APIToken) bool{}
 	if *user != "" {
-		matchers = append(matchers, func(t tokens.Token) bool {
+		matchers = append(matchers, func(t meeseeks.APIToken) bool {
 			return t.UserLink == *user
 		})
 	}
 	if *channel != "" {
-		matchers = append(matchers, func(t tokens.Token) bool {
+		matchers = append(matchers, func(t meeseeks.APIToken) bool {
 			return t.ChannelLink == *channel
 		})
 	}
 	if *command != "" {
-		matchers = append(matchers, func(t tokens.Token) bool {
+		matchers = append(matchers, func(t meeseeks.APIToken) bool {
 			return strings.HasPrefix(t.Text, *command)
 		})
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,15 +22,6 @@ type NewTokenRequest struct {
 	UserLink    string
 	ChannelLink string
 	Text        string
-}
-
-// Token is a persisted token
-type Token struct {
-	TokenID     string    `json:"token"`
-	UserLink    string    `json:"userLink"`
-	ChannelLink string    `json:"channelLink"`
-	Text        string    `json:"text"`
-	CreatedOn   time.Time `json:"created_on"`
 }
 
 // createUUID has been _honored_ from hashicorp UUID
@@ -59,7 +51,7 @@ func Create(r NewTokenRequest) (string, error) {
 			return err
 		}
 
-		t := Token{
+		t := meeseeks.APIToken{
 			TokenID:     token,
 			UserLink:    r.UserLink,
 			ChannelLink: r.ChannelLink,
@@ -78,8 +70,8 @@ func Create(r NewTokenRequest) (string, error) {
 }
 
 // Get returns the token given an ID, it may return ErrTokenNotFound when there is no such token
-func Get(tokenID string) (Token, error) {
-	var token Token
+func Get(tokenID string) (meeseeks.APIToken, error) {
+	var token meeseeks.APIToken
 	err := db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(tokensBucketKey)
 		if bucket == nil {
@@ -111,12 +103,12 @@ func Revoke(tokenID string) error {
 // Filter is used to filter the tokens to be returned from a List query
 type Filter struct {
 	Limit int
-	Match func(Token) bool
+	Match func(meeseeks.APIToken) bool
 }
 
 // MultiMatch builds a Match function from a list of Match functions
-func MultiMatch(matchers ...func(Token) bool) func(Token) bool {
-	return func(token Token) bool {
+func MultiMatch(matchers ...func(meeseeks.APIToken) bool) func(meeseeks.APIToken) bool {
+	return func(token meeseeks.APIToken) bool {
 		for _, matcher := range matchers {
 			if !matcher(token) {
 				return false
@@ -127,12 +119,12 @@ func MultiMatch(matchers ...func(Token) bool) func(Token) bool {
 }
 
 // Find returns a list of tokens that match the filter
-func Find(filter Filter) ([]Token, error) {
+func Find(filter Filter) ([]meeseeks.APIToken, error) {
 	if filter.Match == nil {
-		filter.Match = func(_ Token) bool { return true }
+		filter.Match = func(_ meeseeks.APIToken) bool { return true }
 	}
 
-	tokens := make([]Token, 0)
+	tokens := make([]meeseeks.APIToken, 0)
 
 	err := db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(tokensBucketKey)
@@ -144,7 +136,7 @@ func Find(filter Filter) ([]Token, error) {
 		_, payload := c.First()
 		for len(tokens) < filter.Limit && payload != nil {
 
-			t := Token{}
+			t := meeseeks.APIToken{}
 			if err := json.Unmarshal(payload, &t); err != nil {
 				return err
 			}

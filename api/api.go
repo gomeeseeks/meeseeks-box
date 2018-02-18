@@ -30,7 +30,7 @@ type Listener struct {
 	messageCh chan meeseeks.Message
 }
 
-func (l Listener) sendMessage(token tokens.Token, message string) {
+func (l Listener) sendMessage(token meeseeks.APIToken, message string) {
 	channelID, err := l.metadata.ParseChannelLink(token.ChannelLink)
 	if err != nil {
 		logrus.Errorf("Failed to parse channel link %s: %s. Dropping message!", token.ChannelLink, err)

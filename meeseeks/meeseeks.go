@@ -47,6 +47,15 @@ type Job struct {
 	Status    string    `json:"Status"`
 }
 
+// APIToken is a persisted API token
+type APIToken struct {
+	TokenID     string    `json:"token"`
+	UserLink    string    `json:"userLink"`
+	ChannelLink string    `json:"channelLink"`
+	Text        string    `json:"text"`
+	CreatedOn   time.Time `json:"created_on"`
+}
+
 // Defaults for commands
 const (
 	DefaultCommandTimeout = 60 * time.Second

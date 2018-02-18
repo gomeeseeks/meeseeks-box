@@ -3,6 +3,7 @@ package tokens_test
 import (
 	"testing"
 
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
 )
@@ -54,31 +55,31 @@ func Test_TokenListing(t *testing.T) {
 		tt := []struct {
 			Name     string
 			Filter   tokens.Filter
-			Expected []tokens.Token
+			Expected []meeseeks.APIToken
 		}{
 			{
 				Name:     "empty list",
-				Expected: []tokens.Token{},
+				Expected: []meeseeks.APIToken{},
 				Filter: tokens.Filter{
 					Limit: 0,
 				},
 			},
 			{
 				Name:     "filter by username works",
-				Expected: []tokens.Token{t2},
+				Expected: []meeseeks.APIToken{t2},
 				Filter: tokens.Filter{
 					Limit: 5,
-					Match: func(tk tokens.Token) bool {
+					Match: func(tk meeseeks.APIToken) bool {
 						return tk.UserLink == t2.UserLink
 					},
 				},
 			},
 			{
 				Name:     "filter by channel works",
-				Expected: []tokens.Token{t1},
+				Expected: []meeseeks.APIToken{t1},
 				Filter: tokens.Filter{
 					Limit: 5,
-					Match: func(tk tokens.Token) bool {
+					Match: func(tk meeseeks.APIToken) bool {
 						return tk.ChannelLink == t1.ChannelLink
 					},
 				},
