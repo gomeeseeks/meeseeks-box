@@ -8,7 +8,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/command"
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/jobs"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
@@ -44,7 +44,7 @@ func TestExecuteEcho(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
 		out, err := echoCommand.Execute(context.Background(), jobs.Job{
 			ID:      1,
-			Request: request.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
+			Request: meeseeks.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
 		})
 		stubs.Must(t, "failed to execute echo command", err)
 		stubs.AssertEquals(t, "hello meeseeks\nsecond line\n", out)
@@ -55,7 +55,7 @@ func TestExecuteFail(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
 		_, err := failCommand.Execute(context.Background(), jobs.Job{
 			ID:      2,
-			Request: request.Request{},
+			Request: meeseeks.Request{},
 		})
 		stubs.AssertEquals(t, "exit status 1", err.Error())
 	})
@@ -70,7 +70,7 @@ func TestSleepingCanBeWokenUp(t *testing.T) {
 		}()
 		_, err := sleepCommand.Execute(ctx, jobs.Job{
 			ID:      3,
-			Request: request.Request{},
+			Request: meeseeks.Request{},
 		})
 		stubs.AssertEquals(t, "signal: killed", err.Error())
 	})

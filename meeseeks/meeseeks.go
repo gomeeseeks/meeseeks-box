@@ -19,3 +19,16 @@ type Message interface {
 	// IsIM
 	IsIM() bool
 }
+
+// Request is a structure that holds a command execution request
+type Request struct {
+	Command     string   `json:"Command"`
+	Args        []string `json:"Arguments"`
+	Username    string   `json:"Username"`
+	UserID      string   `json:"UserID"`
+	UserLink    string   `json:"UserLink"`
+	Channel     string   `json:"Channel"`
+	ChannelID   string   `json:"CannelID"`
+	ChannelLink string   `json:"CannelLink"`
+	IsIM        bool     `json:"IsIM"`
+}

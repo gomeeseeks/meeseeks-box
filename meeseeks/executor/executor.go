@@ -15,6 +15,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
 )
 
@@ -105,7 +106,7 @@ func (m *Meeseeks) Start() {
 	}
 }
 
-func (m *Meeseeks) createTask(req request.Request, cmd command.Command) (task, error) {
+func (m *Meeseeks) createTask(req meeseeks.Request, cmd command.Command) (task, error) {
 	if !cmd.Record() {
 		return task{job: jobs.NullJob(req), cmd: cmd}, nil
 	}

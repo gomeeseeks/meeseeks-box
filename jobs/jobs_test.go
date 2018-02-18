@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/jobs"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	stub "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
-var req = request.Request{
+var req = meeseeks.Request{
 	Command:  "mycommand",
 	Username: "myself",
 	Channel:  "general",

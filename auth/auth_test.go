@@ -6,7 +6,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
@@ -31,13 +31,13 @@ func Test_Auth(t *testing.T) {
 	tt := []struct {
 		name     string
 		username string
-		req      request.Request
+		req      meeseeks.Request
 		expected error
 	}{
 		{
 			name:     "any",
 			username: "myself",
-			req: request.Request{
+			req: meeseeks.Request{
 				Command:     "any",
 				Channel:     "general",
 				ChannelID:   "123",
@@ -50,7 +50,7 @@ func Test_Auth(t *testing.T) {
 		{
 			name:     "none",
 			username: "myself",
-			req: request.Request{
+			req: meeseeks.Request{
 				Command:     "none",
 				Channel:     "general",
 				ChannelID:   "123",
@@ -63,7 +63,7 @@ func Test_Auth(t *testing.T) {
 		{
 			name:     "authorized groups",
 			username: "admin_user",
-			req: request.Request{
+			req: meeseeks.Request{
 				Command:     "admins",
 				Channel:     "general",
 				ChannelID:   "123",
@@ -76,7 +76,7 @@ func Test_Auth(t *testing.T) {
 		{
 			name:     "authorized groups with unauthorized user",
 			username: "normal_user",
-			req: request.Request{
+			req: meeseeks.Request{
 				Command:     "admins",
 				Channel:     "general",
 				ChannelID:   "123",

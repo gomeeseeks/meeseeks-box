@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/db"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 
 	"encoding/json"
 
@@ -28,15 +28,15 @@ var ErrNoJobWithID = errors.New("no job could be found")
 
 // Job represents a single job
 type Job struct {
-	ID        uint64          `json:"ID"`
-	Request   request.Request `json:"Request"`
-	StartTime time.Time       `json:"StartTime"`
-	EndTime   time.Time       `json:"EndTime"`
-	Status    string          `json:"Status"`
+	ID        uint64           `json:"ID"`
+	Request   meeseeks.Request `json:"Request"`
+	StartTime time.Time        `json:"StartTime"`
+	EndTime   time.Time        `json:"EndTime"`
+	Status    string           `json:"Status"`
 }
 
 // NullJob is used to handle requests that are not recorded
-func NullJob(req request.Request) Job {
+func NullJob(req meeseeks.Request) Job {
 	return Job{
 		ID:        0,
 		Request:   req,
@@ -46,7 +46,7 @@ func NullJob(req request.Request) Job {
 }
 
 // Create registers a new job in running state in the database
-func Create(req request.Request) (Job, error) {
+func Create(req meeseeks.Request) (Job, error) {
 	var job *Job
 	err := db.Create(jobsBucketKey, func(jobID uint64, bucket *bolt.Bucket) error {
 		job = &Job{
