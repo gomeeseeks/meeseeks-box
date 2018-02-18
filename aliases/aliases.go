@@ -7,19 +7,13 @@ import (
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 )
 
 var aliasesBucketKey = []byte("aliases")
 
 // ErrAliasNotFound is returned when an alias can't be found
 var ErrAliasNotFound = fmt.Errorf("alias not found")
-
-// Alias represent an alias for a command
-type Alias struct {
-	Alias   string
-	Command string
-	Args    []string
-}
 
 // Create adds a new alias for a user ID
 func Create(userID, alias, command string, args ...string) error {
@@ -28,7 +22,7 @@ func Create(userID, alias, command string, args ...string) error {
 		if err != nil {
 			return err
 		}
-		a := Alias{
+		a := meeseeks.Alias{
 			Alias:   alias,
 			Command: command,
 			Args:    args,
@@ -66,8 +60,8 @@ func Delete(userID, alias string) error {
 }
 
 // List returns all configured aliases for a user ID
-func List(userID string) ([]Alias, error) {
-	aliases := make([]Alias, 0)
+func List(userID string) ([]meeseeks.Alias, error) {
+	aliases := make([]meeseeks.Alias, 0)
 	err := db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)
 		if err != nil {
@@ -75,7 +69,7 @@ func List(userID string) ([]Alias, error) {
 		}
 		cur := bucket.Cursor()
 		for _, payload := cur.First(); payload != nil; _, payload = cur.Next() {
-			a := Alias{}
+			a := meeseeks.Alias{}
 			json.Unmarshal(payload, &a)
 			aliases = append(aliases, a)
 		}
@@ -90,7 +84,7 @@ func List(userID string) ([]Alias, error) {
 // Get returns the command for an alias
 func Get(userID, alias string) (string, []string, error) {
 	logrus.Debugf("looking up command %s", alias)
-	var a Alias
+	var a meeseeks.Alias
 	err := db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)
 		if err != nil {

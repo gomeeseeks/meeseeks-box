@@ -95,3 +95,10 @@ type Help interface {
 	GetSummary() string
 	GetArgs() []string
 }
+
+// Alias represent an alias for a command
+type Alias struct {
+	Alias   string
+	Command string
+	Args    []string
+}
