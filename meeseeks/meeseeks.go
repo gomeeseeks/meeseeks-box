@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+// Defaults for commands
+const (
+	DefaultCommandTimeout = 60 * time.Second
+)
+
 // Message interface to interact with an abstract message
 type Message interface {
 	// The text received without the matching portion
@@ -39,22 +44,13 @@ type Request struct {
 	IsIM        bool     `json:"IsIM"`
 }
 
-// Job represents a single job
+// Job represents a request that matched a command and can be executed
 type Job struct {
 	ID        uint64    `json:"ID"`
 	Request   Request   `json:"Request"`
 	StartTime time.Time `json:"StartTime"`
 	EndTime   time.Time `json:"EndTime"`
 	Status    string    `json:"Status"`
-}
-
-// APIToken is a persisted API token
-type APIToken struct {
-	TokenID     string    `json:"token"`
-	UserLink    string    `json:"userLink"`
-	ChannelLink string    `json:"channelLink"`
-	Text        string    `json:"text"`
-	CreatedOn   time.Time `json:"created_on"`
 }
 
 // JobLog represents all the logging information of a given Job
@@ -71,10 +67,14 @@ func (j JobLog) GetError() error {
 	return errors.New(j.Error)
 }
 
-// Defaults for commands
-const (
-	DefaultCommandTimeout = 60 * time.Second
-)
+// APIToken is a persisted API token pointing to a message used to trigger a command request
+type APIToken struct {
+	TokenID     string    `json:"token"`
+	UserLink    string    `json:"userLink"`
+	ChannelLink string    `json:"channelLink"`
+	Text        string    `json:"text"`
+	CreatedOn   time.Time `json:"created_on"`
+}
 
 // Command is the base interface for any command
 type Command interface {
