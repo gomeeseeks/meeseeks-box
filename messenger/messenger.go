@@ -1,23 +1,23 @@
 package messenger
 
 import (
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/sirupsen/logrus"
 )
 
 // Listener provides the necessary interface to start listening messages in a channel.
 type Listener interface {
-	ListenMessages(chan<- message.Message)
+	ListenMessages(chan<- meeseeks.Message)
 }
 
 // Messenger handles multiple message sources
 type Messenger struct {
-	messagesCh chan message.Message
+	messagesCh chan meeseeks.Message
 }
 
 // Listen starts a routine to listen for messages on the provided client
 func Listen(listeners ...Listener) (*Messenger, error) {
-	messagesCh := make(chan message.Message)
+	messagesCh := make(chan meeseeks.Message)
 
 	for _, listener := range listeners {
 		go listener.ListenMessages(messagesCh)
@@ -29,7 +29,7 @@ func Listen(listeners ...Listener) (*Messenger, error) {
 }
 
 // MessagesCh returns the channel in which to listen for messages
-func (m *Messenger) MessagesCh() <-chan message.Message {
+func (m *Messenger) MessagesCh() <-chan meeseeks.Message {
 	return m.messagesCh
 }
 

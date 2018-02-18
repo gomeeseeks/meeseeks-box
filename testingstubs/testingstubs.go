@@ -14,7 +14,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/db"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 
 	"github.com/sirupsen/logrus"
 )
@@ -98,14 +98,14 @@ func (h Harness) Load() (ClientStub, config.Config) {
 // It implements the Client interface
 type ClientStub struct {
 	MessagesSent     chan SentMessage
-	receivedMessages chan message.Message
+	receivedMessages chan meeseeks.Message
 }
 
 // NewClientStub returns a new empty but intialized Client stub
 func newClientStub() ClientStub {
 	return ClientStub{
 		MessagesSent:     make(chan SentMessage),
-		receivedMessages: make(chan message.Message),
+		receivedMessages: make(chan meeseeks.Message),
 	}
 }
 
@@ -120,12 +120,12 @@ func (c ClientStub) Reply(r formatter.Reply) {
 }
 
 // MessagesCh implements meeseeks.Client.MessagesCh interface
-func (c ClientStub) MessagesCh() chan message.Message {
+func (c ClientStub) MessagesCh() chan meeseeks.Message {
 	return c.receivedMessages
 }
 
 // ListenMessages listens for messages and then passes it to the sent channel
-func (c ClientStub) ListenMessages(ch chan<- message.Message) {
+func (c ClientStub) ListenMessages(ch chan<- meeseeks.Message) {
 	for m := range c.receivedMessages {
 		ch <- m
 	}

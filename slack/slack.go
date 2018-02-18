@@ -9,7 +9,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/formatter"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 
 	"github.com/nlopes/slack"
 	"github.com/sirupsen/logrus"
@@ -248,7 +248,7 @@ func (m *messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) 
 }
 
 // ListenMessages listens to messages and sends the matching ones through the channel
-func (c *Client) ListenMessages(ch chan<- message.Message) {
+func (c *Client) ListenMessages(ch chan<- meeseeks.Message) {
 	logrus.Infof("Listening Slack RTM Messages")
 
 	for msg := range c.rtm.IncomingEvents {

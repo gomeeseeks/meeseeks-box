@@ -7,7 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
 )
 
@@ -27,7 +27,7 @@ type MetadataClient interface {
 // received from the API to the messaging pipeline
 type Listener struct {
 	metadata  MetadataClient
-	messageCh chan message.Message
+	messageCh chan meeseeks.Message
 }
 
 func (l Listener) sendMessage(token tokens.Token, message string) {
@@ -57,7 +57,7 @@ func (l Listener) sendMessage(token tokens.Token, message string) {
 }
 
 // ListenMessages listens to messages and sends the matching ones through the channel
-func (l Listener) ListenMessages(ch chan<- message.Message) {
+func (l Listener) ListenMessages(ch chan<- meeseeks.Message) {
 	for m := range l.messageCh {
 		ch <- m
 	}
@@ -73,7 +73,7 @@ func (l Listener) Shutdown() {
 func NewListener(client MetadataClient) Listener {
 	return Listener{
 		metadata:  client,
-		messageCh: make(chan message.Message),
+		messageCh: make(chan meeseeks.Message),
 	}
 }
 

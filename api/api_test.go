@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/api"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
 
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
@@ -77,7 +77,7 @@ func TestAPIServer(t *testing.T) {
 		}, ":0")
 		defer s.Shutdown()
 
-		ch := make(chan message.Message)
+		ch := make(chan meeseeks.Message)
 		go s.GetListener().ListenMessages(ch)
 
 		testSrv := httptest.NewServer(http.HandlerFunc(s.HandlePostToken))
@@ -88,7 +88,7 @@ func TestAPIServer(t *testing.T) {
 					actualStatus)
 			}
 		}
-		assertNothing := func(_ *testing.T, _ chan message.Message) {
+		assertNothing := func(_ *testing.T, _ chan meeseeks.Message) {
 		}
 
 		tt := []struct {
@@ -96,7 +96,7 @@ func TestAPIServer(t *testing.T) {
 			reqToken      string
 			payload       string
 			assertStatus  func(*testing.T, string)
-			assertMessage func(*testing.T, chan message.Message)
+			assertMessage func(*testing.T, chan meeseeks.Message)
 		}{
 			{
 				"invalid token",
@@ -117,7 +117,7 @@ func TestAPIServer(t *testing.T) {
 				tk,
 				"",
 				assertHttpStatus(http.StatusAccepted),
-				func(t *testing.T, ch chan message.Message) {
+				func(t *testing.T, ch chan meeseeks.Message) {
 					msg := <-ch
 					stubs.AssertEquals(t, "echo something", msg.GetText())
 					stubs.AssertEquals(t, "general", msg.GetChannelID())
@@ -134,7 +134,7 @@ func TestAPIServer(t *testing.T) {
 				tk,
 				"with arguments that will be attached",
 				assertHttpStatus(http.StatusAccepted),
-				func(t *testing.T, ch chan message.Message) {
+				func(t *testing.T, ch chan meeseeks.Message) {
 					msg := <-ch
 					stubs.AssertEquals(t, "echo something with arguments that will be attached", msg.GetText())
 				},
