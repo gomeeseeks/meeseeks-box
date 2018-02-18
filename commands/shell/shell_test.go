@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/command"
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
@@ -34,7 +33,7 @@ func TestShellCommand(t *testing.T) {
 	stubs.AssertEquals(t, true, echoCommand.HasHandshake())
 	stubs.AssertEquals(t, true, echoCommand.Record())
 	stubs.AssertEquals(t, map[string]string{}, echoCommand.Templates())
-	stubs.AssertEquals(t, command.DefaultCommandTimeout, echoCommand.Timeout())
+	stubs.AssertEquals(t, meeseeks.DefaultCommandTimeout, echoCommand.Timeout())
 	stubs.AssertEquals(t, "command that prints back the arguments passed", echoCommand.Help().GetSummary())
 	stubs.AssertEquals(t, []string{}, echoCommand.Help().GetArgs())
 }

@@ -5,8 +5,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/gomeeseeks/meeseeks-box/command"
 	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/template"
 )
 
@@ -114,7 +114,7 @@ type Reply struct {
 }
 
 // WithCommand receives a command and pulls all the specific command configuration
-func (r Reply) WithCommand(cmd command.Command) Reply {
+func (r Reply) WithCommand(cmd meeseeks.Command) Reply {
 	if r.templates == nil {
 		logrus.Info("templates are nil in the current reply??")
 		return r

@@ -8,7 +8,6 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/sirupsen/logrus"
 
-	"github.com/gomeeseeks/meeseeks-box/command"
 	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/messenger"
@@ -37,7 +36,7 @@ type Meeseeks struct {
 
 type task struct {
 	job meeseeks.Job
-	cmd command.Command
+	cmd meeseeks.Command
 }
 
 // New creates a new Meeseeks service
@@ -106,7 +105,7 @@ func (m *Meeseeks) Start() {
 	}
 }
 
-func (m *Meeseeks) createTask(req meeseeks.Request, cmd command.Command) (task, error) {
+func (m *Meeseeks) createTask(req meeseeks.Request, cmd meeseeks.Command) (task, error) {
 	if !cmd.Record() {
 		return task{job: jobs.NullJob(req), cmd: cmd}, nil
 	}

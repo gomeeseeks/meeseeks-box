@@ -10,7 +10,6 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/auth"
-	"github.com/gomeeseeks/meeseeks-box/command"
 	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
@@ -47,7 +46,7 @@ const (
 )
 
 // Commands is the basic set of builtin commands
-var Commands = map[string]command.Command{
+var Commands = map[string]meeseeks.Command{
 	// The help builtin command needs a pointer to the map of generated commands,
 	// because of this it is added as the last one when building the whole command
 	// map
@@ -184,7 +183,7 @@ var Commands = map[string]command.Command{
 var errNoJobIDAsArgument = fmt.Errorf("no job id passed")
 
 // AddHelpCommand creates a new help command and adds it to the map
-func AddHelpCommand(c map[string]command.Command) {
+func AddHelpCommand(c map[string]meeseeks.Command) {
 	c[BuiltinHelpCommand] = helpCommand{
 		commands: c,
 		cmd:      cmd{BuiltinHelpCommand},
@@ -214,7 +213,7 @@ func (d defaultTemplates) Templates() map[string]string {
 type defaultTimeout struct{}
 
 func (d defaultTimeout) Timeout() time.Duration {
-	return command.DefaultCommandTimeout
+	return meeseeks.DefaultCommandTimeout
 }
 
 type emptyArgs struct{}
@@ -293,7 +292,7 @@ type help struct {
 	commandHelp commandHelp
 }
 
-func (h help) Help() command.Help {
+func (h help) Help() meeseeks.Help {
 	return h.commandHelp
 }
 
@@ -319,7 +318,7 @@ type helpCommand struct {
 	plainTemplates
 	emptyArgs
 	defaultTimeout
-	commands map[string]command.Command
+	commands map[string]meeseeks.Command
 }
 
 var helpListTemplate = `{{ range $name, $c := .commands }}- {{ $name }}: {{ $c.Help.GetSummary }}
@@ -344,7 +343,7 @@ func (h helpCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 			return "", err
 		}
 
-		commands := make(map[string]command.Command)
+		commands := make(map[string]meeseeks.Command)
 		for k, c := range h.commands {
 			if _, isBuiltin := Commands[k]; isBuiltin && !*all {
 				continue
@@ -387,7 +386,7 @@ type cancelJobCommand struct {
 }
 
 // NewCancelJobCommand creates a command that will invoke the passed cancel job function when executed
-func NewCancelJobCommand(f func(jobID uint64)) command.Command {
+func NewCancelJobCommand(f func(jobID uint64)) meeseeks.Command {
 	return cancelJobCommand{
 		help: newHelp(
 			"sends a cancellation signal to a job owned by the current user",
@@ -426,7 +425,7 @@ type killJobCommand struct {
 }
 
 // NewKillJobCommand creates a command that will invoke the passed cancel job function when executed
-func NewKillJobCommand(f func(jobID uint64)) command.Command {
+func NewKillJobCommand(f func(jobID uint64)) meeseeks.Command {
 	return killJobCommand{
 		help: newHelp(
 			"sends a cancellation signal to a job, admin only",

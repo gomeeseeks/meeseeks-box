@@ -1,6 +1,7 @@
 package meeseeks
 
 import (
+	"context"
 	"time"
 )
 
@@ -44,4 +45,29 @@ type Job struct {
 	StartTime time.Time `json:"StartTime"`
 	EndTime   time.Time `json:"EndTime"`
 	Status    string    `json:"Status"`
+}
+
+// Defaults for commands
+const (
+	DefaultCommandTimeout = 60 * time.Second
+)
+
+// Command is the base interface for any command
+type Command interface {
+	Execute(context.Context, Job) (string, error)
+	Cmd() string
+	HasHandshake() bool
+	Templates() map[string]string
+	AuthStrategy() string
+	AllowedGroups() []string
+	Args() []string
+	Timeout() time.Duration
+	Help() Help
+	Record() bool
+}
+
+// Help is the base interface for any command help
+type Help interface {
+	GetSummary() string
+	GetArgs() []string
 }
