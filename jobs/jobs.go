@@ -26,18 +26,9 @@ var jobsBucketKey = []byte("jobs")
 // ErrNoJobWithID is returned when we can't find a job with the proposed id
 var ErrNoJobWithID = errors.New("no job could be found")
 
-// Job represents a single job
-type Job struct {
-	ID        uint64           `json:"ID"`
-	Request   meeseeks.Request `json:"Request"`
-	StartTime time.Time        `json:"StartTime"`
-	EndTime   time.Time        `json:"EndTime"`
-	Status    string           `json:"Status"`
-}
-
 // NullJob is used to handle requests that are not recorded
-func NullJob(req meeseeks.Request) Job {
-	return Job{
+func NullJob(req meeseeks.Request) meeseeks.Job {
+	return meeseeks.Job{
 		ID:        0,
 		Request:   req,
 		StartTime: time.Now().UTC(),
@@ -46,10 +37,10 @@ func NullJob(req meeseeks.Request) Job {
 }
 
 // Create registers a new job in running state in the database
-func Create(req meeseeks.Request) (Job, error) {
-	var job *Job
+func Create(req meeseeks.Request) (meeseeks.Job, error) {
+	var job *meeseeks.Job
 	err := db.Create(jobsBucketKey, func(jobID uint64, bucket *bolt.Bucket) error {
-		job = &Job{
+		job = &meeseeks.Job{
 			ID:        jobID,
 			Request:   req,
 			StartTime: time.Now().UTC(),
@@ -60,14 +51,14 @@ func Create(req meeseeks.Request) (Job, error) {
 		return save(job, bucket)
 	})
 	if err != nil {
-		return Job{}, fmt.Errorf("failed to create a job %s", err)
+		return meeseeks.Job{}, fmt.Errorf("failed to create a job %s", err)
 	}
 	return *job, nil
 }
 
 // Get returns a job by id
-func Get(id uint64) (Job, error) {
-	job := &Job{}
+func Get(id uint64) (meeseeks.Job, error) {
+	job := &meeseeks.Job{}
 	err := db.View(func(tx *bolt.Tx) error {
 		jobsBucket := tx.Bucket(jobsBucketKey)
 		if jobsBucket == nil {
@@ -86,14 +77,15 @@ func Get(id uint64) (Job, error) {
 // Finish sets the status of a job to whatever end state if it's current status is running
 //
 // It also sets the end time of the job
-func (j Job) Finish(status string) error {
-	if j.ID == 0 {
-		return nil
+func Finish(jobID uint64, status string) error {
+	j, err := Get(jobID)
+	if err != nil {
+		return err
 	}
 	if !(status == SuccessStatus || status == FailedStatus) {
 		return fmt.Errorf("invalid status %s", status)
 	}
-	return change(j.ID, func(job *Job) error {
+	return change(j.ID, func(job *meeseeks.Job) error {
 		if job.Status != RunningStatus {
 			return fmt.Errorf("job is not in running status")
 		}
@@ -106,12 +98,12 @@ func (j Job) Finish(status string) error {
 // JobFilter provides the basic tooling to filter jobs when using Find
 type JobFilter struct {
 	Limit int
-	Match func(Job) bool
+	Match func(meeseeks.Job) bool
 }
 
 // MultiMatch builds a Match function from a list of Match functions
-func MultiMatch(matchers ...func(Job) bool) func(Job) bool {
-	return func(job Job) bool {
+func MultiMatch(matchers ...func(meeseeks.Job) bool) func(meeseeks.Job) bool {
+	return func(job meeseeks.Job) bool {
 		for _, matcher := range matchers {
 			if !matcher(job) {
 				return false
@@ -125,9 +117,9 @@ func MultiMatch(matchers ...func(Job) bool) func(Job) bool {
 // to determine if the job matches a search criteria.
 //
 // Returns a list of jobs in descending order that match the filter
-func Find(filter JobFilter) ([]Job, error) {
-	latest := make([]Job, 0)
-	matcher := func(job Job) bool {
+func Find(filter JobFilter) ([]meeseeks.Job, error) {
+	latest := make([]meeseeks.Job, 0)
+	matcher := func(job meeseeks.Job) bool {
 		return true
 	}
 	if filter.Match != nil {
@@ -145,7 +137,7 @@ func Find(filter JobFilter) ([]Job, error) {
 				break
 			}
 
-			job := Job{}
+			job := meeseeks.Job{}
 			if err := json.Unmarshal(payload, &job); err != nil {
 				return fmt.Errorf("failed to load Job payload %s", err)
 			}
@@ -159,10 +151,10 @@ func Find(filter JobFilter) ([]Job, error) {
 	return latest, err
 }
 
-func change(id uint64, f func(job *Job) error) error {
+func change(id uint64, f func(job *meeseeks.Job) error) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(jobsBucketKey)
-		job := &Job{}
+		job := &meeseeks.Job{}
 		if err := json.Unmarshal(bucket.Get(db.IDToBytes(id)), job); err != nil {
 			return fmt.Errorf("could not get job with id %d: %s", id, err)
 		}
@@ -173,7 +165,7 @@ func change(id uint64, f func(job *Job) error) error {
 	})
 }
 
-func save(job *Job, bucket *bolt.Bucket) error {
+func save(job *meeseeks.Job, bucket *bolt.Bucket) error {
 	buffer, err := json.Marshal(job)
 	if err != nil {
 		return err

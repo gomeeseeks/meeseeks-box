@@ -7,7 +7,6 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/command"
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
@@ -42,7 +41,7 @@ func TestShellCommand(t *testing.T) {
 
 func TestExecuteEcho(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
-		out, err := echoCommand.Execute(context.Background(), jobs.Job{
+		out, err := echoCommand.Execute(context.Background(), meeseeks.Job{
 			ID:      1,
 			Request: meeseeks.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
 		})
@@ -53,7 +52,7 @@ func TestExecuteEcho(t *testing.T) {
 
 func TestExecuteFail(t *testing.T) {
 	stubs.WithTmpDB(func(_ string) {
-		_, err := failCommand.Execute(context.Background(), jobs.Job{
+		_, err := failCommand.Execute(context.Background(), meeseeks.Job{
 			ID:      2,
 			Request: meeseeks.Request{},
 		})
@@ -68,7 +67,7 @@ func TestSleepingCanBeWokenUp(t *testing.T) {
 			<-time.After(10 * time.Millisecond)
 			cancel()
 		}()
-		_, err := sleepCommand.Execute(ctx, jobs.Job{
+		_, err := sleepCommand.Execute(ctx, meeseeks.Job{
 			ID:      3,
 			Request: meeseeks.Request{},
 		})

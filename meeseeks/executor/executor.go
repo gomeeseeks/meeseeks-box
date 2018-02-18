@@ -36,7 +36,7 @@ type Meeseeks struct {
 }
 
 type task struct {
-	job jobs.Job
+	job meeseeks.Job
 	cmd command.Command
 }
 
@@ -157,7 +157,7 @@ func (m *Meeseeks) loop() {
 					ChannelID: req.ChannelID,
 				}, err).WithCommand(cmd).WithOutput(out))
 
-				job.Finish(jobs.FailedStatus)
+				jobs.Finish(job.ID, jobs.FailedStatus)
 			} else {
 				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 					req.Username)
@@ -167,7 +167,7 @@ func (m *Meeseeks) loop() {
 					ChannelID: req.ChannelID,
 				}).WithCommand(cmd).WithOutput(out))
 
-				job.Finish(jobs.SuccessStatus)
+				jobs.Finish(job.ID, jobs.SuccessStatus)
 			}
 			m.wg.Done()
 		}(t)

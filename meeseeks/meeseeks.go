@@ -1,5 +1,9 @@
 package meeseeks
 
+import (
+	"time"
+)
+
 // Message interface to interact with an abstract message
 type Message interface {
 	// The text received without the matching portion
@@ -31,4 +35,13 @@ type Request struct {
 	ChannelID   string   `json:"CannelID"`
 	ChannelLink string   `json:"CannelLink"`
 	IsIM        bool     `json:"IsIM"`
+}
+
+// Job represents a single job
+type Job struct {
+	ID        uint64    `json:"ID"`
+	Request   Request   `json:"Request"`
+	StartTime time.Time `json:"StartTime"`
+	EndTime   time.Time `json:"EndTime"`
+	Status    string    `json:"Status"`
 }

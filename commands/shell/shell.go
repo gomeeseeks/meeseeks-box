@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/command"
-	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/sirupsen/logrus"
 )
 
@@ -38,7 +38,7 @@ type shellCommand struct {
 }
 
 // Execute implements Command.Execute for the ShellCommand
-func (c shellCommand) Execute(ctx context.Context, job jobs.Job) (string, error) {
+func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
 	cmdArgs := append(c.Args(), job.Request.Args...)
 	logrus.Debugf("Calling command %s with args %#v", c.Cmd(), cmdArgs)
 

@@ -25,7 +25,7 @@ func Test_GettingJobsWorksWhenEmpty(t *testing.T) {
 	stub.Must(t, "failed to run tests", stub.WithTmpDB(func(_ string) {
 		js, err := jobs.Find(jobs.JobFilter{
 			Limit: 10,
-			Match: func(_ jobs.Job) bool {
+			Match: func(_ meeseeks.Job) bool {
 				return true
 			},
 		})
@@ -51,7 +51,7 @@ func Test_MarkSuccessFul(t *testing.T) {
 		job, err := jobs.Create(req)
 		stub.Must(t, "Could not store a job: ", err)
 
-		err = job.Finish(jobs.SuccessStatus)
+		err = jobs.Finish(job.ID, jobs.SuccessStatus)
 		stub.Must(t, "could not set as successful", err)
 
 		actual, err := jobs.Get(job.ID)
@@ -69,7 +69,7 @@ func Test_MarkSuccessFulWithRunningEndStateFails(t *testing.T) {
 		job, err := jobs.Create(req)
 		stub.Must(t, "Could not store a job: ", err)
 
-		err = job.Finish(jobs.RunningStatus)
+		err = jobs.Finish(job.ID, jobs.RunningStatus)
 		if err.Error() != "invalid status Running" {
 			t.Fatalf("Wrong error %s", err)
 		}

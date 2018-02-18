@@ -44,7 +44,7 @@ func Test_BuiltinCommands(t *testing.T) {
 	tt := []struct {
 		name          string
 		req           meeseeks.Request
-		job           jobs.Job
+		job           meeseeks.Job
 		setup         func()
 		expected      string
 		expectedMatch string
@@ -57,7 +57,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job:      jobs.Job{},
+			job:      meeseeks.Job{},
 			expected: "meeseeks-box version , commit , built on ",
 		},
 		{
@@ -67,7 +67,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job:      jobs.Job{Request: meeseeks.Request{Args: []string{}}},
+			job:      meeseeks.Job{Request: meeseeks.Request{Args: []string{}}},
 			expected: "",
 		},
 		{
@@ -76,7 +76,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				Command: builtins.BuiltinHelpCommand,
 				UserID:  "userid",
 			},
-			job: jobs.Job{Request: meeseeks.Request{Args: []string{"-all"}}},
+			job: meeseeks.Job{Request: meeseeks.Request{Args: []string{"-all"}}},
 			expected: `- alias: adds an alias for a command for the current user
 - aliases: list all the aliases for the current user
 - audit: lists jobs from all users or a specific one (admin only)
@@ -105,7 +105,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				Command: builtins.BuiltinHelpCommand,
 				UserID:  "userid",
 			},
-			job: jobs.Job{Request: meeseeks.Request{Args: []string{"token-new"}}},
+			job: meeseeks.Job{Request: meeseeks.Request{Args: []string{"token-new"}}},
 			expected: `*token-new* - creates a new API token
 
 *Arguments*
@@ -122,7 +122,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{},
+			job: meeseeks.Job{},
 			expected: `
 - admins: admin_user
 - other: user_one, user_two
@@ -135,13 +135,13 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone"},
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
 				stubs.Must(t, "could not create job", err)
-				j.Finish(jobs.SuccessStatus)
+				jobs.Finish(j.ID, jobs.SuccessStatus)
 			},
 			expected: "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
 		},
@@ -152,13 +152,13 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{},
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
 				stubs.Must(t, "could not create job", err)
-				j.Finish(jobs.SuccessStatus)
+				jobs.Finish(j.ID, jobs.SuccessStatus)
 			},
 			expected: "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
 		},
@@ -169,7 +169,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit=1"}},
 			},
 			setup: func() {
@@ -185,7 +185,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone"},
 			},
 			setup: func() {
@@ -207,7 +207,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone"},
 			},
 			setup: func() {
@@ -224,7 +224,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
@@ -240,7 +240,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{
 					Command: "alias",
 					Args:    []string{"command", "for", "-add", "alias"},
@@ -255,7 +255,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{
 					Command: "aliases",
 					UserID:  "userid",
@@ -277,7 +277,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{
 					Command: "aliases",
 					UserID:  "userid",
@@ -303,7 +303,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{
 					Command: "testalias",
 					UserID:  "userid",
@@ -335,7 +335,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
@@ -350,7 +350,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				Command: builtins.BuiltinTailCommand,
 				UserID:  "someone",
 			},
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{
 					Username: "someone",
 					Args:     []string{"-limit", "1", "1"}},
@@ -378,7 +378,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "someone",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "2"}},
 			},
 			setup: func() {
@@ -402,7 +402,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				Command: builtins.BuiltinHeadCommand,
 				UserID:  "userid",
 			},
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "2"}},
 			},
 			setup: func() {
@@ -424,7 +424,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				Command: builtins.BuiltinHeadCommand,
 				UserID:  "userid",
 			},
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "1", "1"}},
 			},
 			setup: func() {
@@ -449,7 +449,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
@@ -470,7 +470,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "admin_user", Args: []string{"1"}},
 			},
 			setup: func() {
@@ -491,7 +491,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "admin_user", IsIM: true, Args: []string{"admin_user", "yolo", "rm", "-rf"}},
 			},
 			expectedMatch: "created token .*",
@@ -503,7 +503,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "admin_user", IsIM: true},
 			},
 			setup: func() {
@@ -524,7 +524,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
@@ -543,7 +543,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone", Args: []string{"2"}},
 			},
 			setup: func() {
@@ -561,7 +561,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				Command: builtins.BuiltinCancelJobCommand,
 				UserID:  "userid",
 			},
-			job: jobs.Job{
+			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "someone_else",
 					Args: []string{"2"},
 				},
@@ -640,7 +640,7 @@ func Test_FilterJobsAudit(t *testing.T) {
 			t.Fatalf("could not find command %s", "audit")
 		}
 
-		audit, err := cmd.Execute(context.Background(), jobs.Job{
+		audit, err := cmd.Execute(context.Background(), meeseeks.Job{
 			Request: meeseeks.Request{Args: []string{"-user", "someone"}},
 		})
 		if err != nil {
@@ -648,7 +648,7 @@ func Test_FilterJobsAudit(t *testing.T) {
 		}
 		stubs.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n*1* - now - *command* by *someone* in *<#123>* - *Running*\n", audit)
 
-		limit, err := cmd.Execute(context.Background(), jobs.Job{
+		limit, err := cmd.Execute(context.Background(), meeseeks.Job{
 			Request: meeseeks.Request{Args: []string{"-user", "someone", "-limit", "2"}},
 		})
 		if err != nil {

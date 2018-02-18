@@ -5,7 +5,7 @@ import (
 
 	"context"
 
-	"github.com/gomeeseeks/meeseeks-box/jobs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 )
 
 // Defaults for commands
@@ -15,7 +15,7 @@ const (
 
 // Command is the base interface for any command
 type Command interface {
-	Execute(context.Context, jobs.Job) (string, error)
+	Execute(context.Context, meeseeks.Job) (string, error)
 	Cmd() string
 	HasHandshake() bool
 	Templates() map[string]string
