@@ -45,12 +45,12 @@ dockers:
     goarch: amd64
     goarm: ''
     binary: meeseeks-box
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.amd64
     latest: true
   - image: gomeeseeks/meeseeks-box-armv6
     goos: linux
     goarch: arm
     goarm: '6'
     binary: meeseeks-box
-    dockerfile: DockerfileArm
+    dockerfile: Dockerfile.armv6
     latest: true
