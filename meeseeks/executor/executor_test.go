@@ -1,4 +1,4 @@
-package meeseeks_test
+package executor_test
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/formatter"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/messenger"
 	"github.com/gomeeseeks/meeseeks-box/template"
 	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
@@ -152,7 +152,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("could not create listener: %s", err)
 		}
-		m := meeseeks.New(client, msgs, formatter.New(cnf))
+		m := executor.New(client, msgs, formatter.New(cnf))
 		go m.Start()
 
 		for _, tc := range tt {

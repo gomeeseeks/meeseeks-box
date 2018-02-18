@@ -13,7 +13,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/messenger"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/version"
 	log "github.com/sirupsen/logrus"
 )
@@ -77,7 +77,7 @@ func main() {
 
 	log.Info("Listening messages")
 
-	meeseek := meeseeks.New(slackClient, msgs, formatter.New(cnf))
+	meeseek := executor.New(slackClient, msgs, formatter.New(cnf))
 	go meeseek.Start()
 
 	log.Info("Started commands pipeline")
