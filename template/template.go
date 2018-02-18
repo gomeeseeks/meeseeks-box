@@ -6,10 +6,9 @@ import (
 	"math/rand"
 	"strings"
 
-	tmpl "text/template"
-
 	humanize "github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
+	tmpl "text/template"
 )
 
 // Template names used for rendering

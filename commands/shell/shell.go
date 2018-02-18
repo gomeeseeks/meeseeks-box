@@ -9,9 +9,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/command"
-	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,11 +22,11 @@ type CommandOpts struct {
 	AuthStrategy  string
 	Timeout       time.Duration
 	Templates     map[string]string
-	Help          command.Help
+	Help          meeseeks.Help
 }
 
 // New return a new ShellCommand based on the passed in opts
-func New(opts CommandOpts) command.Command {
+func New(opts CommandOpts) meeseeks.Command {
 	return shellCommand{
 		opts: opts,
 	}
@@ -38,7 +37,7 @@ type shellCommand struct {
 }
 
 // Execute implements Command.Execute for the ShellCommand
-func (c shellCommand) Execute(ctx context.Context, job jobs.Job) (string, error) {
+func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
 	cmdArgs := append(c.Args(), job.Request.Args...)
 	logrus.Debugf("Calling command %s with args %#v", c.Cmd(), cmdArgs)
 
@@ -133,7 +132,7 @@ func (c shellCommand) Args() []string {
 
 func (c shellCommand) Timeout() time.Duration {
 	if c.opts.Timeout == 0 {
-		return command.DefaultCommandTimeout
+		return meeseeks.DefaultCommandTimeout
 	}
 	return c.opts.Timeout
 }
@@ -142,7 +141,7 @@ func (c shellCommand) Cmd() string {
 	return c.opts.Cmd
 }
 
-func (c shellCommand) Help() command.Help {
+func (c shellCommand) Help() meeseeks.Help {
 	return c.opts.Help
 }
 
@@ -164,7 +163,7 @@ func (h shellHelp) GetArgs() []string {
 }
 
 // NewHelp returns a new command help implementation for the shell command
-func NewHelp(summary string, args ...string) command.Help {
+func NewHelp(summary string, args ...string) meeseeks.Help {
 	return shellHelp{
 		summary,
 		append([]string{}, args...),

@@ -6,8 +6,8 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
-	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/mocks"
 )
 
 func Test_Auth(t *testing.T) {
@@ -31,13 +31,13 @@ func Test_Auth(t *testing.T) {
 	tt := []struct {
 		name     string
 		username string
-		req      request.Request
+		req      meeseeks.Request
 		expected error
 	}{
 		{
 			name:     "any",
 			username: "myself",
-			req: request.Request{
+			req: meeseeks.Request{
 				Command:     "any",
 				Channel:     "general",
 				ChannelID:   "123",
@@ -50,7 +50,7 @@ func Test_Auth(t *testing.T) {
 		{
 			name:     "none",
 			username: "myself",
-			req: request.Request{
+			req: meeseeks.Request{
 				Command:     "none",
 				Channel:     "general",
 				ChannelID:   "123",
@@ -63,7 +63,7 @@ func Test_Auth(t *testing.T) {
 		{
 			name:     "authorized groups",
 			username: "admin_user",
-			req: request.Request{
+			req: meeseeks.Request{
 				Command:     "admins",
 				Channel:     "general",
 				ChannelID:   "123",
@@ -76,7 +76,7 @@ func Test_Auth(t *testing.T) {
 		{
 			name:     "authorized groups with unauthorized user",
 			username: "normal_user",
-			req: request.Request{
+			req: meeseeks.Request{
 				Command:     "admins",
 				Channel:     "general",
 				ChannelID:   "123",
@@ -90,9 +90,9 @@ func Test_Auth(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			stubs.Must(t, tc.name, stubs.WithTmpDB(func(_ string) {
+			mocks.Must(t, tc.name, mocks.WithTmpDB(func(_ string) {
 				cmd, ok := commands.Find(&tc.req)
-				stubs.AssertEquals(t, true, ok)
+				mocks.AssertEquals(t, true, ok)
 				if actual := auth.Check(tc.username, cmd); actual != tc.expected {
 					t.Fatalf("Check failed with %s", actual)
 				}
@@ -108,7 +108,7 @@ func Test_Groups(t *testing.T) {
 			"developer":     {"user1"},
 		},
 	)
-	stubs.AssertEquals(t,
+	mocks.AssertEquals(t,
 		map[string][]string{
 			"developer":     {"user1"},
 			auth.AdminGroup: {"user1", "user2"},

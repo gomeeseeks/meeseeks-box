@@ -1,4 +1,4 @@
-package meeseeks_test
+package executor_test
 
 import (
 	"fmt"
@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/formatter"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/messenger"
+	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/template"
-	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 	"github.com/renstrom/dedent"
 	"github.com/sirupsen/logrus"
 )
@@ -126,8 +126,8 @@ func Test_MeeseeksInteractions(t *testing.T) {
 		},
 	}
 
-	stubs.WithTmpDB(func(dbpath string) {
-		client, cnf := stubs.NewHarness().
+	mocks.WithTmpDB(func(dbpath string) {
+		client, cnf := mocks.NewHarness().
 			WithConfig(dedent.Dedent(`
 			---
 			commands:
@@ -152,13 +152,13 @@ func Test_MeeseeksInteractions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("could not create listener: %s", err)
 		}
-		m := meeseeks.New(client, msgs, formatter.New(cnf))
+		m := executor.New(client, msgs, formatter.New(cnf))
 		go m.Start()
 
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
 				logrus.Infof("starting test %s", tc.name)
-				client.MessagesCh() <- stubs.MessageStub{
+				client.MessagesCh() <- mocks.MessageStub{
 					Text:      tc.message,
 					Channel:   tc.channel,
 					ChannelID: tc.channel + "ID",
@@ -175,13 +175,13 @@ func Test_MeeseeksInteractions(t *testing.T) {
 					logrus.Infof("got message %#v", actual)
 
 					r, err := regexp.Compile(expected.TextMatcher)
-					stubs.Must(t, "could not compile regex", err, expected.TextMatcher)
+					mocks.Must(t, "could not compile regex", err, expected.TextMatcher)
 
 					if !r.MatchString(actual.Text) {
 						t.Fatalf("Bad message, expected %s; got %s", expected.TextMatcher, actual.Text)
 					}
-					stubs.AssertEquals(t, expected.Channel, actual.Channel)
-					stubs.AssertEquals(t, expected.IsIM, actual.IsIM)
+					mocks.AssertEquals(t, expected.Channel, actual.Channel)
+					mocks.AssertEquals(t, expected.IsIM, actual.IsIM)
 				}
 			})
 		}

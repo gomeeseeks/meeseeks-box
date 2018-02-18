@@ -4,13 +4,12 @@ import (
 	"sync"
 
 	"github.com/gomeeseeks/meeseeks-box/aliases"
-	"github.com/gomeeseeks/meeseeks-box/command"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/sirupsen/logrus"
 )
 
-var commands map[string]command.Command
+var commands map[string]meeseeks.Command
 var mutex sync.Mutex
 
 func init() {
@@ -22,7 +21,7 @@ func Reset() {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	commands = make(map[string]command.Command)
+	commands = make(map[string]meeseeks.Command)
 	for name, cmd := range builtins.Commands {
 		commands[name] = cmd
 	}
@@ -31,7 +30,7 @@ func Reset() {
 }
 
 // Add adds a new command to the map
-func Add(name string, cmd command.Command) {
+func Add(name string, cmd meeseeks.Command) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -42,7 +41,7 @@ func Add(name string, cmd command.Command) {
 //
 // This method implements the map interface as in returning true of false in the
 // case the command exists in the map
-func Find(req *request.Request) (command.Command, bool) {
+func Find(req *meeseeks.Request) (meeseeks.Command, bool) {
 	aliasedCommand, args, err := aliases.Get(req.UserID, req.Command)
 	if err != nil {
 		logrus.Debugf("Failed to get alias %s", req.Command)

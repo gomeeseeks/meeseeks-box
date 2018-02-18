@@ -9,10 +9,9 @@ import (
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/api"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/message"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
-
-	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
 /*
@@ -61,34 +60,34 @@ import (
 */
 
 func TestAPIServer(t *testing.T) {
-	stubs.Must(t, "failed to create a temporary DB", stubs.WithTmpDB(func(dbpath string) {
+	mocks.Must(t, "failed to create a temporary DB", mocks.WithTmpDB(func(dbpath string) {
 		// This is necessary because we need to store and then load the token in the DB
-		stubs.NewHarness().WithEchoCommand().WithDBPath(dbpath).Load()
+		mocks.NewHarness().WithEchoCommand().WithDBPath(dbpath).Load()
 
 		tk, err := tokens.Create(tokens.NewTokenRequest{
 			UserLink:    "someoneLink",
 			ChannelLink: "generalLink",
 			Text:        "echo something",
 		})
-		stubs.Must(t, "failed to create the token", err)
+		mocks.Must(t, "failed to create the token", err)
 
-		s := api.NewServer(stubs.MetadataStub{
+		s := api.NewServer(mocks.MetadataStub{
 			IM: false,
 		}, ":0")
 		defer s.Shutdown()
 
-		ch := make(chan message.Message)
+		ch := make(chan meeseeks.Message)
 		go s.GetListener().ListenMessages(ch)
 
 		testSrv := httptest.NewServer(http.HandlerFunc(s.HandlePostToken))
 
 		assertHttpStatus := func(statusCode int) func(t *testing.T, actualStatus string) {
 			return func(t *testing.T, actualStatus string) {
-				stubs.AssertEquals(t, fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)),
+				mocks.AssertEquals(t, fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)),
 					actualStatus)
 			}
 		}
-		assertNothing := func(_ *testing.T, _ chan message.Message) {
+		assertNothing := func(_ *testing.T, _ chan meeseeks.Message) {
 		}
 
 		tt := []struct {
@@ -96,7 +95,7 @@ func TestAPIServer(t *testing.T) {
 			reqToken      string
 			payload       string
 			assertStatus  func(*testing.T, string)
-			assertMessage func(*testing.T, chan message.Message)
+			assertMessage func(*testing.T, chan meeseeks.Message)
 		}{
 			{
 				"invalid token",
@@ -117,16 +116,16 @@ func TestAPIServer(t *testing.T) {
 				tk,
 				"",
 				assertHttpStatus(http.StatusAccepted),
-				func(t *testing.T, ch chan message.Message) {
+				func(t *testing.T, ch chan meeseeks.Message) {
 					msg := <-ch
-					stubs.AssertEquals(t, "echo something", msg.GetText())
-					stubs.AssertEquals(t, "general", msg.GetChannelID())
-					stubs.AssertEquals(t, "name: general", msg.GetChannel())
-					stubs.AssertEquals(t, "<#general>", msg.GetChannelLink())
-					stubs.AssertEquals(t, "name: someone", msg.GetUsername())
-					stubs.AssertEquals(t, "<@someone>", msg.GetUserLink())
-					stubs.AssertEquals(t, "someone", msg.GetUserID())
-					stubs.AssertEquals(t, false, msg.IsIM())
+					mocks.AssertEquals(t, "echo something", msg.GetText())
+					mocks.AssertEquals(t, "general", msg.GetChannelID())
+					mocks.AssertEquals(t, "name: general", msg.GetChannel())
+					mocks.AssertEquals(t, "<#general>", msg.GetChannelLink())
+					mocks.AssertEquals(t, "name: someone", msg.GetUsername())
+					mocks.AssertEquals(t, "<@someone>", msg.GetUserLink())
+					mocks.AssertEquals(t, "someone", msg.GetUserID())
+					mocks.AssertEquals(t, false, msg.IsIM())
 				},
 			},
 			{
@@ -134,9 +133,9 @@ func TestAPIServer(t *testing.T) {
 				tk,
 				"with arguments that will be attached",
 				assertHttpStatus(http.StatusAccepted),
-				func(t *testing.T, ch chan message.Message) {
+				func(t *testing.T, ch chan meeseeks.Message) {
 					msg := <-ch
-					stubs.AssertEquals(t, "echo something with arguments that will be attached", msg.GetText())
+					mocks.AssertEquals(t, "echo something with arguments that will be attached", msg.GetText())
 				},
 			},
 		}
@@ -149,13 +148,13 @@ func TestAPIServer(t *testing.T) {
 				}
 
 				req, err := http.NewRequest("POST", testSrv.URL, strings.NewReader(values.Encode()))
-				stubs.Must(t, "Could not create request", err)
+				mocks.Must(t, "Could not create request", err)
 
 				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 				req.Header.Add("TOKEN", tc.reqToken)
 
 				resp, err := testSrv.Client().Do(req)
-				stubs.Must(t, "failed to do request", err)
+				mocks.Must(t, "failed to do request", err)
 
 				tc.assertStatus(t, resp.Status)
 				tc.assertMessage(t, ch)
