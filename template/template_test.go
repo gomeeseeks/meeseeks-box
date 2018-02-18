@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/template"
-	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
 )
 
 func Test_Templating(t *testing.T) {
@@ -136,8 +136,8 @@ func Test_ChangingTemplate(t *testing.T) {
 		template.Handshake: "hello!",
 	}).Build()
 	out, err := templates.RenderHandshake("myuser")
-	stubs.Must(t, "can't render changed handshake template", err)
-	stubs.AssertEquals(t, "hello!", out)
+	mocks.Must(t, "can't render changed handshake template", err)
+	mocks.AssertEquals(t, "hello!", out)
 }
 
 func Test_ChangingMessages(t *testing.T) {
@@ -145,32 +145,32 @@ func Test_ChangingMessages(t *testing.T) {
 		template.Handshake: {"yo!"},
 	}).Build()
 	out, err := templates.RenderHandshake("myuser")
-	stubs.Must(t, "can't render changed handshake template", err)
-	stubs.AssertEquals(t, "yo!", out)
+	mocks.Must(t, "can't render changed handshake template", err)
+	mocks.AssertEquals(t, "yo!", out)
 }
 func Test_DefaultTemplates(t *testing.T) {
 	templates := template.NewBuilder().Build()
 
 	handshakeMatcher, err := regexp.Compile(fmt.Sprintf("^(%s)$", strings.Join(template.DefaultHandshakeMessages, "|")))
-	stubs.Must(t, "can't compile default hanshake matcher", err)
+	mocks.Must(t, "can't compile default hanshake matcher", err)
 
 	successMatcher, err := regexp.Compile(fmt.Sprintf("^<@myself> (%s)$", strings.Join(template.DefaultSuccessMessages, "|")))
-	stubs.Must(t, "can't compile default success matcher", err)
+	mocks.Must(t, "can't compile default success matcher", err)
 
 	successWithOutputMatcher, err := regexp.Compile(fmt.Sprintf("(?m)<@myself> (%s)[\\n `]*something happened", strings.Join(template.DefaultSuccessMessages, "|")))
-	stubs.Must(t, "can't compile default success with output matcher", err)
+	mocks.Must(t, "can't compile default success with output matcher", err)
 
 	failureMatcher, err := regexp.Compile(fmt.Sprintf("^<@myself> (%s) :disappointed: it failed$", strings.Join(template.DefaultFailedMessages, "|")))
-	stubs.Must(t, "can't compile default failure matcher", err)
+	mocks.Must(t, "can't compile default failure matcher", err)
 
 	failureWithOutputMatcher, err := regexp.Compile(fmt.Sprintf("(?m)<@myself> (%s) :disappointed: it failed[\\n `]*some output", strings.Join(template.DefaultFailedMessages, "|")))
-	stubs.Must(t, "can't compile default failure with output matcher", err)
+	mocks.Must(t, "can't compile default failure with output matcher", err)
 
 	unknownCommandMatcher, err := regexp.Compile(fmt.Sprintf("<@myself> (%s) mycommand", strings.Join(template.DefaultUnknownCommandMessages, "|")))
-	stubs.Must(t, "can't compile default unknown command matcher", err)
+	mocks.Must(t, "can't compile default unknown command matcher", err)
 
 	unauthorizedCommandMatcher, err := regexp.Compile(fmt.Sprintf("<@myself> (%s) mycommand", strings.Join(template.DefaultUnauthorizedMessages, "|")))
-	stubs.Must(t, "can't compile default unauthorized command matcher", err)
+	mocks.Must(t, "can't compile default unauthorized command matcher", err)
 
 	tt := []struct {
 		name     string

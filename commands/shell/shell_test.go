@@ -7,7 +7,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/mocks"
 )
 
 var echoCommand = shell.New(shell.CommandOpts{
@@ -27,40 +27,40 @@ var sleepCommand = shell.New(shell.CommandOpts{
 })
 
 func TestShellCommand(t *testing.T) {
-	stubs.AssertEquals(t, "echo", echoCommand.Cmd())
-	stubs.AssertEquals(t, []string{}, echoCommand.Args())
-	stubs.AssertEquals(t, []string{}, echoCommand.AllowedGroups())
-	stubs.AssertEquals(t, true, echoCommand.HasHandshake())
-	stubs.AssertEquals(t, true, echoCommand.Record())
-	stubs.AssertEquals(t, map[string]string{}, echoCommand.Templates())
-	stubs.AssertEquals(t, meeseeks.DefaultCommandTimeout, echoCommand.Timeout())
-	stubs.AssertEquals(t, "command that prints back the arguments passed", echoCommand.Help().GetSummary())
-	stubs.AssertEquals(t, []string{}, echoCommand.Help().GetArgs())
+	mocks.AssertEquals(t, "echo", echoCommand.Cmd())
+	mocks.AssertEquals(t, []string{}, echoCommand.Args())
+	mocks.AssertEquals(t, []string{}, echoCommand.AllowedGroups())
+	mocks.AssertEquals(t, true, echoCommand.HasHandshake())
+	mocks.AssertEquals(t, true, echoCommand.Record())
+	mocks.AssertEquals(t, map[string]string{}, echoCommand.Templates())
+	mocks.AssertEquals(t, meeseeks.DefaultCommandTimeout, echoCommand.Timeout())
+	mocks.AssertEquals(t, "command that prints back the arguments passed", echoCommand.Help().GetSummary())
+	mocks.AssertEquals(t, []string{}, echoCommand.Help().GetArgs())
 }
 
 func TestExecuteEcho(t *testing.T) {
-	stubs.WithTmpDB(func(_ string) {
+	mocks.WithTmpDB(func(_ string) {
 		out, err := echoCommand.Execute(context.Background(), meeseeks.Job{
 			ID:      1,
 			Request: meeseeks.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
 		})
-		stubs.Must(t, "failed to execute echo command", err)
-		stubs.AssertEquals(t, "hello meeseeks\nsecond line\n", out)
+		mocks.Must(t, "failed to execute echo command", err)
+		mocks.AssertEquals(t, "hello meeseeks\nsecond line\n", out)
 	})
 }
 
 func TestExecuteFail(t *testing.T) {
-	stubs.WithTmpDB(func(_ string) {
+	mocks.WithTmpDB(func(_ string) {
 		_, err := failCommand.Execute(context.Background(), meeseeks.Job{
 			ID:      2,
 			Request: meeseeks.Request{},
 		})
-		stubs.AssertEquals(t, "exit status 1", err.Error())
+		mocks.AssertEquals(t, "exit status 1", err.Error())
 	})
 }
 
 func TestSleepingCanBeWokenUp(t *testing.T) {
-	stubs.WithTmpDB(func(_ string) {
+	mocks.WithTmpDB(func(_ string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
 			<-time.After(10 * time.Millisecond)
@@ -70,6 +70,6 @@ func TestSleepingCanBeWokenUp(t *testing.T) {
 			ID:      3,
 			Request: meeseeks.Request{},
 		})
-		stubs.AssertEquals(t, "signal: killed", err.Error())
+		mocks.AssertEquals(t, "signal: killed", err.Error())
 	})
 }

@@ -1,8 +1,7 @@
-package testingstubs
+package mocks
 
 import (
 	"fmt"
-	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"io/ioutil"
 	"os"
 	"path"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 
 	"github.com/sirupsen/logrus"

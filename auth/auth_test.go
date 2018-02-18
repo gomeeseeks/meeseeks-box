@@ -7,7 +7,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/mocks"
 )
 
 func Test_Auth(t *testing.T) {
@@ -90,9 +90,9 @@ func Test_Auth(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			stubs.Must(t, tc.name, stubs.WithTmpDB(func(_ string) {
+			mocks.Must(t, tc.name, mocks.WithTmpDB(func(_ string) {
 				cmd, ok := commands.Find(&tc.req)
-				stubs.AssertEquals(t, true, ok)
+				mocks.AssertEquals(t, true, ok)
 				if actual := auth.Check(tc.username, cmd); actual != tc.expected {
 					t.Fatalf("Check failed with %s", actual)
 				}
@@ -108,7 +108,7 @@ func Test_Groups(t *testing.T) {
 			"developer":     {"user1"},
 		},
 	)
-	stubs.AssertEquals(t,
+	mocks.AssertEquals(t,
 		map[string][]string{
 			"developer":     {"user1"},
 			auth.AdminGroup: {"user1", "user2"},

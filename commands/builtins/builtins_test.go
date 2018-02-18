@@ -14,7 +14,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	stubs "github.com/gomeeseeks/meeseeks-box/testingstubs"
+	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
 )
 
@@ -140,7 +140,7 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
-				stubs.Must(t, "could not create job", err)
+				mocks.Must(t, "could not create job", err)
 				jobs.Finish(j.ID, jobs.SuccessStatus)
 			},
 			expected: "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
@@ -157,7 +157,7 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
-				stubs.Must(t, "could not create job", err)
+				mocks.Must(t, "could not create job", err)
 				jobs.Finish(j.ID, jobs.SuccessStatus)
 			},
 			expected: "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
@@ -263,10 +263,10 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				err := aliases.Create("userid", "first", "command", []string{"-with args"}...)
-				stubs.Must(t, "create first alias", err)
+				mocks.Must(t, "create first alias", err)
 
 				err = aliases.Create("userid", "second", "another", []string{"-command"}...)
-				stubs.Must(t, "create second alias", err)
+				mocks.Must(t, "create second alias", err)
 			},
 			expected: "- *first* - `command -with args`\n- *second* - `another -command`\n",
 		},
@@ -285,13 +285,13 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				err := aliases.Create("userid", "command", "command", []string{"-with", "args"}...)
-				stubs.Must(t, "create first alias", err)
+				mocks.Must(t, "create first alias", err)
 
 				err = aliases.Create("userid", "second", "another", []string{"-command"}...)
-				stubs.Must(t, "create second alias", err)
+				mocks.Must(t, "create second alias", err)
 
 				err = aliases.Delete("userid", "command")
-				stubs.Must(t, "delete first alias", err)
+				mocks.Must(t, "delete first alias", err)
 
 			},
 			expected: "- *second* - `another -command`\n",
@@ -311,7 +311,7 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				err := aliases.Create("userid", "testalias", "audit", []string{"-limit", "1"}...)
-				stubs.Must(t, "create an alias", err)
+				mocks.Must(t, "create an alias", err)
 
 				commands.Add("noop", shell.New(shell.CommandOpts{
 					AuthStrategy: "any",
@@ -323,7 +323,7 @@ func Test_BuiltinCommands(t *testing.T) {
 						Command: "noop",
 						UserID:  "userid",
 					})
-				stubs.Must(t, "do nothing", err)
+				mocks.Must(t, "do nothing", err)
 
 			},
 			expected: "*1* - now - *noop* by ** in ** - *Running*\n",
@@ -357,14 +357,14 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "line 1.1")
 				logs.Append(j.ID, "line 1.2")
 				logs.Append(j.ID, "line 1.3")
 				logs.Append(j.ID, "line 1.4")
 
 				j, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "line 2.1")
 				logs.Append(j.ID, "line 2.2")
 				logs.Append(j.ID, "line 2.3")
@@ -383,13 +383,13 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "line 1.1")
 				logs.Append(j.ID, "line 1.2")
 				logs.Append(j.ID, "line 1.3")
 
 				j, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "line 2.1")
 				logs.Append(j.ID, "line 2.2")
 				logs.Append(j.ID, "line 2.3")
@@ -407,11 +407,11 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "line 1.1\nline 1.2\nsomething to say 1")
 
 				j, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "line 2.1")
 				logs.Append(j.ID, "line 2.2")
 				logs.Append(j.ID, "something to say 2")
@@ -429,13 +429,13 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "line 1.1")
 				logs.Append(j.ID, "line 1.2")
 				logs.Append(j.ID, "something to say 1")
 
 				j, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "line 2.1")
 				logs.Append(j.ID, "line 2.2")
 				logs.Append(j.ID, "something to say 2")
@@ -454,11 +454,11 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "something to say 1")
 
 				j, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "something to say 2")
 			},
 			expected: "something to say 1",
@@ -475,11 +475,11 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				j, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "something to say 1")
 
 				j, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 				logs.Append(j.ID, "something to say 2")
 			},
 			expected: "something to say 1",
@@ -512,7 +512,7 @@ func Test_BuiltinCommands(t *testing.T) {
 					UserLink:    "userLink",
 					Text:        "something",
 				})
-				stubs.Must(t, "create token", err)
+				mocks.Must(t, "create token", err)
 
 			},
 			expectedMatch: "- \\*.*?\\* userLink at channelLink _something_",
@@ -529,10 +529,10 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				_, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 
 				_, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 			},
 			expected: "Issued command cancellation to job 1",
 		},
@@ -548,10 +548,10 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				_, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 
 				_, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 			},
 			expected: "Issued command cancellation to job 2",
 		},
@@ -568,10 +568,10 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 				_, err := jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 
 				_, err = jobs.Create(req)
-				stubs.Must(t, "create job", err)
+				mocks.Must(t, "create job", err)
 			},
 			expectedError: fmt.Errorf("no job could be found"),
 		},
@@ -579,7 +579,7 @@ func Test_BuiltinCommands(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			stubs.Must(t, "failed to run tests", stubs.WithTmpDB(func(_ string) {
+			mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
 				if tc.setup != nil {
 					tc.setup()
 				}
@@ -590,16 +590,16 @@ func Test_BuiltinCommands(t *testing.T) {
 
 				out, err := cmd.Execute(context.Background(), tc.job)
 				if err != nil && tc.expectedError != nil {
-					stubs.AssertEquals(t, err.Error(), tc.expectedError.Error())
+					mocks.AssertEquals(t, err.Error(), tc.expectedError.Error())
 					return
 				}
 
-				stubs.Must(t, "cmd erred out", err)
+				mocks.Must(t, "cmd erred out", err)
 				if tc.expected != "" {
-					stubs.AssertEquals(t, tc.expected, out)
+					mocks.AssertEquals(t, tc.expected, out)
 				}
 				if tc.expectedMatch != "" {
-					stubs.AssertMatches(t, tc.expectedMatch, out)
+					mocks.AssertMatches(t, tc.expectedMatch, out)
 				}
 			}))
 		})
@@ -607,7 +607,7 @@ func Test_BuiltinCommands(t *testing.T) {
 }
 
 func Test_FilterJobsAudit(t *testing.T) {
-	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func(_ string) {
+	mocks.Must(t, "failed to audit the correct jobs", mocks.WithTmpDB(func(_ string) {
 		r1 := meeseeks.Request{
 			Command:     "command",
 			Channel:     "general",
@@ -646,7 +646,7 @@ func Test_FilterJobsAudit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to execute audit: %s", err)
 		}
-		stubs.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n*1* - now - *command* by *someone* in *<#123>* - *Running*\n", audit)
+		mocks.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n*1* - now - *command* by *someone* in *<#123>* - *Running*\n", audit)
 
 		limit, err := cmd.Execute(context.Background(), meeseeks.Job{
 			Request: meeseeks.Request{Args: []string{"-user", "someone", "-limit", "2"}},
@@ -654,7 +654,7 @@ func Test_FilterJobsAudit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to execute audit: %s", err)
 		}
-		stubs.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n", limit)
+		mocks.AssertEquals(t, "*4* - now - *command* by *someone* in *<#123>* - *Running*\n*3* - now - *command* by *someone* in *<#123>* - *Running*\n", limit)
 	}))
 }
 
@@ -669,15 +669,15 @@ func TestAPITokenLifecycle(t *testing.T) {
 		return cmd.Execute(context.Background(), jobs.NullJob(r))
 	}
 
-	stubs.Must(t, "failed to audit the correct jobs", stubs.WithTmpDB(func(_ string) {
+	mocks.Must(t, "failed to audit the correct jobs", mocks.WithTmpDB(func(_ string) {
 
 		out, err := exec(meeseeks.Request{
 			Command: builtins.BuiltinListAPITokenCommand,
 			UserID:  "apiuser",
 			IsIM:    true,
 		})
-		stubs.Must(t, "can't list api tokens:", err)
-		stubs.AssertEquals(t, "No tokens could be found", out)
+		mocks.Must(t, "can't list api tokens:", err)
+		mocks.AssertEquals(t, "No tokens could be found", out)
 
 		out, err = exec(meeseeks.Request{
 			Command: builtins.BuiltinNewAPITokenCommand,
@@ -685,7 +685,7 @@ func TestAPITokenLifecycle(t *testing.T) {
 			IsIM:    true,
 			Args:    []string{"apiuser", "yolo", "rm", "-rf"},
 		})
-		stubs.Must(t, "can't create an api token:", err)
+		mocks.Must(t, "can't create an api token:", err)
 
 		token := strings.Split(out, " ")[2]
 
@@ -694,8 +694,8 @@ func TestAPITokenLifecycle(t *testing.T) {
 			UserID:  "apiuser",
 			IsIM:    true,
 		})
-		stubs.Must(t, "can't list api tokens:", err)
-		stubs.AssertEquals(t, fmt.Sprintf("- *%s* apiuser at yolo _rm -rf_\n", token), out)
+		mocks.Must(t, "can't list api tokens:", err)
+		mocks.AssertEquals(t, fmt.Sprintf("- *%s* apiuser at yolo _rm -rf_\n", token), out)
 
 		out, err = exec(meeseeks.Request{
 			Command: builtins.BuiltinRevokeAPITokenCommand,
@@ -703,15 +703,15 @@ func TestAPITokenLifecycle(t *testing.T) {
 			IsIM:    true,
 			Args:    []string{token},
 		})
-		stubs.Must(t, "can't revoke an api token:", err)
-		stubs.AssertEquals(t, fmt.Sprintf("Token *%s* has been revoked", token), out)
+		mocks.Must(t, "can't revoke an api token:", err)
+		mocks.AssertEquals(t, fmt.Sprintf("Token *%s* has been revoked", token), out)
 
 		out, err = exec(meeseeks.Request{
 			Command: builtins.BuiltinListAPITokenCommand,
 			UserID:  "apiuser",
 			IsIM:    true,
 		})
-		stubs.Must(t, "can't list api tokens:", err)
-		stubs.AssertEquals(t, "No tokens could be found", out)
+		mocks.Must(t, "can't list api tokens:", err)
+		mocks.AssertEquals(t, "No tokens could be found", out)
 	}))
 }
