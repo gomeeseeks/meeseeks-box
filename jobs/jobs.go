@@ -1,27 +1,27 @@
 package jobs
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-
-	"encoding/json"
-
-	bolt "github.com/coreos/bbolt"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // Jobs status
 const (
 	RunningStatus = "Running"
 	FailedStatus  = "Failed"
+	KilledStatus  = "Killed"
 	SuccessStatus = "Successful"
 )
 
 var jobsBucketKey = []byte("jobs")
+var runningJobsBucketKey = []byte("running-jobs")
 
 // ErrNoJobWithID is returned when we can't find a job with the proposed id
 var ErrNoJobWithID = errors.New("no job could be found")
@@ -39,16 +39,29 @@ func NullJob(req meeseeks.Request) meeseeks.Job {
 // Create registers a new job in running state in the database
 func Create(req meeseeks.Request) (meeseeks.Job, error) {
 	var job *meeseeks.Job
-	err := db.Create(jobsBucketKey, func(jobID uint64, bucket *bolt.Bucket) error {
+	err := db.Update(func(tx *bolt.Tx) error {
+		jobID, bucket, err := db.NextSequenceFor(jobsBucketKey, tx)
+		if err != nil {
+			return fmt.Errorf("could not get next sequence for %s: %s", string(jobsBucketKey), err)
+		}
+
 		job = &meeseeks.Job{
 			ID:        jobID,
 			Request:   req,
 			StartTime: time.Now().UTC(),
 			Status:    RunningStatus,
 		}
+		logrus.Debugf("Creating job %#v", job)
 
-		log.Debugf("Creating job %#v", job)
-		return save(job, bucket)
+		runningJobsBucket, err := tx.CreateBucketIfNotExists(runningJobsBucketKey)
+		if err != nil {
+			return fmt.Errorf("could not create running jobs bucket: %s", err)
+		}
+		if err = runningJobsBucket.Put(db.IDToBytes(job.ID), []byte(RunningStatus)); err != nil {
+			return fmt.Errorf("could not save running job ID %d: %s", jobID, err)
+		}
+
+		return save(*job, bucket)
 	})
 	if err != nil {
 		return meeseeks.Job{}, fmt.Errorf("failed to create a job %s", err)
@@ -70,7 +83,7 @@ func Get(id uint64) (meeseeks.Job, error) {
 		}
 		return json.Unmarshal(payload, job)
 	})
-	log.Debugf("Returning job %#v for ID %d, err: %s", *job, id, err)
+	logrus.Debugf("Returning job %#v for ID %d, err: %s", *job, id, err)
 	return *job, err
 }
 
@@ -78,20 +91,27 @@ func Get(id uint64) (meeseeks.Job, error) {
 //
 // It also sets the end time of the job
 func Finish(jobID uint64, status string) error {
-	j, err := Get(jobID)
-	if err != nil {
-		return err
-	}
 	if !(status == SuccessStatus || status == FailedStatus) {
 		return fmt.Errorf("invalid status %s", status)
 	}
-	return change(j.ID, func(job *meeseeks.Job) error {
-		if job.Status != RunningStatus {
-			return fmt.Errorf("job is not in running status")
+	return db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(jobsBucketKey)
+		job, err := Get(jobID)
+		if err != nil {
+			return fmt.Errorf("could not get job with id %d: %s", jobID, err)
 		}
+		if job.Status != RunningStatus {
+			return fmt.Errorf("job is not in running status but %s", job.Status)
+		}
+		runningJobsBucket := tx.Bucket(runningJobsBucketKey)
+		if err = runningJobsBucket.Delete(db.IDToBytes(jobID)); err != nil {
+			return fmt.Errorf("could not remove job %d from running list: %s", jobID, err)
+		}
+
 		job.EndTime = time.Now().UTC()
 		job.Status = status
-		return nil
+
+		return save(job, bucket)
 	})
 }
 
@@ -151,24 +171,53 @@ func Find(filter JobFilter) ([]meeseeks.Job, error) {
 	return latest, err
 }
 
-func change(id uint64, f func(job *meeseeks.Job) error) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(jobsBucketKey)
-		job := &meeseeks.Job{}
-		if err := json.Unmarshal(bucket.Get(db.IDToBytes(id)), job); err != nil {
-			return fmt.Errorf("could not get job with id %d: %s", id, err)
-		}
-		if err := f(job); err != nil {
-			return fmt.Errorf("could not change job with id %d: %s", id, err)
-		}
-		return save(job, bucket)
-	})
-}
-
-func save(job *meeseeks.Job, bucket *bolt.Bucket) error {
+func save(job meeseeks.Job, bucket *bolt.Bucket) error {
 	buffer, err := json.Marshal(job)
 	if err != nil {
 		return err
 	}
 	return bucket.Put(db.IDToBytes(job.ID), buffer)
+}
+
+// FailRunningJobs flags as failed any jobs that is still in running state
+func FailRunningJobs() error {
+	return db.Update(func(tx *bolt.Tx) error {
+		runningJobsBucket := tx.Bucket(runningJobsBucketKey)
+		if runningJobsBucket == nil {
+			return nil
+		}
+
+		jobsBucket := tx.Bucket(jobsBucketKey)
+		if jobsBucket == nil {
+			return nil
+		}
+
+		c := runningJobsBucket.Cursor()
+		jobIDKey, _ := c.First()
+		for {
+			if jobIDKey == nil {
+				break
+			}
+			jobID := db.IDFromBytes(jobIDKey)
+			logrus.Warnf("Found job %d in running state, marking as killed", jobID)
+
+			j := meeseeks.Job{}
+			if err := json.Unmarshal(jobsBucket.Get(jobIDKey), &j); err != nil {
+				return fmt.Errorf("could not read job %d from bucket: %s", jobID, err)
+			}
+
+			j.Status = KilledStatus
+			j.EndTime = time.Now().UTC()
+			if err := save(j, jobsBucket); err != nil {
+				return fmt.Errorf("could not save killed job %d: %s", jobID, err)
+			}
+
+			if err := runningJobsBucket.Delete(jobIDKey); err != nil {
+				return fmt.Errorf("could not delete running job %d: %s", jobID, err)
+			}
+
+			jobIDKey, _ = c.Next()
+		}
+		return nil
+	})
 }

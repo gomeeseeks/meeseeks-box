@@ -64,7 +64,7 @@ func Test_MarkSuccessFul(t *testing.T) {
 	}))
 }
 
-func Test_MarkSuccessFulWithRunningEndStateFails(t *testing.T) {
+func Test_MarkSuccessfulWithRunningEndStateFails(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
 		job, err := jobs.Create(req)
 		mocks.Must(t, "Could not store a job: ", err)
@@ -104,5 +104,33 @@ func Test_FilterReturnsEnough(t *testing.T) {
 		mocks.AssertEquals(t, 2, len(latest))
 		mocks.AssertEquals(t, uint64(2), latest[0].ID)
 		mocks.AssertEquals(t, uint64(1), latest[1].ID)
+	}))
+}
+
+func TestFailRunningJobsLeavesNoJobRunning(t *testing.T) {
+	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
+		jobs.Create(req)
+		jobs.Create(req)
+		jobs.Create(req)
+
+		mocks.Must(t, "Fail running jobs", jobs.FailRunningJobs())
+
+		running, err := jobs.Find(jobs.JobFilter{
+			Limit: 5,
+			Match: func(j meeseeks.Job) bool {
+				return j.Status == jobs.RunningStatus
+			},
+		})
+		mocks.Must(t, "get running jobs", err)
+		mocks.AssertEquals(t, 0, len(running))
+
+		killed, err := jobs.Find(jobs.JobFilter{
+			Limit: 5,
+			Match: func(j meeseeks.Job) bool {
+				return j.Status == jobs.KilledStatus
+			},
+		})
+		mocks.Must(t, "get killed jobs", err)
+		mocks.AssertEquals(t, 3, len(killed))
 	}))
 }
