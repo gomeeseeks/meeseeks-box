@@ -2,7 +2,6 @@ package shell
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -56,8 +55,6 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 		return err
 	}
 
-	buffer := bytes.NewBufferString("")
-
 	cmd := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
 	op, err := cmd.StdoutPipe()
 	if err != nil {
@@ -68,14 +65,14 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 		return "", SetError(fmt.Errorf("Could not create stderr pipe: %s", err))
 	}
 
-	tr := io.TeeReader(io.MultiReader(op, ep), buffer)
+	tr := io.MultiReader(op, ep)
 
 	done := make(chan struct{})
 
 	go func() {
 		s := bufio.NewScanner(tr)
 		for s.Scan() {
-			AppendLogs(fmt.Sprintln(s.Text()))
+			AppendLogs(s.Text())
 		}
 		done <- struct{}{}
 	}()
@@ -94,7 +91,12 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 		return "", SetError(err)
 	}
 
-	return buffer.String(), err
+	jobLog, err := logs.Get(job.ID)
+	if err != nil {
+		logrus.Errorf("Failed to read back output for job %d: %s", job.ID, err)
+	}
+
+	return jobLog.Output, jobLog.GetError()
 }
 
 func (c shellCommand) HasHandshake() bool {
