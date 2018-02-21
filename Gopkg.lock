@@ -14,10 +14,16 @@
   revision = "bb3d318650d48840a39aa21a027c6630e198e626"
 
 [[projects]]
-  branch = "master"
+  name = "github.com/gorilla/websocket"
+  packages = ["."]
+  revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
+  version = "v1.2.0"
+
+[[projects]]
   name = "github.com/nlopes/slack"
   packages = ["."]
-  revision = "ccf0351050c69b08f9c48f3e876f4cd5564463e8"
+  revision = "8ab4d0b364ef1e9af5d102531da20d5ec902b6c4"
+  version = "v0.2.0"
 
 [[projects]]
   name = "github.com/renstrom/dedent"
@@ -39,12 +45,6 @@
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/net"
-  packages = ["websocket"]
-  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
   revision = "83801418e1b59fb1880e363299581ee543af32ca"
@@ -58,6 +58,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "106d5badb0c06b40eafc05840e76e46a9372f8aad7bb21d8f1e92f9279245659"
+  inputs-digest = "76ae5da3a21b8ca9bbf64d1d7083700a1ee43a9be490d48cdfec2df8736c3610"
   solver-name = "gps-cdcl"
   solver-version = 1
