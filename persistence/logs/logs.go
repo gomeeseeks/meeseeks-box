@@ -3,14 +3,38 @@ package logs
 import (
 	"errors"
 	"fmt"
-	"strings"
-
 	bolt "github.com/coreos/bbolt"
 
+	"github.com/gomeeseeks/meeseeks-box/jobs/logs/local"
+	"github.com/gomeeseeks/meeseeks-box/jobs/logs/remote"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence/db"
+	"strings"
 )
+
+// JobLogReader is an interface to read job logs
+type JobLogReader interface {
+	Get() (meeseeks.JobLog, error)
+	Head(limit int) (meeseeks.JobLog, error)
+	Tail(limit int) (meeseeks.JobLog, error)
+}
+
+// LoggerConfig is the configuration for the loggers
+type LoggerConfig struct {
+	LoggerType string
+}
+
+// JobLogWriter is an interface to write job logs
+type JobLogWriter interface {
+	Append(content string) error
+	SetError(jobErr error) error
+}
+
+// LocalLogReader contains all that's needed to create a local log reader
+type LocalLogReader struct {
+	jobID uint64
+}
 
 var logsBucketKey = []byte("logs")
 var errorKey = []byte("error")
@@ -18,51 +42,25 @@ var errorKey = []byte("error")
 // ErrNoLogsForJob is returned when we try to extract the logs of a non existing job
 var ErrNoLogsForJob = errors.New("no logs for job")
 
-// Append adds a new line to the logs of the given Job
-func Append(jobID uint64, content string) error {
-	if content == "" {
-		return nil
+// GetJobLogReader returns a new JobLogReader that uses Bolt as the backend
+func GetJobLogReader(cnf LoggerConfig, jobID uint64) JobLogReader {
+	return LocalLogReader{
+		jobID: jobID,
 	}
-	return db.Update(func(tx *bolt.Tx) error {
-		jobBucket, err := getJobBucket(jobID, tx)
-		if err != nil {
-			return fmt.Errorf("could not get job %d bucket: %s", jobID, err)
-		}
-
-		sequence, err := jobBucket.NextSequence()
-		if err != nil {
-			return fmt.Errorf("could not get next sequence for job %d: %s", jobID, err)
-		}
-
-		metrics.LogLinesCount.Inc()
-
-		return jobBucket.Put(db.IDToBytes(sequence), []byte(content))
-	})
 }
 
-// SetError sets the error message for the given Job
-func SetError(jobID uint64, jobErr error) error {
-	if jobErr == nil {
-		return nil
+// GetJobLogWriter returns a new JobLogWriter. The backend type depends on the configuration
+func GetJobLogWriter(cnf LoggerConfig, jobID uint64) JobLogWriter {
+	if cnf.LoggerType == "remote" {
+		return remote.NewJobLogWriter(jobID)
 	}
-	return db.Update(func(tx *bolt.Tx) error {
-		jobBucket, err := getJobBucket(jobID, tx)
-		if err != nil {
-			return fmt.Errorf("could not get job %d bucket: %s", jobID, err)
-		}
-		errorBucket, err := jobBucket.CreateBucketIfNotExists(errorKey)
-		if err != nil {
-			return fmt.Errorf("could not get error bucket for job %d: %s", jobID, err)
-		}
-
-		return errorBucket.Put(errorKey, []byte(jobErr.Error()))
-	})
+	return local.NewJobLogWriter(jobID)
 }
 
 // Get returns the JobLog for the given Job
-func Get(jobID uint64) (meeseeks.JobLog, error) {
+func (l LocalLogReader) Get() (meeseeks.JobLog, error) {
 	job := &meeseeks.JobLog{}
-	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+	err := readLogBucket(l.jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 		_, line := c.First()
 		lines := make([]string, 0)
@@ -85,9 +83,9 @@ func Get(jobID uint64) (meeseeks.JobLog, error) {
 }
 
 // Head returns the top <limit> log lines
-func Head(jobID uint64, limit int) (meeseeks.JobLog, error) {
+func (l LocalLogReader) Head(limit int) (meeseeks.JobLog, error) {
 	job := &meeseeks.JobLog{}
-	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+	err := readLogBucket(l.jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 
 		lines := make([]string, 0)
@@ -108,9 +106,9 @@ func Head(jobID uint64, limit int) (meeseeks.JobLog, error) {
 }
 
 // Tail returns the bottm <limit> log lines
-func Tail(jobID uint64, limit int) (meeseeks.JobLog, error) {
+func (l LocalLogReader) Tail(limit int) (meeseeks.JobLog, error) {
 	job := &meeseeks.JobLog{}
-	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
+	err := readLogBucket(l.jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 		lines := make([]string, 0)
 

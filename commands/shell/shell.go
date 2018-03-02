@@ -46,14 +46,21 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 	ctx, cancelFunc := context.WithTimeout(ctx, c.Timeout())
 	defer cancelFunc()
 
+	// TODO: load from config
+	logConfig := logs.LoggerConfig{
+		LoggerType: "local",
+	}
+	logR := logs.GetJobLogReader(logConfig, job.ID)
+	logW := logs.GetJobLogWriter(logConfig, job.ID)
+
 	AppendLogs := func(line string) {
-		if e := logs.Append(job.ID, line); e != nil {
-			logrus.Errorf("could not append '%s' to job %d logs: %s", line, job.ID, e)
+		if e := logW.Append(line); e != nil {
+			logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
 		}
 	}
 	SetError := func(err error) error {
-		if e := logs.SetError(job.ID, err); e != nil {
-			logrus.Errorf("could set error to job %d: %s", job.ID, e)
+		if e := logW.SetError(err); e != nil {
+			logrus.Errorf("Could set error to job %d: %s", job.ID, e)
 		}
 		return err
 	}
@@ -101,7 +108,7 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 		return "", SetError(err)
 	}
 
-	jobLog, err := logs.Get(job.ID)
+	jobLog, err := logR.Get()
 	if err != nil {
 		logrus.Errorf("failed to read back output for job %d: %s", job.ID, err)
 	}
