@@ -115,7 +115,7 @@ func Connect(opts ConnectionOpts) (*Client, error) {
 		return nil, fmt.Errorf("could not connect to slack: %s", err)
 	}
 
-	rtm := slackClient.NewRTM(slack.RTMOptionUseStart(true))
+	rtm := slackClient.NewRTM(slack.RTMOptionUseStart(false))
 	go rtm.ManageConnection()
 
 	if opts.Stealth {
