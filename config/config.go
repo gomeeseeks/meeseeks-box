@@ -113,7 +113,6 @@ type Command struct {
 	Timeout       time.Duration     `yaml:"timeout"`
 	Templates     map[string]string `yaml:"templates"`
 	Help          CommandHelp       `yaml:"help"`
-	Type          int
 }
 
 // CommandHelp is the struct that handles the help of a command
