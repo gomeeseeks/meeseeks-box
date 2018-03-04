@@ -27,5 +27,6 @@
 
 [[constraint]]
   name = "github.com/nlopes/slack"
-  branch = "master"
+  # branch = "master"
   # version = "0.2.0"
+  revision = "1217b9d3e4304348a9be15c2afd80ad4691f31e5"
