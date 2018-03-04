@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package api;
+
+message AgentRegistration {
+    string Token = 1;
+    string Hostname = 2;
+}
+
+message AgentPrivateToken {
+    string Token = 1;
+}
+
+message AgentConfiguration {
+    string Token = 1;
+    map<string, string> Labels = 3;
+    map<string, RemoteCommand> commands = 2;
+}
+
+message CommandFinish {
+    uint64 jobID = 1;
+    string status = 2;
+    string error = 3;
+}
+
+message Help {
+    string Summary = 1;
+    repeated string Args = 2;
+}
+
+message RemoteCommand {
+    string AuthStrategy = 1;
+    int64 Timeout = 2;
+    Help help = 3;
+    repeated string AuthorizedGroups = 4;
+    map<string, string> Templates = 5;
+}
+
+message Empty {
+}
+
+message CommandRequest {
+    string command = 1;
+    repeated string args = 2;
+    string username = 3;
+    string userID = 4;
+    string userLink = 5;
+    string channel = 6;
+    string channelID = 7;
+    string channelLink = 8;
+    bool isIM = 9;
+    uint64 jobID = 10;
+}
+
+message LogEntry {
+    uint64 jobID = 1;
+    string line = 2;
+}
+
+service Registration {
+    rpc Register(AgentRegistration) returns (AgentPrivateToken) {}
+}
+
+service CommandPipeline {
+    rpc Select(AgentConfiguration) returns (stream CommandRequest) {}
+    rpc Finish(CommandFinish) returns (Empty) {}
+}
+
+service CommandLogger {
+    rpc Append(stream LogEntry) returns (Empty) {}
+}
+
