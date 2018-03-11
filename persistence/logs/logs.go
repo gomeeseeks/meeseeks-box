@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+var loggerConfig LoggerConfig
+
 // JobLogReader is an interface to read job logs
 type JobLogReader interface {
 	Get() (meeseeks.JobLog, error)
@@ -42,16 +44,22 @@ var errorKey = []byte("error")
 // ErrNoLogsForJob is returned when we try to extract the logs of a non existing job
 var ErrNoLogsForJob = errors.New("no logs for job")
 
+// Configure loads the required configuration to set up the loggers
+func Configure(cnf LoggerConfig) error {
+	loggerConfig = cnf
+	return nil
+}
+
 // GetJobLogReader returns a new JobLogReader that uses Bolt as the backend
-func GetJobLogReader(cnf LoggerConfig, jobID uint64) JobLogReader {
+func GetJobLogReader(jobID uint64) JobLogReader {
 	return LocalLogReader{
 		jobID: jobID,
 	}
 }
 
 // GetJobLogWriter returns a new JobLogWriter. The backend type depends on the configuration
-func GetJobLogWriter(cnf LoggerConfig, jobID uint64) JobLogWriter {
-	if cnf.LoggerType == "remote" {
+func GetJobLogWriter(jobID uint64) JobLogWriter {
+	if loggerConfig.LoggerType == "remote" {
 		return remote.NewJobLogWriter(jobID)
 	}
 	return local.NewJobLogWriter(jobID)

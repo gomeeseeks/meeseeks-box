@@ -356,27 +356,22 @@ func Test_BuiltinCommands(t *testing.T) {
 					Args:     []string{"-limit", "1", "1"}},
 			},
 			setup: func() {
+				logs.Configure(logs.LoggerConfig{
+					LoggerType: "local",
+				})
+
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				// TODO: load from config
-				logConfig := logs.LoggerConfig{
-					LoggerType: "local",
-				}
-				logW := logs.GetJobLogWriter(logConfig, j.ID)
-
-				logW.Append("line 1.1")
-				logW.Append("line 1.2")
-				logW.Append("line 1.3")
-				logW.Append("line 1.4")
+				logs.GetJobLogWriter(j.ID).Append("line 1.1")
+				logs.GetJobLogWriter(j.ID).Append("line 1.2")
+				logs.GetJobLogWriter(j.ID).Append("line 1.3")
+				logs.GetJobLogWriter(j.ID).Append("line 1.4")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				logW = logs.GetJobLogWriter(logConfig, j.ID)
-				logW.Append("line 2.1")
-				logW.Append("line 2.2")
-				logW.Append("line 2.3")
+				logs.GetJobLogWriter(j.ID).Append("line 2.1")
+				logs.GetJobLogWriter(j.ID).Append("line 2.2")
+				logs.GetJobLogWriter(j.ID).Append("line 2.3")
 			},
 			expected: "line 1.4",
 		},
@@ -391,27 +386,21 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "2"}},
 			},
 			setup: func() {
-				j, err := jobs.Create(req)
-
-				// TODO: load from config
-				logConfig := logs.LoggerConfig{
+				logs.Configure(logs.LoggerConfig{
 					LoggerType: "local",
-				}
-				logW := logs.GetJobLogWriter(logConfig, j.ID)
+				})
 
+				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logW.Append("line 1.1")
-				logW.Append("line 1.2")
-				logW.Append("line 1.3")
+				logs.GetJobLogWriter(j.ID).Append("line 1.1")
+				logs.GetJobLogWriter(j.ID).Append("line 1.2")
+				logs.GetJobLogWriter(j.ID).Append("line 1.3")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				logW = logs.GetJobLogWriter(logConfig, j.ID)
-
-				logW.Append("line 2.1")
-				logW.Append("line 2.2")
-				logW.Append("line 2.3")
+				logs.GetJobLogWriter(j.ID).Append("line 2.1")
+				logs.GetJobLogWriter(j.ID).Append("line 2.2")
+				logs.GetJobLogWriter(j.ID).Append("line 2.3")
 			},
 			expected: "line 2.2\nline 2.3",
 		},
@@ -425,20 +414,19 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "2"}},
 			},
 			setup: func() {
+				logs.Configure(logs.LoggerConfig{
+					LoggerType: "local",
+				})
+
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				// TODO: review
-				logW := logs.GetJobLogWriter(logs.LoggerConfig{LoggerType: "local"}, j.ID)
-				logW.Append("line 1.1\nline 1.2\nsomething to say 1")
+				logs.GetJobLogWriter(j.ID).Append("line 1.1\nline 1.2\nsomething to say 1")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				// TODO: review
-				logW = logs.GetJobLogWriter(logs.LoggerConfig{LoggerType: "local"}, j.ID)
-				logW.Append("line 2.1")
-				logW.Append("line 2.2")
-				logW.Append("something to say 2")
+				logs.GetJobLogWriter(j.ID).Append("line 2.1")
+				logs.GetJobLogWriter(j.ID).Append("line 2.2")
+				logs.GetJobLogWriter(j.ID).Append("something to say 2")
 			},
 			expected: "line 2.1\nline 2.2",
 		},
@@ -452,23 +440,21 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "1", "1"}},
 			},
 			setup: func() {
+				logs.Configure(logs.LoggerConfig{
+					LoggerType: "local",
+				})
+
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				// TODO: review
-				logW := logs.GetJobLogWriter(logs.LoggerConfig{LoggerType: "local"}, j.ID)
-				logW.Append("line 1.1")
-				logW.Append("line 1.2")
-				logW.Append("something to say 1")
+				logs.GetJobLogWriter(j.ID).Append("line 1.1")
+				logs.GetJobLogWriter(j.ID).Append("line 1.2")
+				logs.GetJobLogWriter(j.ID).Append("something to say 1")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				// TODO: review
-				logW = logs.GetJobLogWriter(logs.LoggerConfig{LoggerType: "local"}, j.ID)
-				logW.Append("line 2.1")
-				logW.Append("line 2.2")
-				logW.Append("something to say 2")
+				logs.GetJobLogWriter(j.ID).Append("line 2.1")
+				logs.GetJobLogWriter(j.ID).Append("line 2.2")
+				logs.GetJobLogWriter(j.ID).Append("something to say 2")
 			},
 			expected: "line 1.1",
 		},
@@ -483,19 +469,17 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
+				logs.Configure(logs.LoggerConfig{
+					LoggerType: "local",
+				})
+
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				// TODO: review
-				logW := logs.GetJobLogWriter(logs.LoggerConfig{LoggerType: "local"}, j.ID)
-				logW.Append("something to say 1")
+				logs.GetJobLogWriter(j.ID).Append("something to say 1")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				// TODO: review
-				logW = logs.GetJobLogWriter(logs.LoggerConfig{LoggerType: "local"}, j.ID)
-				logW.Append("something to say 2")
+				logs.GetJobLogWriter(j.ID).Append("something to say 2")
 			},
 			expected: "something to say 1",
 		},
@@ -510,19 +494,17 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "admin_user", Args: []string{"1"}},
 			},
 			setup: func() {
+				logs.Configure(logs.LoggerConfig{
+					LoggerType: "local",
+				})
+
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				// TODO: review
-				logW := logs.GetJobLogWriter(logs.LoggerConfig{LoggerType: "local"}, j.ID)
-				logW.Append("something to say 1")
+				logs.GetJobLogWriter(j.ID).Append("something to say 1")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-
-				// TODO: review
-				logW = logs.GetJobLogWriter(logs.LoggerConfig{LoggerType: "local"}, j.ID)
-				logW.Append("something to say 2")
+				logs.GetJobLogWriter(j.ID).Append("something to say 2")
 			},
 			expected: "something to say 1",
 		},

@@ -46,12 +46,8 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 	ctx, cancelFunc := context.WithTimeout(ctx, c.Timeout())
 	defer cancelFunc()
 
-	// TODO: load from config
-	logConfig := logs.LoggerConfig{
-		LoggerType: "local",
-	}
-	logR := logs.GetJobLogReader(logConfig, job.ID)
-	logW := logs.GetJobLogWriter(logConfig, job.ID)
+	logR := logs.GetJobLogReader(job.ID)
+	logW := logs.GetJobLogWriter(job.ID)
 
 	AppendLogs := func(line string) {
 		if e := logW.Append(line); e != nil {

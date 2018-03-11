@@ -19,6 +19,10 @@ import (
 	"github.com/renstrom/dedent"
 )
 
+var loggerConfig = logs.Configure(logs.LoggerConfig{
+	LoggerType: "local",
+})
+
 // Builtin Commands Names
 const (
 	BuiltinVersionCommand   = "version"
@@ -758,12 +762,7 @@ func (t auditLogsCommand) Execute(_ context.Context, job meeseeks.Job) (string, 
 	}
 	j := jobs[0]
 
-	// TODO: load from config
-	logConfig := logs.LoggerConfig{
-		LoggerType: "local",
-	}
-	logR := logs.GetJobLogReader(logConfig, j.ID)
-	jobLogs, err := logR.Get()
+	jobLogs, err := logs.GetJobLogReader(j.ID).Get()
 	if err != nil {
 		return "", err
 	}
@@ -797,12 +796,7 @@ func (t tailCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", err
 	}
 
-	// TODO: load from config
-	logConfig := logs.LoggerConfig{
-		LoggerType: "local",
-	}
-	logR := logs.GetJobLogReader(logConfig, jobID)
-	jobLogs, err := logR.Tail(*limit)
+	jobLogs, err := logs.GetJobLogReader(jobID).Tail(*limit)
 	if err != nil {
 		return "", err
 	}
@@ -836,12 +830,7 @@ func (h headCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", err
 	}
 
-	// TODO: load from config
-	logConfig := logs.LoggerConfig{
-		LoggerType: "local",
-	}
-	logR := logs.GetJobLogReader(logConfig, jobID)
-	jobLogs, err := logR.Head(*limit)
+	jobLogs, err := logs.GetJobLogReader(jobID).Head(*limit)
 	if err != nil {
 		return "", err
 	}
@@ -881,12 +870,7 @@ func (t logsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 	}
 	j := jobs[0]
 
-	// TODO: load from config
-	logConfig := logs.LoggerConfig{
-		LoggerType: "local",
-	}
-	logR := logs.GetJobLogReader(logConfig, j.ID)
-	jobLogs, err := logR.Get()
+	jobLogs, err := logs.GetJobLogReader(j.ID).Get()
 	if err != nil {
 		return "", err
 	}
