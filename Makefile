@@ -1,17 +1,20 @@
 src = $(wildcard *.go)
 
-.PHONY: all test release clean
+.PHONY: all clean lint release snapshot test
 
 all: test
 
-test:
-	go test -cover ./...
+clean:
+	rm -rf ./dist
 
-snapshot: test
-	goreleaser --snapshot --rm-dist
+lint:
+	golint -set_exit_status ./...
 
 release: test
 	goreleaser --rm-dist
 
-clean:
-	rm -rf ./dist
+snapshot: test
+	goreleaser --snapshot --rm-dist
+
+test: lint
+	go test -cover ./...
