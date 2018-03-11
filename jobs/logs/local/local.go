@@ -15,20 +15,20 @@ var errorKey = []byte("error")
 // ErrNoLogsForJob is returned when we try to extract the logs of a non existing job
 var ErrNoLogsForJob = errors.New("No logs for job")
 
-// LocalLogWriter contains all that's needed to create a local log writer
-type LocalLogWriter struct {
+// LogWriter contains all that's needed to create a local log writer
+type LogWriter struct {
 	jobID uint64
 }
 
-// NewJobLogWriter returns a new LocalLogWriter object that uses Bolt as the backend
-func NewJobLogWriter(jobID uint64) LocalLogWriter {
-	return LocalLogWriter{
+// NewJobLogWriter returns a new LogWriter object that uses Bolt as the backend
+func NewJobLogWriter(jobID uint64) LogWriter {
+	return LogWriter{
 		jobID: jobID,
 	}
 }
 
 // Append adds a new line to the logs of the given Job
-func (l LocalLogWriter) Append(content string) error {
+func (l LogWriter) Append(content string) error {
 	if content == "" {
 		return nil
 	}
@@ -48,7 +48,7 @@ func (l LocalLogWriter) Append(content string) error {
 }
 
 // SetError sets the error message for the given Job
-func (l LocalLogWriter) SetError(jobErr error) error {
+func (l LogWriter) SetError(jobErr error) error {
 	if jobErr == nil {
 		return nil
 	}
