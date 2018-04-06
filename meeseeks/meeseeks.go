@@ -84,6 +84,7 @@ type Command interface {
 	Templates() map[string]string
 	AuthStrategy() string
 	AllowedGroups() []string
+	AllowedChannels() []string
 	Args() []string
 	Timeout() time.Duration
 	Help() Help

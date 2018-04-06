@@ -79,7 +79,7 @@ func (m *Meeseeks) Start() {
 			}, req.Command))
 			continue
 		}
-		if err = auth.Check(req.Username, cmd); err != nil {
+		if err = auth.Check(req, cmd); err != nil {
 			m.client.Reply(m.formatter.UnauthorizedCommandReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
