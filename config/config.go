@@ -48,10 +48,11 @@ func LoadConfig(cnf Config) error {
 
 	for name, cmd := range cnf.Commands {
 		commands.Add(name, shell.New(shell.CommandOpts{
+			AuthStrategy:    cmd.AuthStrategy,
 			AllowedGroups:   cmd.AllowedGroups,
+			ChannelStrategy: cmd.ChannelStrategy,
 			AllowedChannels: cmd.AllowedChannels,
 			Args:            cmd.Args,
-			AuthStrategy:    cmd.AuthStrategy,
 			HasHandshake:    !cmd.NoHandshake,
 			Cmd:             cmd.Cmd,
 			Help: shell.NewHelp(
@@ -111,8 +112,9 @@ type Command struct {
 	Cmd             string            `yaml:"command"`
 	Args            []string          `yaml:"args"`
 	AllowedGroups   []string          `yaml:"allowed_groups"`
-	AllowedChannels []string          `yaml:"allowed_channels"`
 	AuthStrategy    string            `yaml:"auth_strategy"`
+	ChannelStrategy string            `yaml:"channel_strategy"`
+	AllowedChannels []string          `yaml:"allowed_channels"`
 	NoHandshake     bool              `yaml:"no_handshake"`
 	Timeout         time.Duration     `yaml:"timeout"`
 	Templates       map[string]string `yaml:"templates"`

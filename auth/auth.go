@@ -16,12 +16,13 @@ const AdminGroup = "admin"
 type CommandAuthorization interface {
 	AuthStrategy() string
 	AllowedGroups() []string
+	ChannelStrategy() string
 	AllowedChannels() []string
 }
 
 // Authorizer is the interface used to check if a user is allowed to run a command
 type Authorizer interface {
-	Check(string, CommandAuthorization) error
+	Check(meeseeks.Request, CommandAuthorization) error
 }
 
 // ErrUserNotAllowed is the error returned when the auth check fails because the user is not in an allowed group
@@ -30,11 +31,21 @@ var ErrUserNotAllowed = errors.New("User no allowed")
 // ErrChannelNotAllowed is the error returne when the auth check fails because the command was invoked in a not allowed channel
 var ErrChannelNotAllowed = errors.New("Command not allowed in channel")
 
+// ErrOnlyIMAllowed is the error returne when the auth check fails because the command was invoked on a public channel
+var ErrOnlyIMAllowed = errors.New("Command only allowed in IM")
+
 // Authorization Strategies determine who has access to what
 const (
 	AuthStrategyAny          = "any"
 	AuthStrategyAllowedGroup = "group"
 	AuthStrategyNone         = "none"
+)
+
+// Channel Strategies determine in which kind of channel a command can be executed
+const (
+	ChannelStrategyAny             = "any"
+	ChannelStrategyIMOnly          = "im_only"
+	ChannelStrategyAllowedChannels = "channel"
 )
 
 var authStrategies = map[string]Authorizer{
@@ -43,34 +54,38 @@ var authStrategies = map[string]Authorizer{
 	AuthStrategyNone:         noUserAllowed{},
 }
 
+var channelStrategies = map[string]Authorizer{
+	ChannelStrategyAllowedChannels: channelExplicitlyAllowed{},
+	ChannelStrategyAny:             anyChannelAllowed{},
+	ChannelStrategyIMOnly:          imOnlyAllowed{},
+}
+
 // Check checks if a user is allowed to run a command given the command authorization strategy
 func Check(req meeseeks.Request, cmd CommandAuthorization) error {
-	strategy, ok := authStrategies[cmd.AuthStrategy()]
+	authStrategy, ok := authStrategies[cmd.AuthStrategy()]
 	if !ok {
 		log.Errorf("Command does not have a valid auth strategy, falling back to none: %+v", cmd)
-		strategy = authStrategies[AuthStrategyNone]
+		authStrategy = authStrategies[AuthStrategyNone]
 	}
-	if err := strategy.Check(req.Username, cmd); err != nil {
+
+	if err := authStrategy.Check(req, cmd); err != nil {
 		return err
 	}
 
-	if len(cmd.AllowedChannels()) == 0 {
-		return nil
+	channelStrategy, ok := channelStrategies[cmd.ChannelStrategy()]
+	if !ok {
+		log.Errorf("Command does not have a valid auth strategy, falling back to any: %+v", cmd)
+		channelStrategy = channelStrategies[ChannelStrategyAny]
 	}
 
-	for _, ch := range cmd.AllowedChannels() {
-		if req.Channel == ch {
-			return nil
-		}
-	}
-	return ErrChannelNotAllowed
+	return channelStrategy.Check(req, cmd)
 }
 
 type anyUserAllowed struct {
 }
 
 // Check implements Authorizer.Check
-func (a anyUserAllowed) Check(_ string, _ CommandAuthorization) error {
+func (a anyUserAllowed) Check(_ meeseeks.Request, _ CommandAuthorization) error {
 	return nil
 }
 
@@ -78,14 +93,16 @@ type noUserAllowed struct {
 }
 
 // Check implements Authorizer.Check
-func (a noUserAllowed) Check(_ string, _ CommandAuthorization) error {
+func (a noUserAllowed) Check(_ meeseeks.Request, _ CommandAuthorization) error {
 	return ErrUserNotAllowed
 }
 
 type userInGroupAllowed struct {
 }
 
-func (a userInGroupAllowed) Check(username string, cmd CommandAuthorization) error {
+func (a userInGroupAllowed) Check(req meeseeks.Request, cmd CommandAuthorization) error {
+	username := req.Username
+
 	for _, group := range cmd.AllowedGroups() {
 		err := groups.CheckUserInGroup(username, group)
 		switch err {
@@ -168,4 +185,33 @@ func GetGroups() map[string][]string {
 func IsKnownUser(username string) (ok bool) {
 	_, ok = knownUsers[username]
 	return
+}
+
+type anyChannelAllowed struct{}
+
+// Check implements Authorizer.Check
+func (a anyChannelAllowed) Check(_ meeseeks.Request, _ CommandAuthorization) error {
+	return nil
+}
+
+type imOnlyAllowed struct{}
+
+// Check implements Authorizer.Check
+func (a imOnlyAllowed) Check(req meeseeks.Request, _ CommandAuthorization) error {
+	if req.IsIM {
+		return nil
+	}
+	return ErrOnlyIMAllowed
+}
+
+type channelExplicitlyAllowed struct{}
+
+// Check implements Authorizer.Check
+func (a channelExplicitlyAllowed) Check(req meeseeks.Request, cmd CommandAuthorization) error {
+	for _, ch := range cmd.AllowedChannels() {
+		if req.Channel == ch {
+			return nil
+		}
+	}
+	return ErrChannelNotAllowed
 }
