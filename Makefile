@@ -8,10 +8,10 @@ clean:
 	rm -rf ./dist
 
 lint:
-	golint -set_exit_status ./...
+	golint -set_exit_status $(go list ./...)
 
 megacheck:
-	megacheck ./...
+	megacheck $(go list ./...)
 
 release: test
 	goreleaser --rm-dist
