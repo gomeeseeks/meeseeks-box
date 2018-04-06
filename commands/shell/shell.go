@@ -20,6 +20,7 @@ type CommandOpts struct {
 	AllowedGroups   []string
 	AllowedChannels []string
 	AuthStrategy    string
+	HasHandshake    bool
 	Timeout         time.Duration
 	Templates       map[string]string
 	Help            meeseeks.Help
@@ -101,7 +102,7 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 }
 
 func (c shellCommand) HasHandshake() bool {
-	return true
+	return c.opts.HasHandshake
 }
 
 func (c shellCommand) Templates() map[string]string {

@@ -52,6 +52,7 @@ func LoadConfig(cnf Config) error {
 			AllowedChannels: cmd.AllowedChannels,
 			Args:            cmd.Args,
 			AuthStrategy:    cmd.AuthStrategy,
+			HasHandshake:    !cmd.NoHandshake,
 			Cmd:             cmd.Cmd,
 			Help: shell.NewHelp(
 				cmd.Help.Summary,
@@ -112,6 +113,7 @@ type Command struct {
 	AllowedGroups   []string          `yaml:"allowed_groups"`
 	AllowedChannels []string          `yaml:"allowed_channels"`
 	AuthStrategy    string            `yaml:"auth_strategy"`
+	NoHandshake     bool              `yaml:"no_handshake"`
 	Timeout         time.Duration     `yaml:"timeout"`
 	Templates       map[string]string `yaml:"templates"`
 	Help            CommandHelp       `yaml:"help"`
