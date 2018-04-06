@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -15,6 +16,7 @@ const AdminGroup = "admin"
 type CommandAuthorization interface {
 	AuthStrategy() string
 	AllowedGroups() []string
+	AllowedChannels() []string
 }
 
 // Authorizer is the interface used to check if a user is allowed to run a command
@@ -22,8 +24,11 @@ type Authorizer interface {
 	Check(string, CommandAuthorization) error
 }
 
-// ErrUserNotAllowed is the error returned when the auth check fails
-var ErrUserNotAllowed = errors.New("User no allower")
+// ErrUserNotAllowed is the error returned when the auth check fails because the user is not in an allowed group
+var ErrUserNotAllowed = errors.New("User no allowed")
+
+// ErrChannelNotAllowed is the error returne when the auth check fails because the command was invoked in a not allowed channel
+var ErrChannelNotAllowed = errors.New("Command not allowed in channel")
 
 // Authorization Strategies determine who has access to what
 const (
@@ -39,13 +44,26 @@ var authStrategies = map[string]Authorizer{
 }
 
 // Check checks if a user is allowed to run a command given the command authorization strategy
-func Check(username string, cmd CommandAuthorization) error {
+func Check(req meeseeks.Request, cmd CommandAuthorization) error {
 	strategy, ok := authStrategies[cmd.AuthStrategy()]
 	if !ok {
 		log.Errorf("Command does not have a valid auth strategy, falling back to none: %+v", cmd)
 		strategy = authStrategies[AuthStrategyNone]
 	}
-	return strategy.Check(username, cmd)
+	if err := strategy.Check(req.Username, cmd); err != nil {
+		return err
+	}
+
+	if len(cmd.AllowedChannels()) == 0 {
+		return nil
+	}
+
+	for _, ch := range cmd.AllowedChannels() {
+		if req.Channel == ch {
+			return nil
+		}
+	}
+	return ErrChannelNotAllowed
 }
 
 type anyUserAllowed struct {

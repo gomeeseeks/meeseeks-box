@@ -238,6 +238,10 @@ func (a allowAll) AllowedGroups() []string {
 	return []string{}
 }
 
+func (a allowAll) AllowedChannels() []string {
+	return []string{}
+}
+
 type allowAdmins struct{}
 
 func (a allowAdmins) AuthStrategy() string {
@@ -246,6 +250,10 @@ func (a allowAdmins) AuthStrategy() string {
 
 func (a allowAdmins) AllowedGroups() []string {
 	return []string{auth.AdminGroup}
+}
+
+func (a allowAdmins) AllowedChannels() []string {
+	return []string{}
 }
 
 type noHandshake struct {

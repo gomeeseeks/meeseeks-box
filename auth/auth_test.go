@@ -27,16 +27,19 @@ func Test_Auth(t *testing.T) {
 		AuthStrategy:  auth.AuthStrategyAllowedGroup,
 		AllowedGroups: []string{auth.AdminGroup},
 	}))
+	commands.Add("general-channel-only", shell.New(shell.CommandOpts{
+		Cmd:             "none",
+		AuthStrategy:    auth.AuthStrategyAny,
+		AllowedChannels: []string{"general"},
+	}))
 
 	tt := []struct {
 		name     string
-		username string
 		req      meeseeks.Request
 		expected error
 	}{
 		{
-			name:     "any",
-			username: "myself",
+			name: "any",
 			req: meeseeks.Request{
 				Command:     "any",
 				Channel:     "general",
@@ -48,8 +51,7 @@ func Test_Auth(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name:     "none",
-			username: "myself",
+			name: "none",
 			req: meeseeks.Request{
 				Command:     "none",
 				Channel:     "general",
@@ -61,21 +63,19 @@ func Test_Auth(t *testing.T) {
 			expected: auth.ErrUserNotAllowed,
 		},
 		{
-			name:     "authorized groups",
-			username: "admin_user",
+			name: "authorized groups",
 			req: meeseeks.Request{
 				Command:     "admins",
 				Channel:     "general",
 				ChannelID:   "123",
 				ChannelLink: "<#123>",
-				Username:    "myself",
+				Username:    "admin_user",
 				UserID:      "userid",
 			},
 			expected: nil,
 		},
 		{
-			name:     "authorized groups with unauthorized user",
-			username: "normal_user",
+			name: "authorized groups with unauthorized user",
 			req: meeseeks.Request{
 				Command:     "admins",
 				Channel:     "general",
@@ -86,6 +86,30 @@ func Test_Auth(t *testing.T) {
 			},
 			expected: auth.ErrUserNotAllowed,
 		},
+		{
+			name: "authorized channel ok",
+			req: meeseeks.Request{
+				Command:     "general-channel-only",
+				Channel:     "general",
+				ChannelID:   "123",
+				ChannelLink: "<#123>",
+				Username:    "myself",
+				UserID:      "userid",
+			},
+			expected: nil,
+		},
+		{
+			name: "unauthorized channel errs",
+			req: meeseeks.Request{
+				Command:     "general-channel-only",
+				Channel:     "random",
+				ChannelID:   "123",
+				ChannelLink: "<#123>",
+				Username:    "myself",
+				UserID:      "userid",
+			},
+			expected: auth.ErrChannelNotAllowed,
+		},
 	}
 
 	for _, tc := range tt {
@@ -93,7 +117,7 @@ func Test_Auth(t *testing.T) {
 			mocks.Must(t, tc.name, mocks.WithTmpDB(func(_ string) {
 				cmd, ok := commands.Find(&tc.req)
 				mocks.AssertEquals(t, true, ok)
-				if actual := auth.Check(tc.username, cmd); actual != tc.expected {
+				if actual := auth.Check(tc.req, cmd); actual != tc.expected {
 					t.Fatalf("Check failed with %s", actual)
 				}
 			}))

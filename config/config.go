@@ -48,10 +48,11 @@ func LoadConfig(cnf Config) error {
 
 	for name, cmd := range cnf.Commands {
 		commands.Add(name, shell.New(shell.CommandOpts{
-			AllowedGroups: cmd.AllowedGroups,
-			Args:          cmd.Args,
-			AuthStrategy:  cmd.AuthStrategy,
-			Cmd:           cmd.Cmd,
+			AllowedGroups:   cmd.AllowedGroups,
+			AllowedChannels: cmd.AllowedChannels,
+			Args:            cmd.Args,
+			AuthStrategy:    cmd.AuthStrategy,
+			Cmd:             cmd.Cmd,
 			Help: shell.NewHelp(
 				cmd.Help.Summary,
 				cmd.Help.Args...),
@@ -106,13 +107,14 @@ type Config struct {
 
 // Command is the struct that handles a command configuration
 type Command struct {
-	Cmd           string            `yaml:"command"`
-	Args          []string          `yaml:"args"`
-	AllowedGroups []string          `yaml:"allowed_groups"`
-	AuthStrategy  string            `yaml:"auth_strategy"`
-	Timeout       time.Duration     `yaml:"timeout"`
-	Templates     map[string]string `yaml:"templates"`
-	Help          CommandHelp       `yaml:"help"`
+	Cmd             string            `yaml:"command"`
+	Args            []string          `yaml:"args"`
+	AllowedGroups   []string          `yaml:"allowed_groups"`
+	AllowedChannels []string          `yaml:"allowed_channels"`
+	AuthStrategy    string            `yaml:"auth_strategy"`
+	Timeout         time.Duration     `yaml:"timeout"`
+	Templates       map[string]string `yaml:"templates"`
+	Help            CommandHelp       `yaml:"help"`
 }
 
 // CommandHelp is the struct that handles the help of a command

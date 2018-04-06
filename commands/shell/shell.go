@@ -15,13 +15,14 @@ import (
 
 // CommandOpts are the options used to build a new shell command
 type CommandOpts struct {
-	Cmd           string
-	Args          []string
-	AllowedGroups []string
-	AuthStrategy  string
-	Timeout       time.Duration
-	Templates     map[string]string
-	Help          meeseeks.Help
+	Cmd             string
+	Args            []string
+	AllowedGroups   []string
+	AllowedChannels []string
+	AuthStrategy    string
+	Timeout         time.Duration
+	Templates       map[string]string
+	Help            meeseeks.Help
 }
 
 // New return a new ShellCommand based on the passed in opts
@@ -124,6 +125,13 @@ func (c shellCommand) AllowedGroups() []string {
 	return c.opts.AllowedGroups
 }
 
+func (c shellCommand) AllowedChannels() []string {
+	if c.opts.AllowedChannels == nil {
+		return []string{}
+	}
+	return c.opts.AllowedChannels
+}
+
 func (c shellCommand) Args() []string {
 	logrus.Debug("Returning shell command args ", c.opts.Args)
 	if c.opts.Args == nil {
@@ -170,5 +178,4 @@ func NewHelp(summary string, args ...string) meeseeks.Help {
 		summary,
 		append([]string{}, args...),
 	}
-
 }
