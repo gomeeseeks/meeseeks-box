@@ -228,6 +228,26 @@ func (n noRecord) Record() bool {
 	return false
 }
 
+type imOnlyChannel struct{}
+
+func (i imOnlyChannel) AllowedChannels() []string {
+	return []string{}
+}
+
+func (i imOnlyChannel) ChannelStrategy() string {
+	return auth.ChannelStrategyIMOnly
+}
+
+type anyChannel struct{}
+
+func (a anyChannel) AllowedChannels() []string {
+	return []string{}
+}
+
+func (a anyChannel) ChannelStrategy() string {
+	return auth.ChannelStrategyAny
+}
+
 type allowAll struct{}
 
 func (a allowAll) AuthStrategy() string {
@@ -235,10 +255,6 @@ func (a allowAll) AuthStrategy() string {
 }
 
 func (a allowAll) AllowedGroups() []string {
-	return []string{}
-}
-
-func (a allowAll) AllowedChannels() []string {
 	return []string{}
 }
 
@@ -250,10 +266,6 @@ func (a allowAdmins) AuthStrategy() string {
 
 func (a allowAdmins) AllowedGroups() []string {
 	return []string{auth.AdminGroup}
-}
-
-func (a allowAdmins) AllowedChannels() []string {
-	return []string{}
 }
 
 type noHandshake struct {
@@ -277,6 +289,7 @@ type versionCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -323,6 +336,7 @@ type helpCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -388,6 +402,7 @@ type cancelJobCommand struct {
 	noRecord
 	emptyArgs
 	allowAll
+	anyChannel
 	defaultTemplates
 	defaultTimeout
 	cancelFunc func(jobID uint64)
@@ -427,6 +442,7 @@ type killJobCommand struct {
 	noRecord
 	emptyArgs
 	allowAdmins
+	anyChannel
 	defaultTemplates
 	defaultTimeout
 	cancelFunc func(jobID uint64)
@@ -463,6 +479,7 @@ type groupsCommand struct {
 	noRecord
 	emptyArgs
 	allowAdmins
+	anyChannel
 	plainTemplates
 	defaultTimeout
 }
@@ -490,6 +507,7 @@ type jobsCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -545,6 +563,7 @@ type auditCommand struct {
 	noHandshake
 	noRecord
 	allowAdmins
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -592,6 +611,7 @@ type lastCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -634,6 +654,7 @@ type findJobCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -674,6 +695,7 @@ type auditJobCommand struct {
 	noHandshake
 	noRecord
 	allowAdmins
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -711,6 +733,7 @@ type auditLogsCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
@@ -748,6 +771,7 @@ type tailCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
@@ -781,6 +805,7 @@ type headCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
@@ -814,6 +839,7 @@ type logsCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	defaultTemplates
 	emptyArgs
 	defaultTimeout
@@ -853,15 +879,13 @@ type newAPITokenCommand struct {
 	noHandshake
 	noRecord
 	allowAdmins
+	imOnlyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
 
 func (n newAPITokenCommand) Execute(_ context.Context, job meeseeks.Job) (string, error) {
-	if !job.Request.IsIM {
-		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
-	}
 	if len(job.Request.Args) < 3 {
 		return "", fmt.Errorf("not enough arguments passed in")
 	}
@@ -880,15 +904,13 @@ type revokeAPITokenCommand struct {
 	noHandshake
 	noRecord
 	allowAdmins
+	imOnlyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
 
 func (r revokeAPITokenCommand) Execute(_ context.Context, job meeseeks.Job) (string, error) {
-	if !job.Request.IsIM {
-		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
-	}
 	if len(job.Request.Args) != 1 {
 		return "", fmt.Errorf("only one token ID should be passed as an argument")
 	}
@@ -905,6 +927,7 @@ type listAPITokensCommand struct {
 	noHandshake
 	noRecord
 	allowAdmins
+	imOnlyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -914,10 +937,6 @@ var listTokensTemplate = `{{ if eq (len .tokens) 0 }}No tokens could be found{{ 
 {{ end }}{{ end }}`
 
 func (l listAPITokensCommand) Execute(_ context.Context, job meeseeks.Job) (string, error) {
-	if !job.Request.IsIM {
-		return "", fmt.Errorf("API tokens can only be managed over an IM conversation, security ffs")
-	}
-
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
 	limit := flags.Int("limit", 5, "how many jobs to return")
 	user := flags.String("user", "", "user to filter for")
@@ -967,6 +986,7 @@ type newAliasCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -991,6 +1011,7 @@ type deleteAliasCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout
@@ -1014,6 +1035,7 @@ type getAliasesCommand struct {
 	noHandshake
 	noRecord
 	allowAll
+	anyChannel
 	plainTemplates
 	emptyArgs
 	defaultTimeout

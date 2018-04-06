@@ -18,8 +18,9 @@ type CommandOpts struct {
 	Cmd             string
 	Args            []string
 	AllowedGroups   []string
-	AllowedChannels []string
 	AuthStrategy    string
+	AllowedChannels []string
+	ChannelStrategy string
 	HasHandshake    bool
 	Timeout         time.Duration
 	Templates       map[string]string
@@ -124,6 +125,13 @@ func (c shellCommand) AllowedGroups() []string {
 		return []string{}
 	}
 	return c.opts.AllowedGroups
+}
+
+func (c shellCommand) ChannelStrategy() string {
+	if c.opts.ChannelStrategy == "" {
+		return "any"
+	}
+	return c.opts.ChannelStrategy
 }
 
 func (c shellCommand) AllowedChannels() []string {

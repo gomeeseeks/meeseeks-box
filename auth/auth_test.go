@@ -31,6 +31,12 @@ func Test_Auth(t *testing.T) {
 		Cmd:             "none",
 		AuthStrategy:    auth.AuthStrategyAny,
 		AllowedChannels: []string{"general"},
+		ChannelStrategy: "channel",
+	}))
+	commands.Add("im-only", shell.New(shell.CommandOpts{
+		Cmd:             "none",
+		AuthStrategy:    auth.AuthStrategyAny,
+		ChannelStrategy: "im_only",
 	}))
 
 	tt := []struct {
@@ -109,6 +115,32 @@ func Test_Auth(t *testing.T) {
 				UserID:      "userid",
 			},
 			expected: auth.ErrChannelNotAllowed,
+		},
+		{
+			name: "im channel only fails on any other",
+			req: meeseeks.Request{
+				Command:     "im-only",
+				Channel:     "random",
+				ChannelID:   "123",
+				ChannelLink: "<#123>",
+				Username:    "myself",
+				UserID:      "userid",
+				IsIM:        false,
+			},
+			expected: auth.ErrOnlyIMAllowed,
+		},
+		{
+			name: "im channel only works on IM",
+			req: meeseeks.Request{
+				Command:     "im-only",
+				Channel:     "who-cares",
+				ChannelID:   "123",
+				ChannelLink: "<#123>",
+				Username:    "myself",
+				UserID:      "userid",
+				IsIM:        true,
+			},
+			expected: nil,
 		},
 	}
 
