@@ -24,8 +24,10 @@ type Authorizer interface {
 	Check(string, CommandAuthorization) error
 }
 
-// ErrUserNotAllowed is the error returned when the auth check fails
+// ErrUserNotAllowed is the error returned when the auth check fails because the user is not in an allowed group
 var ErrUserNotAllowed = errors.New("User no allowed")
+
+// ErrChannelNotAllowed is the error returne when the auth check fails because the command was invoked in a not allowed channel
 var ErrChannelNotAllowed = errors.New("Command not allowed in channel")
 
 // Authorization Strategies determine who has access to what
