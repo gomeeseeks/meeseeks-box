@@ -29,7 +29,7 @@ var (
 		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", Failure)
 	DefaultUnknownCommandTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}",
 		UnknownCommand)
-	DefaultUnauthorizedTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}",
+	DefaultUnauthorizedTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}: {{ .error }}",
 		Unauthorized)
 )
 

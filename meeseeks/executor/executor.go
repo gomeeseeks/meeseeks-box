@@ -83,7 +83,7 @@ func (m *Meeseeks) Start() {
 			m.client.Reply(m.formatter.UnauthorizedCommandReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
-			}, req.Command).WithCommand(cmd))
+			}, req.Command).WithCommand(cmd).WithError(err))
 			continue
 		}
 
