@@ -148,7 +148,7 @@ func (r Reply) Render() (string, error) {
 	case template.UnknownCommand:
 		return r.templates.Build().RenderUnknownCommand(r.to.UserLink, r.output)
 	case template.Unauthorized:
-		return r.templates.Build().RenderUnauthorizedCommand(r.to.UserLink, r.output)
+		return r.templates.Build().RenderUnauthorizedCommand(r.to.UserLink, r.output, r.err)
 	case template.Failure:
 		return r.templates.Build().RenderFailure(r.to.UserLink, r.err.Error(), r.output)
 	case template.Success:

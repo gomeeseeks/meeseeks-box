@@ -1,6 +1,7 @@
 package template_test
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -169,7 +170,7 @@ func Test_DefaultTemplates(t *testing.T) {
 	unknownCommandMatcher, err := regexp.Compile(fmt.Sprintf("<@myself> (%s) mycommand", strings.Join(template.DefaultUnknownCommandMessages, "|")))
 	mocks.Must(t, "can't compile default unknown command matcher", err)
 
-	unauthorizedCommandMatcher, err := regexp.Compile(fmt.Sprintf("<@myself> (%s) mycommand", strings.Join(template.DefaultUnauthorizedMessages, "|")))
+	unauthorizedCommandMatcher, err := regexp.Compile(fmt.Sprintf("<@myself> (%s) mycommand: just because", strings.Join(template.DefaultUnauthorizedMessages, "|")))
 	mocks.Must(t, "can't compile default unauthorized command matcher", err)
 
 	tt := []struct {
@@ -222,7 +223,7 @@ func Test_DefaultTemplates(t *testing.T) {
 		{
 			name: "Unauthorized command",
 			renderer: func() (string, error) {
-				return templates.RenderUnauthorizedCommand("<@myself>", "mycommand")
+				return templates.RenderUnauthorizedCommand("<@myself>", "mycommand", errors.New("just because"))
 			},
 			matcher: unauthorizedCommandMatcher,
 		},
