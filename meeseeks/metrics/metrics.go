@@ -48,20 +48,13 @@ var SuccessfulTasksCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Tasks that have finished successfully",
 }, []string{"command"})
 
-// CancelledTasksCount is the count of tasks that have been cancelled by a user request
-var CancelledTasksCount = prometheus.NewCounter(prometheus.CounterOpts{
-	Namespace: namespace,
-	Name:      "cancelled_tasks_count",
-	Help:      "Tasks that have been cancelled by the user",
-})
-
 // TaskDurations provides buckets to observe task execution latencies
-var TaskDurations = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+var TaskDurations = prometheus.NewHistogram(prometheus.HistogramOpts{
 	Namespace: namespace,
 	Name:      "tasks_durations_seconds",
 	Buckets:   prometheus.ExponentialBuckets(0.00025, 2, 18), // exponential buckets, starting at 0.25ms up to over 1h,
 	Help:      "Command execution time distributions in seconds.",
-}, []string{"command"})
+})
 
 // LogLinesCount is the count of tasks that have been accepted
 var LogLinesCount = prometheus.NewCounter(prometheus.CounterOpts{
@@ -77,7 +70,6 @@ func init() {
 	prometheus.MustRegister(AcceptedCommandsCount)
 	prometheus.MustRegister(FailedTasksCount)
 	prometheus.MustRegister(SuccessfulTasksCount)
-	prometheus.MustRegister(CancelledTasksCount)
 	prometheus.MustRegister(TaskDurations)
 	prometheus.MustRegister(LogLinesCount)
 }

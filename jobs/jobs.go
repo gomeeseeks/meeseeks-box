@@ -113,7 +113,7 @@ func Finish(jobID uint64, status string) error {
 		job.Status = status
 
 		difference := job.EndTime.Sub(job.StartTime)
-		metrics.TaskDurations.WithLabelValues(job.Request.Command).Observe(difference.Seconds())
+		metrics.TaskDurations.Observe(difference.Seconds())
 
 		return save(job, bucket)
 	})

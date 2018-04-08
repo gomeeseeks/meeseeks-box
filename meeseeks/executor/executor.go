@@ -213,8 +213,6 @@ func (a *activeCommands) Cancel(jobID uint64) {
 		return
 	}
 
-	metrics.CancelledTasksCount.Inc()
-
 	// Delete the cancel command from the map
 	delete(a.ctx, jobID)
 
