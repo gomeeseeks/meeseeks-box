@@ -9,6 +9,7 @@ import (
 	bolt "github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/sirupsen/logrus"
 )
 
@@ -110,6 +111,9 @@ func Finish(jobID uint64, status string) error {
 
 		job.EndTime = time.Now().UTC()
 		job.Status = status
+
+		difference := job.EndTime.Sub(job.StartTime)
+		metrics.TaskDurations.WithLabelValues(job.Request.Command).Observe(difference.Seconds())
 
 		return save(job, bucket)
 	})

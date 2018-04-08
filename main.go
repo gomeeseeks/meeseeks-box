@@ -15,6 +15,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/messenger"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,6 +26,7 @@ func main() {
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	apiAddress := flag.String("api-endpoint", ":9696", "api endpoint in which to listen for api calls")
 	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
+	metricsPath := flag.String("metrics-path", "/metrics", "path to in which to expose prometheus metrics")
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
 
 	flag.Parse()
@@ -45,7 +47,6 @@ func main() {
 	if err := config.LoadConfig(cnf); err != nil {
 		logrus.Fatalf("Could not load configuration: %s", err)
 	}
-
 	logrus.Info("Loaded configuration")
 
 	if err := jobs.FailRunningJobs(); err != nil {
@@ -61,29 +62,25 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("Could not connect to slack: %s", err)
 	}
-
 	logrus.Info("Connected to slack")
 
-	apiServer := api.NewServer(slackClient, *apiAddress)
+	httpServer := api.NewServer(slackClient, *metricsPath, *apiPath, *apiAddress)
 	go func() {
-		err = apiServer.ListenAndServe(*apiPath)
+		err = httpServer.ListenAndServe()
 		if err != nil {
 			logrus.Fatalf("Could not start API server: %s", err)
 		}
 	}()
+	logrus.Infof("Started http server on %s%s", *apiAddress, *apiPath)
 
-	logrus.Infof("Started api server on %s%s", *apiAddress, *apiPath)
-
-	msgs, err := messenger.Listen(slackClient, apiServer.GetListener())
+	msgs, err := messenger.Listen(slackClient, httpServer.GetListener())
 	if err != nil {
 		logrus.Fatalf("Could not initialize messenger subsystem: %s", err)
 	}
-
-	logrus.Info("Listening messages")
+	logrus.Info("Listening to slack messages")
 
 	meeseek := executor.New(slackClient, msgs, formatter.New(cnf))
 	go meeseek.Start()
-
 	logrus.Info("Started commands pipeline")
 
 	signalCh := make(chan os.Signal, 1)
@@ -93,9 +90,9 @@ func main() {
 	sig := <-signalCh
 	logrus.Infof("Got signal %s, trying to gracefully shutdown", sig)
 
-	apiServer.Shutdown()
+	httpServer.Shutdown()
 	msgs.Shutdown()
 	meeseek.Shutdown()
 
-	logrus.Infof("All done, quitting")
+	logrus.Info("Everything has been shut down, bye bye!")
 }

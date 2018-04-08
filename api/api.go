@@ -9,6 +9,8 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // MetadataClient is a helper client used to augment the metadata of the user
@@ -84,18 +86,20 @@ type Server struct {
 }
 
 // NewServer returns a new API Server that will use the provided metadata client
-func NewServer(client MetadataClient, address string) Server {
-	return Server{
+func NewServer(client MetadataClient, metricsPath, apiPath, address string) *Server {
+	s := Server{
 		listener: NewListener(client),
 		httpServer: http.Server{
 			Addr: address,
 		},
 	}
+	http.HandleFunc(apiPath, s.HandlePostToken)
+	http.Handle(metricsPath, promhttp.Handler())
+	return &s
 }
 
 // ListenAndServe starts listening on the provided address, then serving http requests
-func (s *Server) ListenAndServe(path string) error {
-	http.HandleFunc(path, s.HandlePostToken)
+func (s *Server) ListenAndServe() error {
 	return s.httpServer.ListenAndServe()
 }
 

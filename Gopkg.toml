@@ -30,3 +30,7 @@
   # branch = "master"
   # version = "0.2.0"
   revision = "1217b9d3e4304348a9be15c2afd80ad4691f31e5"
+
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  version = "0.8.0"

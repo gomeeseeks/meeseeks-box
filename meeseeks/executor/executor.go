@@ -13,6 +13,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
 	"github.com/gomeeseeks/meeseeks-box/messenger"
 )
@@ -71,24 +72,30 @@ func (m *Meeseeks) Start() {
 			}, err))
 			continue
 		}
+		metrics.ReceivedCommandsCount.Inc()
+
 		cmd, ok := commands.Find(&req)
 		if !ok {
 			m.client.Reply(m.formatter.UnknownCommandReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, req.Command))
+			metrics.UnknownCommandsCount.Inc()
 			continue
 		}
+
 		if err = auth.Check(req, cmd); err != nil {
 			m.client.Reply(m.formatter.UnauthorizedCommandReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, req.Command).WithCommand(cmd))
+			metrics.RejectedCommandsCount.WithLabelValues(cmd.Cmd()).Inc()
 			continue
 		}
 
 		logrus.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 			req.Command, req.Username, req.Channel, req.Args)
+		metrics.AcceptedCommandsCount.WithLabelValues(cmd.Cmd()).Inc()
 
 		t, err := m.createTask(req, cmd)
 		if err != nil {
@@ -155,7 +162,9 @@ func (m *Meeseeks) loop() {
 					ChannelID: req.ChannelID,
 				}, err).WithCommand(cmd).WithOutput(out))
 
+				metrics.FailedTasksCount.WithLabelValues(job.Request.Command).Inc()
 				jobs.Finish(job.ID, jobs.FailedStatus)
+
 			} else {
 				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 					req.Username)
@@ -165,7 +174,9 @@ func (m *Meeseeks) loop() {
 					ChannelID: req.ChannelID,
 				}).WithCommand(cmd).WithOutput(out))
 
+				metrics.SuccessfulTasksCount.WithLabelValues(job.Request.Command).Inc()
 				jobs.Finish(job.ID, jobs.SuccessStatus)
+
 			}
 			m.wg.Done()
 		}(t)
@@ -201,6 +212,8 @@ func (a *activeCommands) Cancel(jobID uint64) {
 		logrus.Debugf("could not cancel job %d because it is not in the active jobs list", jobID)
 		return
 	}
+
+	metrics.CancelledTasksCount.Inc()
 
 	// Delete the cancel command from the map
 	delete(a.ctx, jobID)
