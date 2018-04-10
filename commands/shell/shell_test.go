@@ -31,7 +31,7 @@ func TestShellCommand(t *testing.T) {
 	mocks.AssertEquals(t, []string{}, echoCommand.Args())
 	mocks.AssertEquals(t, []string{}, echoCommand.AllowedGroups())
 	mocks.AssertEquals(t, []string{}, echoCommand.AllowedChannels())
-	mocks.AssertEquals(t, true, echoCommand.HasHandshake())
+	mocks.AssertEquals(t, false, echoCommand.HasHandshake())
 	mocks.AssertEquals(t, true, echoCommand.Record())
 	mocks.AssertEquals(t, map[string]string{}, echoCommand.Templates())
 	mocks.AssertEquals(t, meeseeks.DefaultCommandTimeout, echoCommand.Timeout())
