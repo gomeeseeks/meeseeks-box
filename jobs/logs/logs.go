@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	bolt "github.com/coreos/bbolt"
+
 	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 )
 
 var logsBucketKey = []byte("logs")
@@ -31,6 +33,8 @@ func Append(jobID uint64, content string) error {
 		if err != nil {
 			return fmt.Errorf("could not get next sequence for job %d: %s", jobID, err)
 		}
+
+		metrics.LogLinesCount.Inc()
 
 		return jobBucket.Put(db.IDToBytes(sequence), []byte(content))
 	})

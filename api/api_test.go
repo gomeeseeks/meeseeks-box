@@ -73,7 +73,7 @@ func TestAPIServer(t *testing.T) {
 
 		s := api.NewServer(mocks.MetadataStub{
 			IM: false,
-		}, ":0")
+		}, "/metrics", "/api", ":0")
 		defer s.Shutdown()
 
 		ch := make(chan meeseeks.Message)
