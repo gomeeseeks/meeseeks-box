@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"time"
 )
 
 var namespace = "meeseeks"
@@ -63,7 +64,15 @@ var LogLinesCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Help:      "Count of lines that have been written to the log",
 })
 
+var bootTime = prometheus.NewGauge(prometheus.GaugeOpts{
+	Namespace: namespace,
+	Name:      "boot_time_seconds",
+	Help:      "unix timestamp of when the meeseeks process was started",
+})
+
 func init() {
+	bootTime.Set(float64(time.Now().Unix()))
+
 	prometheus.MustRegister(ReceivedCommandsCount)
 	prometheus.MustRegister(UnknownCommandsCount)
 	prometheus.MustRegister(RejectedCommandsCount)
@@ -72,4 +81,5 @@ func init() {
 	prometheus.MustRegister(SuccessfulTasksCount)
 	prometheus.MustRegister(TaskDurations)
 	prometheus.MustRegister(LogLinesCount)
+	prometheus.MustRegister(bootTime)
 }
