@@ -15,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var errIgnoredMessage = fmt.Errorf("Ignore this message")
+var errIgnoredMessage = fmt.Errorf("ignore this message")
 
 const (
 	textStyle = "text"

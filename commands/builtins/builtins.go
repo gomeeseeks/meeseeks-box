@@ -388,10 +388,10 @@ func (h helpCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 				"help": cmd.Help(),
 			})
 		}
-		return "", fmt.Errorf("Could not find command %s", flags.Arg(0))
+		return "", fmt.Errorf("could not find command %s", flags.Arg(0))
 
 	default:
-		return "", fmt.Errorf("Too many arguments")
+		return "", fmt.Errorf("too many arguments")
 	}
 }
 
@@ -637,7 +637,7 @@ func (l lastCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", fmt.Errorf("failed to get the last job: %s", err)
 	}
 	if len(jobs) == 0 {
-		return "", fmt.Errorf("No last command for current user")
+		return "", fmt.Errorf("no last command for current user")
 	}
 	tmpl, err := template.New("job", jobTemplate)
 	if err != nil {
@@ -677,7 +677,7 @@ func (l findJobCommand) Execute(_ context.Context, job meeseeks.Job) (string, er
 		return "", fmt.Errorf("failed to get the last job: %s", err)
 	}
 	if len(jobs) == 0 {
-		return "", fmt.Errorf("No last command for current user")
+		return "", fmt.Errorf("no last command for current user")
 	}
 
 	tmpl, err := template.New("job", jobTemplate)
@@ -715,7 +715,7 @@ func (l auditJobCommand) Execute(_ context.Context, job meeseeks.Job) (string, e
 		return "", fmt.Errorf("failed to get job %d: %s", job.ID, err)
 	}
 	if len(jobs) == 0 {
-		return "", fmt.Errorf("Job not found")
+		return "", fmt.Errorf("job not found")
 	}
 
 	tmpl, err := template.New("job", jobTemplate)
@@ -862,7 +862,7 @@ func (t logsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", fmt.Errorf("failed to find job with id %d: %s", id, err)
 	}
 	if len(jobs) == 0 {
-		return "", fmt.Errorf("No job with id %d for user %s", id, callingUser)
+		return "", fmt.Errorf("no job with id %d for user %s", id, callingUser)
 	}
 	j := jobs[0]
 
@@ -1100,7 +1100,7 @@ func findLastJobIDForUser(callingUser string) (uint64, error) {
 		return 0, fmt.Errorf("failed to get the last job: %s", err)
 	}
 	if len(jobs) == 0 {
-		return 0, fmt.Errorf("No last command for current user")
+		return 0, fmt.Errorf("no last command for current user")
 	}
 	return jobs[0].ID, nil
 

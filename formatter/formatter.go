@@ -154,7 +154,7 @@ func (r Reply) Render() (string, error) {
 	case template.Success:
 		return r.templates.Build().RenderSuccess(r.to.UserLink, r.output)
 	default:
-		return "", fmt.Errorf("Don't know how to render mode '%s'", r.mode)
+		return "", fmt.Errorf("don't know how to render mode '%s'", r.mode)
 	}
 }
 
