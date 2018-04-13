@@ -87,7 +87,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			channel: "general",
 			expected: []expectedMessage{
 				{
-					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: No command to run$",
+					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: no command to run$",
 					Channel:     "generalID",
 					IsIM:        false,
 				},

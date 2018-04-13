@@ -12,7 +12,7 @@ const (
 )
 
 // ErrUnclosedQuoteInCommand means that the command is not correctly escaped
-var ErrUnclosedQuoteInCommand = errors.New("Unclosed quote on command")
+var ErrUnclosedQuoteInCommand = errors.New("unclosed quote on command")
 
 // Parse parses a command and returns a slice of strings and an error if the command is wrongly built
 func Parse(command string) ([]string, error) {

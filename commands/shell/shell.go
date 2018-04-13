@@ -48,12 +48,12 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 
 	AppendLogs := func(line string) {
 		if e := logs.Append(job.ID, line); e != nil {
-			logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
+			logrus.Errorf("could not append '%s' to job %d logs: %s", line, job.ID, e)
 		}
 	}
 	SetError := func(err error) error {
 		if e := logs.SetError(job.ID, err); e != nil {
-			logrus.Errorf("Could set error to job %d: %s", job.ID, e)
+			logrus.Errorf("could set error to job %d: %s", job.ID, e)
 		}
 		return err
 	}
@@ -61,11 +61,11 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 	cmd := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
 	op, err := cmd.StdoutPipe()
 	if err != nil {
-		return "", SetError(fmt.Errorf("Could not create stdout pipe: %s", err))
+		return "", SetError(fmt.Errorf("could not create stdout pipe: %s", err))
 	}
 	ep, err := cmd.StderrPipe()
 	if err != nil {
-		return "", SetError(fmt.Errorf("Could not create stderr pipe: %s", err))
+		return "", SetError(fmt.Errorf("could not create stderr pipe: %s", err))
 	}
 
 	tr := io.MultiReader(op, ep)
@@ -82,7 +82,7 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 
 	err = cmd.Start()
 	if err != nil {
-		logrus.Errorf("Command failed to start: %s", err)
+		logrus.Errorf("command failed to start: %s", err)
 		return "", SetError(err)
 	}
 
@@ -90,13 +90,13 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 
 	err = cmd.Wait()
 	if err != nil {
-		logrus.Errorf("Command failed: %s", err)
+		logrus.Errorf("command failed: %s", err)
 		return "", SetError(err)
 	}
 
 	jobLog, err := logs.Get(job.ID)
 	if err != nil {
-		logrus.Errorf("Failed to read back output for job %d: %s", job.ID, err)
+		logrus.Errorf("failed to read back output for job %d: %s", job.ID, err)
 	}
 
 	return jobLog.Output, jobLog.GetError()

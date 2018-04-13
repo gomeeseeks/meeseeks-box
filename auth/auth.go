@@ -31,8 +31,14 @@ var ErrUserNotAllowed = errors.New("user no allowed")
 // ErrChannelNotAllowed is the error returne when the auth check fails because the command was invoked in a not allowed channel
 var ErrChannelNotAllowed = errors.New("command not allowed in channel")
 
-// ErrOnlyIMAllowed is the error returne when the auth check fails because the command was invoked on a public channel
-var ErrOnlyIMAllowed = errors.New("Command only allowed in IM")
+// ErrOnlyIMAllowed is the error returned when the auth check fails because the command was invoked on a public channel
+var ErrOnlyIMAllowed = errors.New("command only allowed in IM")
+
+// ErrGroupNotFound is the error returned when we authorize a group that is not defined
+var ErrGroupNotFound = fmt.Errorf("groups does not exists")
+
+// ErrUserNotInGroup is the error returned when a user does not belong to a given group
+var ErrUserNotInGroup = fmt.Errorf("user does not belong to group")
 
 // Authorization Strategies determine who has access to what
 const (
@@ -127,12 +133,6 @@ type Groups struct {
 
 var groups *Groups
 var knownUsers map[string]struct{}
-
-// Errors
-var (
-	ErrGroupNotFound  = fmt.Errorf("Groups does not exists")
-	ErrUserNotInGroup = fmt.Errorf("User does not belong to group")
-)
 
 // Configure loads all the configured groups
 //

@@ -9,7 +9,7 @@ import (
 )
 
 // ErrNoCommandToRun is returned when a request can't identify a command to run
-var ErrNoCommandToRun = errors.New("No command to run")
+var ErrNoCommandToRun = errors.New("no command to run")
 
 // FromMessage gets a message and generates a valid request from it
 func FromMessage(msg meeseeks.Message) (meeseeks.Request, error) {

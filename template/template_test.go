@@ -104,13 +104,13 @@ func Test_InvalidData(t *testing.T) {
 			name:     "no value",
 			template: "{{ AnyValue \"Value\" . }}",
 			payload:  template.Payload{},
-			expected: "failed to execute template no value: template: no value:1:3: executing \"no value\" at <AnyValue \"Value\" .>: error calling AnyValue: ERROR: Value is not loaded in the payload",
+			expected: "failed to execute template no value: template: no value:1:3: executing \"no value\" at <AnyValue \"Value\" .>: error calling AnyValue: Value is not loaded in the payload",
 		},
 		{
 			name:     "wrong value type",
 			template: "{{ AnyValue \"Value\" . }}",
 			payload:  template.Payload{"Value": "something"},
-			expected: "failed to execute template wrong value type: template: wrong value type:1:3: executing \"wrong value type\" at <AnyValue \"Value\" .>: error calling AnyValue: ERROR: Value is not a string slice",
+			expected: "failed to execute template wrong value type: template: wrong value type:1:3: executing \"wrong value type\" at <AnyValue \"Value\" .>: error calling AnyValue: Value is not a string slice",
 		},
 	}
 	for _, tc := range tt {

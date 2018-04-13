@@ -16,7 +16,7 @@ var logsBucketKey = []byte("logs")
 var errorKey = []byte("error")
 
 // ErrNoLogsForJob is returned when we try to extract the logs of a non existing job
-var ErrNoLogsForJob = errors.New("No logs for job")
+var ErrNoLogsForJob = errors.New("no logs for job")
 
 // Append adds a new line to the logs of the given Job
 func Append(jobID uint64, content string) error {

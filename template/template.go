@@ -184,11 +184,11 @@ type Payload map[string]interface{}
 func anyValue(key string, payload map[string]interface{}) (string, error) {
 	values, ok := payload[key]
 	if !ok {
-		return "", fmt.Errorf("ERROR: %s is not loaded in the payload", key)
+		return "", fmt.Errorf("%s is not loaded in the payload", key)
 	}
 	slice, ok := values.([]string)
 	if !ok {
-		return "", fmt.Errorf("ERROR: %s is not a string slice", key)
+		return "", fmt.Errorf("%s is not a string slice", key)
 	}
 	return slice[rand.Intn(len(slice))], nil
 }
