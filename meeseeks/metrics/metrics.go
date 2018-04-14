@@ -97,5 +97,6 @@ func init() {
 	prometheus.MustRegister(SuccessfulTasksCount)
 	prometheus.MustRegister(TaskDurations)
 	prometheus.MustRegister(LogLinesCount)
+	prometheus.MustRegister(buildInfo)
 	prometheus.MustRegister(bootTime)
 }
