@@ -9,10 +9,14 @@ builds:
   - linux
   - darwin
   goarch:
+  - 386
   - amd64
   - arm
+  - arm64
   goarm:
+  - "5"
   - "6"
+  - "7"
   main: .
   ldflags: -s -w -X github.com/gomeeseeks/meeseeks-box/version.Version={{.Version}} -X github.com/gomeeseeks/meeseeks-box/version.Commit={{.Commit}} -X github.com/gomeeseeks/meeseeks-box/version.Date={{.Date}}
   binary: meeseeks-box
@@ -53,4 +57,10 @@ dockers:
     goarm: '6'
     binary: meeseeks-box
     dockerfile: Dockerfile.armv6
+    latest: true
+  - image: gomeeseeks/meeseeks-box-arm64
+    goos: linux
+    goarch: arm64
+    binary: meeseeks-box
+    dockerfile: Dockerfile.arm64
     latest: true
