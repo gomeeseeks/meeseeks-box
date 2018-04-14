@@ -15,6 +15,13 @@ var ReceivedCommandsCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Help:      "Commands that have been received and are known",
 })
 
+// AliasedCommandsCount is the count of commands that have been received
+var AliasedCommandsCount = prometheus.NewCounter(prometheus.CounterOpts{
+	Namespace: namespace,
+	Name:      "aliased_commands_count",
+	Help:      "Commands that have been received and are an alias for another command",
+})
+
 // UnknownCommandsCount is the count of commands that have been received but are unknown
 var UnknownCommandsCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Namespace: namespace,
@@ -82,6 +89,7 @@ func init() {
 	buildInfo.WithLabelValues(version.Name, version.Version, version.Date, version.Commit).Set(1)
 
 	prometheus.MustRegister(ReceivedCommandsCount)
+	prometheus.MustRegister(AliasedCommandsCount)
 	prometheus.MustRegister(UnknownCommandsCount)
 	prometheus.MustRegister(RejectedCommandsCount)
 	prometheus.MustRegister(AcceptedCommandsCount)
