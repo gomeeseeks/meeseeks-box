@@ -50,12 +50,12 @@ var SuccessfulTasksCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 }, []string{"command"})
 
 // TaskDurations provides buckets to observe task execution latencies
-var TaskDurations = prometheus.NewHistogram(prometheus.HistogramOpts{
+var TaskDurations = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: namespace,
 	Name:      "tasks_durations_seconds",
 	Buckets:   prometheus.ExponentialBuckets(0.00025, 2, 18), // exponential buckets, starting at 0.25ms up to over 1h,
 	Help:      "Command execution time distributions in seconds.",
-})
+}, []string{"command"})
 
 // LogLinesCount is the count of tasks that have been accepted
 var LogLinesCount = prometheus.NewCounter(prometheus.CounterOpts{
