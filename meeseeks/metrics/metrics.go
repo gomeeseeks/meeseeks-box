@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/gomeeseeks/meeseeks-box/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )
@@ -70,8 +71,15 @@ var bootTime = prometheus.NewGauge(prometheus.GaugeOpts{
 	Help:      "unix timestamp of when the meeseeks process was started",
 })
 
+var buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	Namespace: namespace,
+	Name:      "build_info",
+	Help:      "Version of the meeseeks executable",
+}, []string{"name", "version", "date", "revision"})
+
 func init() {
 	bootTime.Set(float64(time.Now().Unix()))
+	buildInfo.WithLabelValues(version.Name, version.Version, version.Date, version.Commit).Set(1)
 
 	prometheus.MustRegister(ReceivedCommandsCount)
 	prometheus.MustRegister(UnknownCommandsCount)
