@@ -15,7 +15,7 @@ var ReceivedCommandsCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Help:      "Commands that have been received and are known",
 })
 
-// AliasedCommandsCount is the count of commands that have been received
+// AliasedCommandsCount is the count of aliased commands that have been received
 var AliasedCommandsCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Namespace: namespace,
 	Name:      "aliased_commands_count",
