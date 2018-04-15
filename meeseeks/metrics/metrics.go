@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/gomeeseeks/meeseeks-box/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )
@@ -12,6 +13,13 @@ var ReceivedCommandsCount = prometheus.NewCounter(prometheus.CounterOpts{
 	Namespace: namespace,
 	Name:      "received_commands_count",
 	Help:      "Commands that have been received and are known",
+})
+
+// AliasedCommandsCount is the count of commands that have been received
+var AliasedCommandsCount = prometheus.NewCounter(prometheus.CounterOpts{
+	Namespace: namespace,
+	Name:      "aliased_commands_count",
+	Help:      "Commands that have been received and are an alias for another command",
 })
 
 // UnknownCommandsCount is the count of commands that have been received but are unknown
@@ -50,12 +58,12 @@ var SuccessfulTasksCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 }, []string{"command"})
 
 // TaskDurations provides buckets to observe task execution latencies
-var TaskDurations = prometheus.NewHistogram(prometheus.HistogramOpts{
+var TaskDurations = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: namespace,
 	Name:      "tasks_durations_seconds",
 	Buckets:   prometheus.ExponentialBuckets(0.00025, 2, 18), // exponential buckets, starting at 0.25ms up to over 1h,
 	Help:      "Command execution time distributions in seconds.",
-})
+}, []string{"command"})
 
 // LogLinesCount is the count of tasks that have been accepted
 var LogLinesCount = prometheus.NewCounter(prometheus.CounterOpts{
@@ -70,10 +78,18 @@ var bootTime = prometheus.NewGauge(prometheus.GaugeOpts{
 	Help:      "unix timestamp of when the meeseeks process was started",
 })
 
+var buildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	Namespace: namespace,
+	Name:      "build_info",
+	Help:      "Version of the meeseeks executable",
+}, []string{"name", "version", "date", "revision"})
+
 func init() {
 	bootTime.Set(float64(time.Now().Unix()))
+	buildInfo.WithLabelValues(version.Name, version.Version, version.Date, version.Commit).Set(1)
 
 	prometheus.MustRegister(ReceivedCommandsCount)
+	prometheus.MustRegister(AliasedCommandsCount)
 	prometheus.MustRegister(UnknownCommandsCount)
 	prometheus.MustRegister(RejectedCommandsCount)
 	prometheus.MustRegister(AcceptedCommandsCount)
@@ -81,5 +97,6 @@ func init() {
 	prometheus.MustRegister(SuccessfulTasksCount)
 	prometheus.MustRegister(TaskDurations)
 	prometheus.MustRegister(LogLinesCount)
+	prometheus.MustRegister(buildInfo)
 	prometheus.MustRegister(bootTime)
 }

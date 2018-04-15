@@ -89,13 +89,13 @@ func (m *Meeseeks) Start() {
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, req.Command).WithCommand(cmd))
-			metrics.RejectedCommandsCount.WithLabelValues(cmd.Cmd()).Inc()
+			metrics.RejectedCommandsCount.WithLabelValues(req.Command).Inc()
 			continue
 		}
 
 		logrus.Infof("Accepted command '%s' from user '%s' on channel '%s' with args: %s",
 			req.Command, req.Username, req.Channel, req.Args)
-		metrics.AcceptedCommandsCount.WithLabelValues(cmd.Cmd()).Inc()
+		metrics.AcceptedCommandsCount.WithLabelValues(req.Command).Inc()
 
 		t, err := m.createTask(req, cmd)
 		if err != nil {

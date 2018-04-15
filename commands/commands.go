@@ -6,6 +6,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/sirupsen/logrus"
 )
 
@@ -48,7 +49,9 @@ func Find(req *meeseeks.Request) (meeseeks.Command, bool) {
 	}
 
 	if cmd, ok := commands[aliasedCommand]; ok {
-		logrus.Infof("Command %s is an alias", req.Command)
+		logrus.Infof("Command %s is an alias for %s", req.Command, aliasedCommand)
+		metrics.AliasedCommandsCount.Inc()
+		req.Command = aliasedCommand
 		req.Args = append(args, req.Args...)
 
 		return cmd, ok
