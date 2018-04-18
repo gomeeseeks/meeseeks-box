@@ -71,6 +71,6 @@ func TestSleepingCanBeWokenUp(t *testing.T) {
 			ID:      3,
 			Request: meeseeks.Request{},
 		})
-		mocks.AssertEquals(t, "signal: killed", err.Error())
+		mocks.AssertEquals(t, "context canceled", err.Error())
 	})
 }
