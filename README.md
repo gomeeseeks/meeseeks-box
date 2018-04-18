@@ -55,6 +55,13 @@ Yes. You can cancel your own jobs with `cancel job_id`. Admins can cancel any jo
 
 Yes. Use `tail` to show the last output lines from the last command that you launched.
 
+### How do I release a new version?
+
+* Make sure you have a valid GitHub token and export it in your shell environment as `GITHUB_TOKEN`.
+* Check out the latest version with `git tag --list`.
+* Tag a new version with `git tag <new version>`.
+* Release with `make release`.
+
 ## Documentation
 
 For more in depth details, check the [docs](https://gomeeseeks.github.io/meeseeks-box/).
