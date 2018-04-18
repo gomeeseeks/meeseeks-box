@@ -86,9 +86,16 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 		return "", SetError(err)
 	}
 
-	<-done
+	// Wait for the command to be done or the context to be cancelled
+	select {
+	case <-ctx.Done():
+		// We are finishing because the context was called
+		err = ctx.Err()
+	case <-done:
+		// We are finishing because we are actually done
+		err = cmd.Wait()
+	}
 
-	err = cmd.Wait()
 	if err != nil {
 		logrus.Errorf("command failed: %s", err)
 		return "", SetError(err)
