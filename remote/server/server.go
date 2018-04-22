@@ -6,15 +6,44 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	pb "github.com/gomeeseeks/meeseeks-box/remote/api"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 	"io"
+	"net"
 	"time"
 )
+
+type RemoteServer struct {
+	Address string
+	server  *grpc.Server
+}
+
+func New(address string) RemoteServer {
+	server := grpc.NewServer()
+	pb.RegisterCommandLoggerServer(server, CommandLoggerServer{})
+	pb.RegisterCommandPipelineServer(server, CommandPipelineServer{})
+	return RemoteServer{
+		Address: address,
+		server:  server,
+	}
+}
+
+func (this RemoteServer) Listen() error {
+	address, err := net.Listen("tcp", this.Address)
+	if err != nil {
+		return fmt.Errorf("could parse address %s: %s", this.Address, err)
+	}
+
+	if err := this.server.Serve(address); err != nil {
+		return fmt.Errorf("failed to start listening on address %s: %s", this.Address, err)
+	}
+	return nil
+}
 
 // CommandLoggerServer implements the remote logger interface
 type CommandLoggerServer struct{}
 
-// Append gets a stream receiver, reads from it and records all the messages that are shipped to it
-func (l CommandLoggerServer) Append(stream pb.CommandLogger_AppendServer) error {
+// NewAppender creates a logging stream receiver
+func (l CommandLoggerServer) NewAppender(stream pb.CommandLogger_NewAppenderServer) error {
 	for {
 		l, err := stream.Recv()
 		if err == io.EOF {
@@ -32,13 +61,13 @@ func (l CommandLoggerServer) Append(stream pb.CommandLogger_AppendServer) error 
 // CommandPipelineServer is used to send commands to remote executors
 type CommandPipelineServer struct{}
 
-// Select initializes a CommandPipelineServer
+// RegisterAgent registers the remote agent and makes it available to start getting commands
 //
 // It receives an AgentConfiguration which declares the commands that the remote
 // executor is capable of running and a stream that will be used to send commands to
 //
 // It's not directly called, but using the remote client.
-func (c CommandPipelineServer) Select(cfg *pb.AgentConfiguration, stream pb.CommandPipeline_SelectServer) error {
+func (c CommandPipelineServer) RegisterAgent(cfg *pb.AgentConfiguration, stream pb.CommandPipeline_RegisterAgentServer) error {
 	logrus.Infof("Token: %s", cfg.Token)
 	logrus.Infof("Labels: %s", cfg.Labels)
 	logrus.Infof("Commands: %s", cfg.Commands)
