@@ -5,6 +5,7 @@ import (
 
 	"fmt"
 	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 
 	bolt "github.com/coreos/bbolt"
 )
@@ -42,6 +43,8 @@ func (l LogWriter) Append(content string) error {
 		if err != nil {
 			return fmt.Errorf("could not get next sequence for job %d: %s", l.jobID, err)
 		}
+
+		metrics.LogLinesCount.Inc()
 
 		return jobBucket.Put(db.IDToBytes(sequence), []byte(content))
 	})
