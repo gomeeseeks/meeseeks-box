@@ -12,6 +12,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/messenger"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
@@ -20,6 +21,54 @@ import (
 )
 
 func main() {
+	args := parseArgs()
+
+	setLogLevel(args)
+	cnf := loadConfiguration(args)
+
+	cleanupPendingJobs()
+
+	slackClient := connectToSlack(args)
+	httpServer := listenHTTP(slackClient, args)
+
+	msgs, err := messenger.Listen(slackClient, httpServer.GetListener())
+	// TODO This must change
+	// Instead of a messenger we should get a Requester that has a channel that serves
+	// JobRequests, the internal implementation of the listener is the one that creates
+	// the request internally
+	// This means that we need to hide the implementation of the message itself and only
+	// handle meeseeks.Requests
+	// This then changes the "messenger" name in a requester of sorts
+	if err != nil {
+		logrus.Fatalf("Could not initialize messaging subsystem: %s", err)
+	}
+	logrus.Info("Listening to slack messages")
+
+	meeseek := executor.New(slackClient, msgs, formatter.New(cnf))
+	go meeseek.Start()
+	logrus.Info("Started commands pipeline")
+
+	waitForSignals(func() { // this locks for good, but receives a shutdown function
+		httpServer.Shutdown()
+		msgs.Shutdown()
+		meeseek.Shutdown()
+	})
+
+	logrus.Info("Everything has been shut down, bye bye!")
+}
+
+type args struct {
+	ConfigFile  string
+	DebugMode   bool
+	StealthMode bool
+	DebugSlack  bool
+	APIAddress  string
+	APIPath     string
+	MetricsPath string
+	SlackToken  string
+}
+
+func parseArgs() args {
 	configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
 	debugMode := flag.Bool("debug", false, "enabled debug mode")
 	debugSlack := flag.Bool("debug-slack", false, "enabled debug mode for slack")
@@ -28,6 +77,7 @@ func main() {
 	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
 	metricsPath := flag.String("metrics-path", "/metrics", "path to in which to expose prometheus metrics")
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
+	slackToken := flag.String("slack-token", os.Getenv("SLACK_TOKEN"), "slack token, by default loaded from the SLACK_TOKEN environment variable")
 
 	flag.Parse()
 
@@ -36,63 +86,81 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *debugMode {
+	return args{
+		ConfigFile:  *configFile,
+		DebugMode:   *debugMode,
+		StealthMode: *slackStealth,
+		DebugSlack:  *debugSlack,
+		SlackToken:  *slackToken,
+		APIAddress:  *apiAddress,
+		APIPath:     *apiPath,
+		MetricsPath: *metricsPath,
+	}
+}
+
+func setLogLevel(args args) {
+	if args.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+}
 
-	cnf, err := config.LoadFile(*configFile)
+func loadConfiguration(args args) config.Config {
+	cnf, err := config.LoadFile(args.ConfigFile)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	if err := config.LoadConfig(cnf); err != nil {
 		logrus.Fatalf("Could not load configuration: %s", err)
 	}
-	logrus.Info("Loaded configuration")
+	logrus.Info("Configuration loaded")
 
+	return cnf
+}
+
+func cleanupPendingJobs() {
 	if err := jobs.FailRunningJobs(); err != nil {
 		logrus.Fatalf("Could not flush running jobs after: %s", err)
 	}
+}
 
+func connectToSlack(args args) *slack.Client {
 	slackClient, err := slack.Connect(
 		slack.ConnectionOpts{
-			Debug:   *debugSlack,
-			Token:   os.Getenv("SLACK_TOKEN"),
-			Stealth: *slackStealth,
+			Debug:   args.DebugSlack,
+			Token:   args.SlackToken,
+			Stealth: args.StealthMode,
 		})
 	if err != nil {
 		logrus.Fatalf("Could not connect to slack: %s", err)
 	}
 	logrus.Info("Connected to slack")
 
-	httpServer := api.NewServer(slackClient, *metricsPath, *apiPath, *apiAddress)
+	return slackClient
+}
+
+func listenHTTP(client *slack.Client, args args) *api.Server {
+	metrics.RegisterPath(args.MetricsPath)
+
+	httpServer := api.NewServer(client, args.APIPath, args.APIAddress)
 	go func() {
-		err = httpServer.ListenAndServe()
+		err := httpServer.ListenAndServe()
 		if err != nil {
-			logrus.Fatalf("Could not start API server: %s", err)
+			logrus.Fatalf("Could not start HTTP server: %s", err)
 		}
 	}()
-	logrus.Infof("Started http server on %s%s", *apiAddress, *apiPath)
+	logrus.Infof("Started HTTP server on %s", args.APIAddress)
 
-	msgs, err := messenger.Listen(slackClient, httpServer.GetListener())
-	if err != nil {
-		logrus.Fatalf("Could not initialize messenger subsystem: %s", err)
-	}
-	logrus.Info("Listening to slack messages")
+	return httpServer
+}
 
-	meeseek := executor.New(slackClient, msgs, formatter.New(cnf))
-	go meeseek.Start()
-	logrus.Info("Started commands pipeline")
-
+func waitForSignals(shutdownGracefully func()) {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
 	// Listen for a signal forever
 	sig := <-signalCh
-	logrus.Infof("Got signal %s, trying to gracefully shutdown", sig)
 
-	httpServer.Shutdown()
-	msgs.Shutdown()
-	meeseek.Shutdown()
+	logrus.Infof("Got signal %s, shutting down gracefully", sig)
 
-	logrus.Info("Everything has been shut down, bye bye!")
+	shutdownGracefully()
 }

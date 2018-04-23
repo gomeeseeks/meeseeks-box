@@ -1,9 +1,12 @@
 package metrics
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/gomeeseeks/meeseeks-box/version"
 	"github.com/prometheus/client_golang/prometheus"
-	"time"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var namespace = "meeseeks"
@@ -99,4 +102,9 @@ func init() {
 	prometheus.MustRegister(LogLinesCount)
 	prometheus.MustRegister(buildInfo)
 	prometheus.MustRegister(bootTime)
+}
+
+// RegisterPath registers prometheus metrics path
+func RegisterPath(metricsPath string) {
+	http.Handle(metricsPath, promhttp.Handler())
 }
