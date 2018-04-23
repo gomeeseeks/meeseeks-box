@@ -73,6 +73,17 @@ func (c CommandPipelineServer) RegisterAgent(cfg *api.AgentConfiguration, stream
 	logrus.Infof("Labels: %s", cfg.Labels)
 	logrus.Infof("Commands: %s", cfg.Commands)
 
+	// I've a list of commands, these commands should be appended as remote commands
+	// as a rule of thumb the way they should work is by starting a goroutine that
+	// will wait on any command to be "executed", and when this happens, we simply
+	// forward to command to the right downstream.
+	//
+	// Additionally we need to keep track of those commands so we can remove them when the
+	// remote goes away. This should be done by token.
+	//
+	// This means that I need to register the remote commands in the commands map.
+	// But then I also need to be able of removing commands from the map.
+
 	var jobID uint64
 	for {
 		jobID++
@@ -104,7 +115,6 @@ func (c CommandPipelineServer) RegisterAgent(cfg *api.AgentConfiguration, stream
 			return nil
 		}
 	}
-	return nil
 }
 
 func (c CommandPipelineServer) Finish(_ context.Context, in *api.CommandFinish) (*api.Empty, error) {
