@@ -52,11 +52,12 @@ func Test_Logs(t *testing.T) {
 				LoggerType: "local",
 			})
 			t.Run(tc.name, func(t *testing.T) {
+				lw := logs.GetJobLogWriter(tc.jobID)
 				for _, line := range tc.logs {
-					logs.GetJobLogWriter(tc.jobID).Append(line)
+					lw.Append(line)
 				}
 				if tc.err != nil {
-					logs.GetJobLogWriter(tc.jobID).SetError(tc.err)
+					lw.SetError(tc.err)
 				}
 				actual, err := logs.GetJobLogReader(tc.jobID).Get()
 				mocks.Must(t, "could not get job logs back", err)
