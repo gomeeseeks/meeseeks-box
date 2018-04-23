@@ -6,8 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gomeeseeks/meeseeks-box/formatter"
-
 	"github.com/gomeeseeks/meeseeks-box/api"
 	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/jobs"
@@ -24,7 +22,7 @@ func main() {
 	args := parseArgs()
 
 	setLogLevel(args)
-	cnf := loadConfiguration(args)
+	loadConfiguration(args)
 
 	cleanupPendingJobs()
 
@@ -44,7 +42,7 @@ func main() {
 	}
 	logrus.Info("Listening to slack messages")
 
-	meeseek := executor.New(slackClient, msgs, formatter.New(cnf))
+	meeseek := executor.New(slackClient, msgs)
 	go meeseek.Start()
 	logrus.Info("Started commands pipeline")
 
@@ -104,7 +102,7 @@ func setLogLevel(args args) {
 	}
 }
 
-func loadConfiguration(args args) config.Config {
+func loadConfiguration(args args) {
 	cnf, err := config.LoadFile(args.ConfigFile)
 	if err != nil {
 		logrus.Fatal(err)
@@ -113,8 +111,6 @@ func loadConfiguration(args args) config.Config {
 		logrus.Fatalf("Could not load configuration: %s", err)
 	}
 	logrus.Info("Configuration loaded")
-
-	return cnf
 }
 
 func cleanupPendingJobs() {

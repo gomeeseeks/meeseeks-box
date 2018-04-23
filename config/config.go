@@ -12,16 +12,9 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/formatter"
 
 	yaml "gopkg.in/yaml.v2"
-)
-
-// Default colors
-const (
-	DefaultInfoColorMessage    = ""
-	DefaultSuccessColorMessage = "good"
-	DefaultWarningColorMessage = "warning"
-	DefaultErrColorMessage     = "danger"
 )
 
 // LoadFile reads the given filename, builds a configuration object and initializes
@@ -45,6 +38,7 @@ func LoadConfig(cnf Config) error {
 		return err
 	}
 	auth.Configure(cnf.Groups)
+	formatter.Configure(cnf.Messages, cnf.Format)
 
 	for name, cmd := range cnf.Commands {
 		commands.Add(name, shell.New(shell.CommandOpts{
@@ -73,11 +67,11 @@ func New(r io.Reader) (Config, error) {
 			Mode:    0600,
 			Timeout: 2 * time.Second,
 		},
-		Format: Format{
-			Colors: MessageColors{
-				Info:    DefaultInfoColorMessage,
-				Success: DefaultSuccessColorMessage,
-				Error:   DefaultErrColorMessage,
+		Format: formatter.FormatConfig{
+			Colors: formatter.MessageColors{
+				Info:    formatter.DefaultInfoColorMessage,
+				Success: formatter.DefaultSuccessColorMessage,
+				Error:   formatter.DefaultErrColorMessage,
 			},
 			ReplyStyle: map[string]string{},
 		},
@@ -99,12 +93,12 @@ func New(r io.Reader) (Config, error) {
 
 // Config is the struct used to load MrMeeseeks configuration yaml
 type Config struct {
-	Database db.DatabaseConfig   `yaml:"database"`
-	Messages map[string][]string `yaml:"messages"`
-	Commands map[string]Command  `yaml:"commands"`
-	Groups   map[string][]string `yaml:"groups"`
-	Pool     int                 `yaml:"pool"`
-	Format   Format              `yaml:"format"`
+	Database db.DatabaseConfig      `yaml:"database"`
+	Messages map[string][]string    `yaml:"messages"`
+	Commands map[string]Command     `yaml:"commands"`
+	Groups   map[string][]string    `yaml:"groups"`
+	Pool     int                    `yaml:"pool"`
+	Format   formatter.FormatConfig `yaml:"format"`
 }
 
 // Command is the struct that handles a command configuration
@@ -125,17 +119,4 @@ type Command struct {
 type CommandHelp struct {
 	Summary string   `yaml:"summary"`
 	Args    []string `yaml:"args"`
-}
-
-// MessageColors contains the configured reply message colora
-type MessageColors struct {
-	Info    string `yaml:"info"`
-	Success string `yaml:"success"`
-	Error   string `yaml:"error"`
-}
-
-// Format contains the formatting configurations
-type Format struct {
-	Colors     MessageColors     `yaml:"colors"`
-	ReplyStyle map[string]string `yaml:"reply_styles"`
 }

@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/messenger"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
@@ -127,7 +126,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 	}
 
 	mocks.WithTmpDB(func(dbpath string) {
-		client, cnf := mocks.NewHarness().
+		client := mocks.NewHarness().
 			WithConfig(dedent.Dedent(`
 			---
 			commands:
@@ -152,7 +151,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("could not create listener: %s", err)
 		}
-		m := executor.New(client, msgs, formatter.New(cnf))
+		m := executor.New(client, msgs)
 		go m.Start()
 
 		for _, tc := range tt {

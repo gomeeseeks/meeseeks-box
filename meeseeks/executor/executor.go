@@ -27,7 +27,6 @@ type ChatClient interface {
 type Meeseeks struct {
 	client    ChatClient
 	messenger *messenger.Messenger
-	formatter *formatter.Formatter
 
 	tasksCh        chan task
 	wg             sync.WaitGroup
@@ -40,14 +39,13 @@ type task struct {
 }
 
 // New creates a new Meeseeks service
-func New(client ChatClient, messenger *messenger.Messenger, formatter *formatter.Formatter) *Meeseeks {
+func New(client ChatClient, messenger *messenger.Messenger) *Meeseeks {
 	ac := newActiveCommands()
 	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel))
 	commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel))
 
 	m := Meeseeks{
 		messenger: messenger,
-		formatter: formatter,
 		client:    client,
 		tasksCh:   make(chan task, 20),
 
@@ -66,7 +64,7 @@ func (m *Meeseeks) Start() {
 		req, err := request.FromMessage(msg)
 		if err != nil {
 			logrus.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
-			m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
+			m.client.Reply(formatter.Get().FailureReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, err))
@@ -76,7 +74,7 @@ func (m *Meeseeks) Start() {
 
 		cmd, ok := commands.Find(&req)
 		if !ok {
-			m.client.Reply(m.formatter.UnknownCommandReply(formatter.ReplyTo{
+			m.client.Reply(formatter.Get().UnknownCommandReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, req.Command))
@@ -85,7 +83,7 @@ func (m *Meeseeks) Start() {
 		}
 
 		if err = auth.Check(req, cmd); err != nil {
-			m.client.Reply(m.formatter.UnauthorizedCommandReply(formatter.ReplyTo{
+			m.client.Reply(formatter.Get().UnauthorizedCommandReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, req.Command).WithCommand(cmd))
@@ -99,7 +97,7 @@ func (m *Meeseeks) Start() {
 
 		t, err := m.createTask(req, cmd)
 		if err != nil {
-			m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
+			m.client.Reply(formatter.Get().FailureReply(formatter.ReplyTo{
 				UserLink:  msg.GetUserLink(),
 				ChannelID: msg.GetChannelID(),
 			}, fmt.Errorf("could not create task: %s", err)).WithCommand(cmd))
@@ -143,7 +141,7 @@ func (m *Meeseeks) loop() {
 			cmd := t.cmd
 
 			if cmd.HasHandshake() {
-				m.client.Reply(m.formatter.HandshakeReply(formatter.ReplyTo{
+				m.client.Reply(formatter.Get().HandshakeReply(formatter.ReplyTo{
 					UserLink:  req.UserLink,
 					ChannelID: req.ChannelID,
 				}).WithCommand(cmd))
@@ -157,7 +155,7 @@ func (m *Meeseeks) loop() {
 				logrus.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 					req.Command, req.Username, err)
 
-				m.client.Reply(m.formatter.FailureReply(formatter.ReplyTo{
+				m.client.Reply(formatter.Get().FailureReply(formatter.ReplyTo{
 					UserLink:  req.UserLink,
 					ChannelID: req.ChannelID,
 				}, err).WithCommand(cmd).WithOutput(out))
@@ -169,7 +167,7 @@ func (m *Meeseeks) loop() {
 				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 					req.Username)
 
-				m.client.Reply(m.formatter.SuccessReply(formatter.ReplyTo{
+				m.client.Reply(formatter.Get().SuccessReply(formatter.ReplyTo{
 					UserLink:  req.UserLink,
 					ChannelID: req.ChannelID,
 				}).WithCommand(cmd).WithOutput(out))

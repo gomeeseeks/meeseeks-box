@@ -10,14 +10,15 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/renstrom/dedent"
 )
 
 func Test_ConfigurationReading(t *testing.T) {
-	defaultColors := config.MessageColors{
-		Info:    config.DefaultInfoColorMessage,
-		Error:   config.DefaultErrColorMessage,
-		Success: config.DefaultSuccessColorMessage,
+	defaultColors := formatter.MessageColors{
+		Info:    formatter.DefaultInfoColorMessage,
+		Error:   formatter.DefaultErrColorMessage,
+		Success: formatter.DefaultSuccessColorMessage,
 	}
 	defaultDatabase := db.DatabaseConfig{
 		Path:    "meeseeks.db",
@@ -33,7 +34,7 @@ func Test_ConfigurationReading(t *testing.T) {
 			"Default configuration",
 			"",
 			config.Config{
-				Format: config.Format{
+				Format: formatter.FormatConfig{
 					Colors:     defaultColors,
 					ReplyStyle: map[string]string{},
 				},
@@ -51,7 +52,7 @@ func Test_ConfigurationReading(t *testing.T) {
 				Messages: map[string][]string{
 					"handshake": {"hallo"},
 				},
-				Format: config.Format{
+				Format: formatter.FormatConfig{
 					Colors:     defaultColors,
 					ReplyStyle: map[string]string{},
 				},
@@ -69,8 +70,8 @@ func Test_ConfigurationReading(t *testing.T) {
 				    error: "#000000"
 				`),
 			config.Config{
-				Format: config.Format{
-					Colors: config.MessageColors{
+				Format: formatter.FormatConfig{
+					Colors: formatter.MessageColors{
 						Info:    "#FFFFFF",
 						Success: "#CCCCCC",
 						Error:   "#000000",
@@ -97,7 +98,7 @@ func Test_ConfigurationReading(t *testing.T) {
 						Args: []string{"none"},
 					},
 				},
-				Format: config.Format{
+				Format: formatter.FormatConfig{
 					Colors:     defaultColors,
 					ReplyStyle: map[string]string{},
 				},
