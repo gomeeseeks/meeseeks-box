@@ -19,10 +19,6 @@ import (
 	"github.com/renstrom/dedent"
 )
 
-var loggerConfig = logs.Configure(logs.LoggerConfig{
-	LoggerType: "local",
-})
-
 // Builtin Commands Names
 const (
 	BuiltinVersionCommand   = "version"

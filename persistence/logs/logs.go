@@ -2,7 +2,6 @@ package logs
 
 import (
 	"errors"
-	"fmt"
 	bolt "github.com/coreos/bbolt"
 
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs/local"
@@ -134,14 +133,6 @@ func (l LocalLogReader) Tail(limit int) (meeseeks.JobLog, error) {
 		return nil
 	})
 	return *job, err
-}
-func getJobBucket(jobID uint64, tx *bolt.Tx) (*bolt.Bucket, error) {
-	logsBucket, err := tx.CreateBucketIfNotExists(logsBucketKey)
-	if err != nil {
-		return nil, fmt.Errorf("could not get logs bucket: %s", err)
-	}
-	return logsBucket.CreateBucketIfNotExists(db.IDToBytes(jobID))
-
 }
 
 func readLogBucket(jobID uint64, f func(*bolt.Bucket) error) error {
