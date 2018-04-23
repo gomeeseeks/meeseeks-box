@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
-	pb "github.com/gomeeseeks/meeseeks-box/remote/api"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 	"io"
 	"net"
 	"time"
+
+	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
+	"github.com/gomeeseeks/meeseeks-box/remote/api"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 type RemoteServer struct {
@@ -19,8 +20,8 @@ type RemoteServer struct {
 
 func New(address string) RemoteServer {
 	server := grpc.NewServer()
-	pb.RegisterCommandLoggerServer(server, CommandLoggerServer{})
-	pb.RegisterCommandPipelineServer(server, CommandPipelineServer{})
+	api.RegisterCommandLoggerServer(server, CommandLoggerServer{})
+	api.RegisterCommandPipelineServer(server, CommandPipelineServer{})
 	return RemoteServer{
 		Address: address,
 		server:  server,
@@ -43,7 +44,7 @@ func (this RemoteServer) Listen() error {
 type CommandLoggerServer struct{}
 
 // NewAppender creates a logging stream receiver
-func (l CommandLoggerServer) NewAppender(stream pb.CommandLogger_NewAppenderServer) error {
+func (l CommandLoggerServer) NewAppender(stream api.CommandLogger_NewAppenderServer) error {
 	for {
 		l, err := stream.Recv()
 		if err == io.EOF {
@@ -55,7 +56,7 @@ func (l CommandLoggerServer) NewAppender(stream pb.CommandLogger_NewAppenderServ
 			logrus.Errorf("Failed to record log entry %#v", l)
 		}
 	}
-	return stream.SendAndClose(&pb.Empty{})
+	return stream.SendAndClose(&api.Empty{})
 }
 
 // CommandPipelineServer is used to send commands to remote executors
@@ -67,7 +68,7 @@ type CommandPipelineServer struct{}
 // executor is capable of running and a stream that will be used to send commands to
 //
 // It's not directly called, but using the remote client.
-func (c CommandPipelineServer) RegisterAgent(cfg *pb.AgentConfiguration, stream pb.CommandPipeline_RegisterAgentServer) error {
+func (c CommandPipelineServer) RegisterAgent(cfg *api.AgentConfiguration, stream api.CommandPipeline_RegisterAgentServer) error {
 	logrus.Infof("Token: %s", cfg.Token)
 	logrus.Infof("Labels: %s", cfg.Labels)
 	logrus.Infof("Commands: %s", cfg.Commands)
@@ -75,7 +76,7 @@ func (c CommandPipelineServer) RegisterAgent(cfg *pb.AgentConfiguration, stream 
 	var jobID uint64
 	for {
 		jobID++
-		err := stream.Send(&pb.CommandRequest{
+		err := stream.Send(&api.CommandRequest{
 			Command:     fmt.Sprintf("cmd-for-%s", cfg.Token),
 			Args:        []string{"arg1", "arg2"},
 			Channel:     "channel",
@@ -106,7 +107,7 @@ func (c CommandPipelineServer) RegisterAgent(cfg *pb.AgentConfiguration, stream 
 	return nil
 }
 
-func (c CommandPipelineServer) Finish(_ context.Context, in *pb.CommandFinish) (*pb.Empty, error) {
+func (c CommandPipelineServer) Finish(_ context.Context, in *api.CommandFinish) (*api.Empty, error) {
 	logrus.Infof("Changing job %d status to %s with error %s", in.JobID, in.Status, in.Error)
-	return &pb.Empty{}, nil
+	return &api.Empty{}, nil
 }
