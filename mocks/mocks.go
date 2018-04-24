@@ -73,7 +73,7 @@ func (h Harness) WithDBPath(dbpath string) Harness {
 }
 
 // Load creates a clientStub and a configuration based on the provided one
-func (h Harness) Load() (ClientStub, config.Config) {
+func (h Harness) Load() ClientStub {
 	c, err := config.New(strings.NewReader(h.cnf))
 	if err != nil {
 		logrus.Fatalf("Could not build test harness: %s", err)
@@ -87,9 +87,9 @@ func (h Harness) Load() (ClientStub, config.Config) {
 	}
 	if err := config.LoadConfig(c); err != nil {
 		fmt.Printf("Failed to load configuration: %s", err)
-		return ClientStub{}, c
+		return ClientStub{}
 	}
-	return newClientStub(), c
+	return newClientStub()
 }
 
 // ClientStub is an extremely simple implementation of a client that only captures messages

@@ -3,30 +3,54 @@ package formatter
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/template"
+	"github.com/sirupsen/logrus"
 )
+
+// Default colors
+const (
+	DefaultInfoColorMessage    = ""
+	DefaultSuccessColorMessage = "good"
+	DefaultWarningColorMessage = "warning"
+	DefaultErrColorMessage     = "danger"
+)
+
+// MessageColors contains the configured reply message colora
+type MessageColors struct {
+	Info    string `yaml:"info"`
+	Success string `yaml:"success"`
+	Error   string `yaml:"error"`
+}
+
+// FormatConfig contains the formatting configurations
+type FormatConfig struct {
+	Colors     MessageColors     `yaml:"colors"`
+	ReplyStyle map[string]string `yaml:"reply_styles"`
+}
 
 // Formatter keeps the colors and templates used to format a reply message
 type Formatter struct {
-	colors     config.MessageColors
+	colors     MessageColors
 	templates  *template.TemplatesBuilder
 	replyStyle replyStyle
 }
 
-// New returns a new Formatter
-func New(cnf config.Config) *Formatter {
-	builder := template.NewBuilder().WithMessages(cnf.Messages)
-	f := Formatter{
-		replyStyle: replyStyle{cnf.Format.ReplyStyle},
-		colors:     cnf.Format.Colors,
+var formatter *Formatter
+
+// Configure sets up the singleton formatter
+func Configure(messages map[string][]string, cnf FormatConfig) {
+	builder := template.NewBuilder().WithMessages(messages)
+	formatter = &Formatter{
+		replyStyle: replyStyle{cnf.ReplyStyle},
+		colors:     cnf.Colors,
 		templates:  builder,
 	}
-	logrus.Debugf("Building new formatter %#v", f)
-	return &f
+}
+
+// Get returns the configured singleton formatter
+func Get() *Formatter {
+	return formatter
 }
 
 // Templates returns a clone of the default templates ready to be consumed
@@ -108,7 +132,7 @@ type Reply struct {
 	output string
 	err    error
 
-	colors    config.MessageColors
+	colors    MessageColors
 	templates *template.TemplatesBuilder
 	style     string
 }
