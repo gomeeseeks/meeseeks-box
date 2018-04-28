@@ -136,9 +136,7 @@ type MessageStub struct {
 	Text    string
 	Channel string
 	User    string
-	// UserID    string
-	// ChannelID string
-	IM bool
+	IM      bool
 }
 
 // GetText implements the slack.Message.GetText interface

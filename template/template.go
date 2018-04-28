@@ -149,47 +149,6 @@ func (t Templates) Render(action string, payload map[string]interface{}) (string
 	return output, nil
 }
 
-// // RenderHandshake renders a handshake message
-// func (t Templates) RenderHandshake(user string) (string, error) {
-// 	p := t.newPayload()
-// 	p["user"] = user
-// 	return t.renderers[Handshake].Render(p)
-// }
-
-// // RenderUnknownCommand renders an unknown command message
-// func (t Templates) RenderUnknownCommand(user, cmd string) (string, error) {
-// 	p := t.newPayload()
-// 	p["user"] = user
-// 	p["command"] = cmd
-// 	return t.renderers[UnknownCommand].Render(p)
-// }
-
-// // RenderUnauthorizedCommand renders an unauthorized command message
-// func (t Templates) RenderUnauthorizedCommand(user, cmd string, err error) (string, error) {
-// 	p := t.newPayload()
-// 	p["user"] = user
-// 	p["command"] = cmd
-// 	p["error"] = err
-// 	return t.renderers[Unauthorized].Render(p)
-// }
-
-// // RenderSuccess renders a success message
-// func (t Templates) RenderSuccess(user, output string) (string, error) {
-// 	p := t.newPayload()
-// 	p["user"] = user
-// 	p["output"] = output
-// 	return t.renderers[Success].Render(p)
-// }
-
-// // RenderFailure renders a failure message
-// func (t Templates) RenderFailure(user, err, output string) (string, error) {
-// 	p := t.newPayload()
-// 	p["user"] = user
-// 	p["error"] = err
-// 	p["output"] = output
-// 	return t.renderers[Failure].Render(p)
-// }
-
 func (t Templates) newPayload() map[string]interface{} {
 	p := map[string]interface{}{}
 	for k, v := range t.defaultPayload {
