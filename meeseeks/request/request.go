@@ -21,7 +21,15 @@ func FromMessage(msg meeseeks.Message) (meeseeks.Request, error) {
 	}
 
 	if len(args) == 0 {
-		return meeseeks.Request{}, ErrNoCommandToRun
+		return meeseeks.Request{
+			Username:    msg.GetUsername(),
+			UserID:      msg.GetUserID(),
+			UserLink:    msg.GetUserLink(),
+			Channel:     msg.GetChannel(),
+			ChannelID:   msg.GetChannelID(),
+			ChannelLink: msg.GetChannelLink(),
+			IsIM:        msg.IsIM(),
+		}, ErrNoCommandToRun
 	}
 
 	return meeseeks.Request{

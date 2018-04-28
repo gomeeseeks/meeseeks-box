@@ -23,13 +23,13 @@ const (
 // Default command templates
 var (
 	DefaultHandshakeTemplate = fmt.Sprintf("{{ AnyValue \"%s\" . }}", Handshake)
-	DefaultSuccessTemplate   = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}"+
+	DefaultSuccessTemplate   = fmt.Sprintf("{{ .userlink }} {{ AnyValue \"%s\" . }}"+
 		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", Success)
-	DefaultFailureTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} :disappointed: {{ .error }}"+
+	DefaultFailureTemplate = fmt.Sprintf("{{ .userlink }} {{ AnyValue \"%s\" . }} :disappointed: {{ .error }}"+
 		"{{ with $out := .output }}\n```\n{{ $out }}```{{ end }}", Failure)
-	DefaultUnknownCommandTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}",
+	DefaultUnknownCommandTemplate = fmt.Sprintf("{{ .userlink }} {{ AnyValue \"%s\" . }} {{ .command }}",
 		UnknownCommand)
-	DefaultUnauthorizedTemplate = fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }} {{ .command }}: {{ .error }}",
+	DefaultUnauthorizedTemplate = fmt.Sprintf("{{ .userlink }} {{ AnyValue \"%s\" . }} {{ .command }}: {{ .error }}",
 		Unauthorized)
 )
 
@@ -69,7 +69,7 @@ func GetDefaultMessages() map[string][]string {
 // Templates is a set of templates for the basic operations
 type Templates struct {
 	renderers      map[string]Renderer
-	defaultPayload Payload
+	defaultPayload map[string]interface{}
 }
 
 // TemplatesBuilder is a helper object that is used to build the template renderers
@@ -118,7 +118,7 @@ func (b *TemplatesBuilder) Build() Templates {
 		renderers[name] = renderer
 	}
 
-	payload := Payload{}
+	payload := map[string]interface{}{}
 	for k, v := range b.messages {
 		payload[k] = v
 	}
@@ -129,57 +129,74 @@ func (b *TemplatesBuilder) Build() Templates {
 	}
 }
 
-// RenderHandshake renders a handshake message
-func (t Templates) RenderHandshake(user string) (string, error) {
+// Render renders the template matching the action with the passed in payload
+func (t Templates) Render(action string, payload map[string]interface{}) (string, error) {
 	p := t.newPayload()
-	p["user"] = user
-	return t.renderers[Handshake].Render(p)
+	for k, v := range payload {
+		p[k] = v
+	}
+
+	renderer, ok := t.renderers[action]
+	if !ok {
+		return "", fmt.Errorf("could not find action %s", action)
+	}
+
+	output, err := renderer.Render(p)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute template %s: %s", renderer.template.Name(), err)
+	}
+
+	return output, nil
 }
 
-// RenderUnknownCommand renders an unknown command message
-func (t Templates) RenderUnknownCommand(user, cmd string) (string, error) {
-	p := t.newPayload()
-	p["user"] = user
-	p["command"] = cmd
-	return t.renderers[UnknownCommand].Render(p)
-}
+// // RenderHandshake renders a handshake message
+// func (t Templates) RenderHandshake(user string) (string, error) {
+// 	p := t.newPayload()
+// 	p["user"] = user
+// 	return t.renderers[Handshake].Render(p)
+// }
 
-// RenderUnauthorizedCommand renders an unauthorized command message
-func (t Templates) RenderUnauthorizedCommand(user, cmd string, err error) (string, error) {
-	p := t.newPayload()
-	p["user"] = user
-	p["command"] = cmd
-	p["error"] = err
-	return t.renderers[Unauthorized].Render(p)
-}
+// // RenderUnknownCommand renders an unknown command message
+// func (t Templates) RenderUnknownCommand(user, cmd string) (string, error) {
+// 	p := t.newPayload()
+// 	p["user"] = user
+// 	p["command"] = cmd
+// 	return t.renderers[UnknownCommand].Render(p)
+// }
 
-// RenderSuccess renders a success message
-func (t Templates) RenderSuccess(user, output string) (string, error) {
-	p := t.newPayload()
-	p["user"] = user
-	p["output"] = output
-	return t.renderers[Success].Render(p)
-}
+// // RenderUnauthorizedCommand renders an unauthorized command message
+// func (t Templates) RenderUnauthorizedCommand(user, cmd string, err error) (string, error) {
+// 	p := t.newPayload()
+// 	p["user"] = user
+// 	p["command"] = cmd
+// 	p["error"] = err
+// 	return t.renderers[Unauthorized].Render(p)
+// }
 
-// RenderFailure renders a failure message
-func (t Templates) RenderFailure(user, err, output string) (string, error) {
-	p := t.newPayload()
-	p["user"] = user
-	p["error"] = err
-	p["output"] = output
-	return t.renderers[Failure].Render(p)
-}
+// // RenderSuccess renders a success message
+// func (t Templates) RenderSuccess(user, output string) (string, error) {
+// 	p := t.newPayload()
+// 	p["user"] = user
+// 	p["output"] = output
+// 	return t.renderers[Success].Render(p)
+// }
 
-func (t Templates) newPayload() Payload {
-	p := Payload{}
+// // RenderFailure renders a failure message
+// func (t Templates) RenderFailure(user, err, output string) (string, error) {
+// 	p := t.newPayload()
+// 	p["user"] = user
+// 	p["error"] = err
+// 	p["output"] = output
+// 	return t.renderers[Failure].Render(p)
+// }
+
+func (t Templates) newPayload() map[string]interface{} {
+	p := map[string]interface{}{}
 	for k, v := range t.defaultPayload {
 		p[k] = v
 	}
 	return p
 }
-
-// Payload is a helper type that provides a AnyMessage(key) method
-type Payload map[string]interface{}
 
 func anyValue(key string, payload map[string]interface{}) (string, error) {
 	values, ok := payload[key]
@@ -216,7 +233,7 @@ func New(name, template string) (Renderer, error) {
 }
 
 // Render renders the template with the passed in data
-func (r Renderer) Render(data Payload) (string, error) {
+func (r Renderer) Render(data map[string]interface{}) (string, error) {
 	b := bytes.NewBuffer([]byte{})
 	err := r.template.Execute(b, data)
 

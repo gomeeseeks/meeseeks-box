@@ -1,7 +1,6 @@
 package template_test
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -15,25 +14,25 @@ func Test_Templating(t *testing.T) {
 	tt := []struct {
 		name     string
 		template string
-		data     template.Payload
+		data     map[string]interface{}
 		expected string
 	}{
 		{
 			name:     "simple static",
 			template: "hello!",
-			data:     template.Payload{},
+			data:     map[string]interface{}{},
 			expected: "hello!",
 		},
 		{
 			name:     "simple static",
 			template: "{{ \"hello!\" }}",
-			data:     template.Payload{},
+			data:     map[string]interface{}{},
 			expected: "hello!",
 		},
 		{
 			name:     "with one single value",
 			template: "value: {{ .Value }}",
-			data: template.Payload{
+			data: map[string]interface{}{
 				"Value": "a value",
 			},
 			expected: "value: a value",
@@ -41,7 +40,7 @@ func Test_Templating(t *testing.T) {
 		{
 			name:     "with a map of values",
 			template: "list: {{ range $key, $element := .Values }}{{ $key }}={{ $element }} {{ end }}",
-			data: template.Payload{
+			data: map[string]interface{}{
 				"Values": map[string]string{
 					"first":  "one",
 					"second": "two",
@@ -97,19 +96,19 @@ func Test_InvalidData(t *testing.T) {
 	tt := []struct {
 		name     string
 		template string
-		payload  template.Payload
+		payload  map[string]interface{}
 		expected string
 	}{
 		{
 			name:     "no value",
 			template: "{{ AnyValue \"Value\" . }}",
-			payload:  template.Payload{},
+			payload:  map[string]interface{}{},
 			expected: "failed to execute template no value: template: no value:1:3: executing \"no value\" at <AnyValue \"Value\" .>: error calling AnyValue: Value is not loaded in the payload",
 		},
 		{
 			name:     "wrong value type",
 			template: "{{ AnyValue \"Value\" . }}",
-			payload:  template.Payload{"Value": "something"},
+			payload:  map[string]interface{}{"Value": "something"},
 			expected: "failed to execute template wrong value type: template: wrong value type:1:3: executing \"wrong value type\" at <AnyValue \"Value\" .>: error calling AnyValue: Value is not a string slice",
 		},
 	}
@@ -136,7 +135,11 @@ func Test_ChangingTemplate(t *testing.T) {
 	templates := template.NewBuilder().WithTemplates(map[string]string{
 		template.Handshake: "hello!",
 	}).Build()
-	out, err := templates.RenderHandshake("myuser")
+	out, err := templates.Render(template.Handshake,
+		map[string]interface{}{
+			"user": "myuser",
+		},
+	)
 	mocks.Must(t, "can't render changed handshake template", err)
 	mocks.AssertEquals(t, "hello!", out)
 }
@@ -145,10 +148,11 @@ func Test_ChangingMessages(t *testing.T) {
 	templates := template.NewBuilder().WithMessages(map[string][]string{
 		template.Handshake: {"yo!"},
 	}).Build()
-	out, err := templates.RenderHandshake("myuser")
+	out, err := templates.Render(template.Handshake, map[string]interface{}{})
 	mocks.Must(t, "can't render changed handshake template", err)
 	mocks.AssertEquals(t, "yo!", out)
 }
+
 func Test_DefaultTemplates(t *testing.T) {
 	templates := template.NewBuilder().Build()
 
@@ -181,49 +185,69 @@ func Test_DefaultTemplates(t *testing.T) {
 		{
 			name: "Handshake",
 			renderer: func() (string, error) {
-				return templates.RenderHandshake("my user")
+				return templates.Render(template.Handshake, map[string]interface{}{})
 			},
 			matcher: handshakeMatcher,
 		},
 		{
 			name: "Simple success",
 			renderer: func() (string, error) {
-				return templates.RenderSuccess("<@myself>", "")
+				return templates.Render(template.Success, map[string]interface{}{
+					"userlink": "<@myself>",
+				})
 			},
 			matcher: successMatcher,
 		},
 		{
 			name: "Success with output",
 			renderer: func() (string, error) {
-				return templates.RenderSuccess("<@myself>", "something happened")
+				return templates.Render(template.Success, map[string]interface{}{
+					"userlink": "<@myself>",
+					"output":   "something happened",
+				})
 			},
 			matcher: successWithOutputMatcher,
 		},
 		{
 			name: "Simple Failure",
 			renderer: func() (string, error) {
-				return templates.RenderFailure("<@myself>", "it failed", "")
+				return templates.Render(template.Failure, map[string]interface{}{
+					"userlink": "<@myself>",
+					"error":    "it failed",
+				})
+				// return templates.RenderFailure("<@myself>", "it failed", "")
 			},
 			matcher: failureMatcher,
 		},
 		{
 			name: "Failure with output",
 			renderer: func() (string, error) {
-				return templates.RenderFailure("<@myself>", "it failed", "some output")
+				return templates.Render(template.Failure, map[string]interface{}{
+					"userlink": "<@myself>",
+					"error":    "it failed",
+					"output":   "some output",
+				})
 			},
 			matcher: failureWithOutputMatcher,
 		},
 		{
 			name: "Unknown command",
 			renderer: func() (string, error) {
-				return templates.RenderUnknownCommand("<@myself>", "mycommand")
+				return templates.Render(template.UnknownCommand, map[string]interface{}{
+					"userlink": "<@myself>",
+					"command":  "mycommand",
+				})
 			},
 			matcher: unknownCommandMatcher,
 		},
 		{
 			name: "Unauthorized command",
 			renderer: func() (string, error) {
-				return templates.RenderUnauthorizedCommand("<@myself>", "mycommand", errors.New("just because"))
+				return templates.Render(template.Unauthorized, map[string]interface{}{
+					"userlink": "<@myself>",
+					"command":  "mycommand",
+					"error":    "just because",
+				})
 			},
 			matcher: unauthorizedCommandMatcher,
 		},

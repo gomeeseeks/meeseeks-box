@@ -133,12 +133,12 @@ func (c ClientStub) ListenMessages(ch chan<- meeseeks.Message) {
 
 // MessageStub is a simple stub that implements the Slack.Message interface
 type MessageStub struct {
-	Text      string
-	Channel   string
-	User      string
-	UserID    string
-	ChannelID string
-	IM        bool
+	Text    string
+	Channel string
+	User    string
+	// UserID    string
+	// ChannelID string
+	IM bool
 }
 
 // GetText implements the slack.Message.GetText interface
@@ -173,7 +173,7 @@ func (m MessageStub) GetUsername() string {
 
 // GetUserID implements the slack.Message.GetUsername interface
 func (m MessageStub) GetUserID() string {
-	return m.User
+	return m.User + "ID"
 }
 
 // IsIM implements the slack.Message.IsIM

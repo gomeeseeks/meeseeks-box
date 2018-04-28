@@ -1,11 +1,10 @@
 package formatter
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/template"
-	"github.com/sirupsen/logrus"
 )
 
 // Default colors
@@ -65,45 +64,39 @@ func (f Formatter) WithTemplates(templates map[string]string) template.Templates
 }
 
 // HandshakeReply creates a reply for a handshake message
-func (f Formatter) HandshakeReply(to ReplyTo) Reply {
-	return f.newReplier(template.Handshake, to)
+func (f Formatter) HandshakeReply(req meeseeks.Request) Reply {
+	return f.newReplier(template.Handshake, req)
 }
 
 // UnknownCommandReply creates a reply for an UnknownCommand error message
-func (f Formatter) UnknownCommandReply(to ReplyTo, cmd string) Reply {
-	return f.newReplier(template.UnknownCommand, to).WithOutput(cmd)
+func (f Formatter) UnknownCommandReply(req meeseeks.Request) Reply {
+	return f.newReplier(template.UnknownCommand, req)
 }
 
 // UnauthorizedCommandReply creates a reply for an unauthorized command error message
-func (f Formatter) UnauthorizedCommandReply(to ReplyTo, cmd string) Reply {
-	return f.newReplier(template.Unauthorized, to).WithOutput(cmd)
+func (f Formatter) UnauthorizedCommandReply(req meeseeks.Request) Reply {
+	return f.newReplier(template.Unauthorized, req)
 }
 
 // FailureReply creates a reply for a generic command error message
-func (f Formatter) FailureReply(to ReplyTo, err error) Reply {
-	return f.newReplier(template.Failure, to).WithError(err)
+func (f Formatter) FailureReply(req meeseeks.Request, err error) Reply {
+	return f.newReplier(template.Failure, req).WithError(err)
 }
 
 // SuccessReply creates a reply for a generic command success message
-func (f Formatter) SuccessReply(to ReplyTo) Reply {
-	return f.newReplier(template.Success, to)
+func (f Formatter) SuccessReply(req meeseeks.Request) Reply {
+	return f.newReplier(template.Success, req)
 }
 
-func (f Formatter) newReplier(mode string, to ReplyTo) Reply {
+func (f Formatter) newReplier(action string, req meeseeks.Request) Reply {
 	return Reply{
-		mode: mode,
-		to:   to,
+		action:  action,
+		request: req,
 
 		templates: f.templates.Clone(),
-		style:     f.replyStyle.Get(mode),
+		style:     f.replyStyle.Get(action),
 		colors:    f.colors,
 	}
-}
-
-// ReplyTo holds the information of who and where to reply
-type ReplyTo struct {
-	UserLink  string
-	ChannelID string
 }
 
 type replyStyle struct {
@@ -127,29 +120,14 @@ func (r replyStyle) Get(mode string) string {
 
 // Reply represents all the data necessary to send a reply message
 type Reply struct {
-	mode   string
-	to     ReplyTo
-	output string
-	err    error
+	action  string
+	request meeseeks.Request
+	output  string
+	err     error
 
 	colors    MessageColors
 	templates *template.TemplatesBuilder
 	style     string
-}
-
-// WithCommand receives a command and pulls all the specific command configuration
-func (r Reply) WithCommand(cmd meeseeks.Command) Reply {
-	if r.templates == nil {
-		logrus.Info("templates are nil in the current reply??")
-		return r
-	}
-	if cmd.Templates() == nil {
-		logrus.Info("command templates are nil for %#v", cmd)
-		return r
-	}
-
-	r.templates = r.templates.WithTemplates(cmd.Templates())
-	return r
 }
 
 // WithOutput stores the text payload to render in the reply
@@ -166,25 +144,27 @@ func (r Reply) WithError(err error) Reply {
 
 // Render renders the message returning the rendered text, or an error if something goes wrong.
 func (r Reply) Render() (string, error) {
-	switch r.mode {
-	case template.Handshake:
-		return r.templates.Build().RenderHandshake(r.to.UserLink)
-	case template.UnknownCommand:
-		return r.templates.Build().RenderUnknownCommand(r.to.UserLink, r.output)
-	case template.Unauthorized:
-		return r.templates.Build().RenderUnauthorizedCommand(r.to.UserLink, r.output, r.err)
-	case template.Failure:
-		return r.templates.Build().RenderFailure(r.to.UserLink, r.err.Error(), r.output)
-	case template.Success:
-		return r.templates.Build().RenderSuccess(r.to.UserLink, r.output)
-	default:
-		return "", fmt.Errorf("don't know how to render mode '%s'", r.mode)
-	}
+	payload := make(map[string]interface{})
+	payload["command"] = r.request.Command
+	payload["args"] = strings.Join(r.request.Args, " ")
+
+	payload["user"] = r.request.Username
+	payload["userlink"] = r.request.UserLink
+	payload["userid"] = r.request.UserID
+	payload["channel"] = r.request.Channel
+	payload["channellink"] = r.request.ChannelLink
+	payload["channelid"] = r.request.ChannelID
+	payload["isim"] = r.request.IsIM
+
+	payload["error"] = r.err
+	payload["output"] = r.output
+
+	return r.templates.Build().Render(r.action, payload)
 }
 
 // ChannelID returns the channel ID in which to reply
 func (r Reply) ChannelID() string {
-	return r.to.ChannelID
+	return r.request.ChannelID
 }
 
 // ReplyStyle returns the style to use to reply
@@ -194,7 +174,7 @@ func (r Reply) ReplyStyle() string {
 
 // Color returns the color to use when decorating the reply
 func (r Reply) Color() string {
-	switch r.mode {
+	switch r.action {
 	case template.Handshake:
 		return r.colors.Info
 	case template.UnknownCommand, template.Unauthorized, template.Failure:

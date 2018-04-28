@@ -158,10 +158,9 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				logrus.Infof("starting test %s", tc.name)
 				client.MessagesCh() <- mocks.MessageStub{
-					Text:      tc.message,
-					Channel:   tc.channel,
-					ChannelID: tc.channel + "ID",
-					User:      tc.user,
+					Text:    tc.message,
+					Channel: tc.channel,
+					User:    tc.user,
 				}
 				logrus.Infof("message sent to channel on %s", tc.name)
 

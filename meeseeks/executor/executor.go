@@ -64,29 +64,20 @@ func (m *Meeseeks) Start() {
 		req, err := request.FromMessage(msg)
 		if err != nil {
 			logrus.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
-			m.client.Reply(formatter.Get().FailureReply(formatter.ReplyTo{
-				UserLink:  msg.GetUserLink(),
-				ChannelID: msg.GetChannelID(),
-			}, err))
+			m.client.Reply(formatter.Get().FailureReply(req, err))
 			continue
 		}
 		metrics.ReceivedCommandsCount.Inc()
 
 		cmd, ok := commands.Find(&req)
 		if !ok {
-			m.client.Reply(formatter.Get().UnknownCommandReply(formatter.ReplyTo{
-				UserLink:  msg.GetUserLink(),
-				ChannelID: msg.GetChannelID(),
-			}, req.Command))
+			m.client.Reply(formatter.Get().UnknownCommandReply(req))
 			metrics.UnknownCommandsCount.Inc()
 			continue
 		}
 
 		if err = auth.Check(req, cmd); err != nil {
-			m.client.Reply(formatter.Get().UnauthorizedCommandReply(formatter.ReplyTo{
-				UserLink:  msg.GetUserLink(),
-				ChannelID: msg.GetChannelID(),
-			}, req.Command).WithCommand(cmd))
+			m.client.Reply(formatter.Get().UnauthorizedCommandReply(req))
 			metrics.RejectedCommandsCount.WithLabelValues(req.Command).Inc()
 			continue
 		}
@@ -97,10 +88,7 @@ func (m *Meeseeks) Start() {
 
 		t, err := m.createTask(req, cmd)
 		if err != nil {
-			m.client.Reply(formatter.Get().FailureReply(formatter.ReplyTo{
-				UserLink:  msg.GetUserLink(),
-				ChannelID: msg.GetChannelID(),
-			}, fmt.Errorf("could not create task: %s", err)).WithCommand(cmd))
+			m.client.Reply(formatter.Get().FailureReply(req, fmt.Errorf("could not create task: %s", err)))
 			continue
 		}
 
@@ -141,10 +129,7 @@ func (m *Meeseeks) loop() {
 			cmd := t.cmd
 
 			if cmd.HasHandshake() {
-				m.client.Reply(formatter.Get().HandshakeReply(formatter.ReplyTo{
-					UserLink:  req.UserLink,
-					ChannelID: req.ChannelID,
-				}).WithCommand(cmd))
+				m.client.Reply(formatter.Get().HandshakeReply(req))
 			}
 
 			ctx := m.activeCommands.Add(t)
@@ -155,10 +140,7 @@ func (m *Meeseeks) loop() {
 				logrus.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 					req.Command, req.Username, err)
 
-				m.client.Reply(formatter.Get().FailureReply(formatter.ReplyTo{
-					UserLink:  req.UserLink,
-					ChannelID: req.ChannelID,
-				}, err).WithCommand(cmd).WithOutput(out))
+				m.client.Reply(formatter.Get().FailureReply(req, err).WithOutput(out))
 
 				metrics.FailedTasksCount.WithLabelValues(job.Request.Command).Inc()
 				jobs.Finish(job.ID, jobs.FailedStatus)
@@ -167,10 +149,7 @@ func (m *Meeseeks) loop() {
 				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 					req.Username)
 
-				m.client.Reply(formatter.Get().SuccessReply(formatter.ReplyTo{
-					UserLink:  req.UserLink,
-					ChannelID: req.ChannelID,
-				}).WithCommand(cmd).WithOutput(out))
+				m.client.Reply(formatter.Get().SuccessReply(req).WithOutput(out))
 
 				metrics.SuccessfulTasksCount.WithLabelValues(job.Request.Command).Inc()
 				jobs.Finish(job.ID, jobs.SuccessStatus)
