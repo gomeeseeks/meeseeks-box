@@ -373,7 +373,7 @@ func (h helpCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 			commands[k] = c
 		}
 
-		return tmpl.Render(template.Payload{
+		return tmpl.Render(map[string]interface{}{
 			"commands": commands,
 		})
 
@@ -383,7 +383,7 @@ func (h helpCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 			if err != nil {
 				return "", err
 			}
-			return tmpl.Render(template.Payload{
+			return tmpl.Render(map[string]interface{}{
 				"name": flags.Arg(0),
 				"help": cmd.Help(),
 			})
@@ -496,7 +496,7 @@ func (g groupsCommand) Execute(_ context.Context, job meeseeks.Job) (string, err
 	if err != nil {
 		return "", err
 	}
-	return tmpl.Render(template.Payload{
+	return tmpl.Render(map[string]interface{}{
 		"groups": auth.GetGroups(),
 	})
 }
@@ -552,7 +552,7 @@ func (j jobsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 	if err != nil {
 		return "", err
 	}
-	return tmpl.Render(template.Payload{
+	return tmpl.Render(map[string]interface{}{
 		"jobs": jobs,
 	})
 }
@@ -600,7 +600,7 @@ func (j auditCommand) Execute(_ context.Context, job meeseeks.Job) (string, erro
 	if err != nil {
 		return "", err
 	}
-	return tmpl.Render(template.Payload{
+	return tmpl.Render(map[string]interface{}{
 		"jobs": jobs,
 	})
 }
@@ -643,7 +643,7 @@ func (l lastCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 	if err != nil {
 		return "", err
 	}
-	return tmpl.Render(template.Payload{
+	return tmpl.Render(map[string]interface{}{
 		"job": jobs[0],
 	})
 }
@@ -684,7 +684,7 @@ func (l findJobCommand) Execute(_ context.Context, job meeseeks.Job) (string, er
 	if err != nil {
 		return "", err
 	}
-	return tmpl.Render(template.Payload{
+	return tmpl.Render(map[string]interface{}{
 		"job": jobs[0],
 	})
 }
@@ -722,7 +722,7 @@ func (l auditJobCommand) Execute(_ context.Context, job meeseeks.Job) (string, e
 	if err != nil {
 		return "", err
 	}
-	return tmpl.Render(template.Payload{
+	return tmpl.Render(map[string]interface{}{
 		"job": jobs[0],
 	})
 }
@@ -975,7 +975,7 @@ func (l listAPITokensCommand) Execute(_ context.Context, job meeseeks.Job) (stri
 		return "", err
 	}
 
-	return tmpl.Render(template.Payload{
+	return tmpl.Render(map[string]interface{}{
 		"tokens": t,
 	})
 }
@@ -1053,7 +1053,7 @@ func (l getAliasesCommand) Execute(_ context.Context, job meeseeks.Job) (string,
 	if err != nil {
 		return "", err
 	}
-	return tmpl.Render(template.Payload{
+	return tmpl.Render(map[string]interface{}{
 		"aliases": a,
 	})
 }
