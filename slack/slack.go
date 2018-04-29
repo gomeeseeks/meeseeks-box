@@ -11,7 +11,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request/parser"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/parser"
 
 	"github.com/nlopes/slack"
 	"github.com/sirupsen/logrus"

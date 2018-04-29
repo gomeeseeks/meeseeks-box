@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request/parser"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/parser"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
 )
 
