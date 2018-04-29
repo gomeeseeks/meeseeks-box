@@ -83,19 +83,6 @@ func Test_MeeseeksInteractions(t *testing.T) {
 				},
 			},
 		},
-		// { // This case has to be handled inside the slack client
-		// 	name:    "no command to run",
-		// 	user:    "myuser",
-		// 	message: "",
-		// 	channel: "general",
-		// 	expected: []expectedMessage{
-		// 		{
-		// 			TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: no command to run$",
-		// 			Channel:     "generalID",
-		// 			IsIM:        false,
-		// 		},
-		// 	},
-		// },
 		{
 			name:      "disallowed command",
 			userLink:  "<@myuser>",

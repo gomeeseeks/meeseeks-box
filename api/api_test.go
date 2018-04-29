@@ -71,7 +71,7 @@ func TestAPIServer(t *testing.T) {
 		})
 		mocks.Must(t, "failed to create the token", err)
 
-		s := api.NewServer(mocks.MetadataStub{
+		s := api.NewServer(mocks.EnricherStub{
 			IM: false,
 		}, "/api", ":0")
 		defer s.Shutdown()
