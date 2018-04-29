@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request/parser"
 	"github.com/gomeeseeks/meeseeks-box/tokens"
 )
 
@@ -22,78 +23,24 @@ type Enricher interface {
 	IsIM(string) bool
 }
 
-// Listener implements the message Listener API and is used to send the messaged
-// received from the API to the messaging pipeline
-type Listener struct {
+// Server is used to provide API access
+type Server struct {
+	httpServer http.Server
+
 	enricher   Enricher
 	requestsCh chan meeseeks.Request
 	shutdown   chan bool
 }
 
-func (l Listener) sendMessage(token meeseeks.APIToken, message string) error {
-	channelID, err := l.enricher.ParseChannelLink(token.ChannelLink)
-	if err != nil {
-		logrus.Errorf("Failed to parse channel link %s: %s. Dropping message!", token.ChannelLink, err)
-		// TODO: this error should go to the administration channel
-		return err
-	}
-
-	userID, err := l.enricher.ParseUserLink(token.UserLink)
-	if err != nil {
-		logrus.Errorf("Failed to parse user link %s: %s. Dropping message!", token.UserLink, err)
-		// TODO: this error should go to the administration channel
-		return err
-	}
-
-	l.requestsCh <- meeseeks.Request{
-		UserID:      userID,
-		Username:    l.enricher.GetUsername(userID),
-		UserLink:    l.enricher.GetUserLink(userID),
-		ChannelID:   channelID,
-		Channel:     l.enricher.GetChannel(channelID),
-		ChannelLink: l.enricher.GetChannelLink(channelID),
-		IsIM:        l.enricher.IsIM(channelID),
-	}
-	return nil
-}
-
-// Listen starts a listening on
-func (l Listener) Listen(ch chan<- meeseeks.Request) {
-	shutdown := false
-	for !shutdown {
-		select {
-		case r := <-l.requestsCh:
-			ch <- r
-		case shutdown = <-l.shutdown:
-			break
-		}
-	}
-}
-
-// Shutdown closes the internal messages channel
-func (l Listener) Shutdown() {
-	logrus.Infof("Shutting down API messages channel")
-	l.shutdown <- true
-	close(l.requestsCh)
-}
-
-// Server is used to provide API access
-type Server struct {
-	listener   Listener
-	httpServer http.Server
-}
-
 // NewServer returns a new API Server that will use the provided metadata client
 func NewServer(enricher Enricher, path, address string) *Server {
 	s := Server{
-		listener: Listener{
-			enricher,
-			make(chan meeseeks.Request),
-			make(chan bool),
-		},
-		httpServer: http.Server{
+		http.Server{
 			Addr: address,
 		},
+		enricher,
+		make(chan meeseeks.Request),
+		make(chan bool),
 	}
 	http.HandleFunc(path, s.HandlePostToken)
 	return &s
@@ -104,16 +51,60 @@ func (s *Server) ListenAndServe() error {
 	return s.httpServer.ListenAndServe()
 }
 
-// GetListener returns the internal messages listener to register with the chat pipeline
-func (s *Server) GetListener() Listener {
-	return s.listener
+func (s *Server) sendMessage(token meeseeks.APIToken, message string) error {
+	channelID, err := s.enricher.ParseChannelLink(token.ChannelLink)
+	if err != nil {
+		logrus.Errorf("Failed to parse channel link %s: %s. Dropping message!", token.ChannelLink, err)
+		// TODO: this error should go to the administration channel
+		return err
+	}
+
+	userID, err := s.enricher.ParseUserLink(token.UserLink)
+	if err != nil {
+		logrus.Errorf("Failed to parse user link %s: %s. Dropping message!", token.UserLink, err)
+		// TODO: this error should go to the administration channel
+		return err
+	}
+
+	args, err := parser.Parse(token.Text + " " + message)
+	if err != nil {
+		return err
+	}
+
+	s.requestsCh <- meeseeks.Request{
+		Command:     args[0],
+		Args:        args[1:],
+		UserID:      userID,
+		Username:    s.enricher.GetUsername(userID),
+		UserLink:    s.enricher.GetUserLink(userID),
+		ChannelID:   channelID,
+		Channel:     s.enricher.GetChannel(channelID),
+		ChannelLink: s.enricher.GetChannelLink(channelID),
+		IsIM:        s.enricher.IsIM(channelID),
+	}
+	return nil
+}
+
+// Listen starts a listening on
+func (s *Server) Listen(ch chan<- meeseeks.Request) {
+	shutdown := false
+	for !shutdown {
+		select {
+		case r := <-s.requestsCh:
+			ch <- r
+		case shutdown = <-s.shutdown:
+			break
+		}
+	}
 }
 
 // Shutdown shuts down the http server gracefully
 func (s *Server) Shutdown() error {
-	defer s.listener.Shutdown()
-	logrus.Infof("Shutting down API server")
+	logrus.Infof("Shutting down API messages channel")
+	s.shutdown <- true
+	close(s.requestsCh)
 
+	logrus.Infof("Shutting down API server")
 	return s.httpServer.Shutdown(context.TODO())
 }
 
@@ -133,9 +124,9 @@ func (s *Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.listener.sendMessage(token, r.FormValue("message")); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+	if err := s.sendMessage(token, r.FormValue("message")); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)

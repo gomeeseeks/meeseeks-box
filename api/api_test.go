@@ -64,7 +64,7 @@ func TestAPIServer(t *testing.T) {
 		// This is necessary because we need to store and then load the token in the DB
 		mocks.NewHarness().WithEchoCommand().WithDBPath(dbpath).Load()
 
-		tk, err := tokens.Create(tokens.NewTokenRequest{
+		validToken, err := tokens.Create(tokens.NewTokenRequest{
 			UserLink:    "someoneLink",
 			ChannelLink: "generalLink",
 			Text:        "echo something",
@@ -76,8 +76,8 @@ func TestAPIServer(t *testing.T) {
 		}, "/api", ":0")
 		defer s.Shutdown()
 
-		ch := make(chan meeseeks.Message)
-		go s.GetListener().ListenMessages(ch)
+		ch := make(chan meeseeks.Request)
+		go s.Listen(ch)
 
 		testSrv := httptest.NewServer(http.HandlerFunc(s.HandlePostToken))
 
@@ -87,7 +87,7 @@ func TestAPIServer(t *testing.T) {
 					actualStatus)
 			}
 		}
-		assertNothing := func(_ *testing.T, _ chan meeseeks.Message) {
+		assertNothing := func(_ *testing.T, _ chan meeseeks.Request) {
 		}
 
 		tt := []struct {
@@ -95,7 +95,7 @@ func TestAPIServer(t *testing.T) {
 			reqToken      string
 			payload       string
 			assertStatus  func(*testing.T, string)
-			assertMessage func(*testing.T, chan meeseeks.Message)
+			assertRequest func(*testing.T, chan meeseeks.Request)
 		}{
 			{
 				"invalid token",
@@ -113,35 +113,36 @@ func TestAPIServer(t *testing.T) {
 			},
 			{
 				"valid without payload call",
-				tk,
+				validToken,
 				"",
 				assertHttpStatus(http.StatusAccepted),
-				func(t *testing.T, ch chan meeseeks.Message) {
-					msg := <-ch
-					mocks.AssertEquals(t, "echo something", msg.GetText())
-					mocks.AssertEquals(t, "general", msg.GetChannelID())
-					mocks.AssertEquals(t, "name: general", msg.GetChannel())
-					mocks.AssertEquals(t, "<#general>", msg.GetChannelLink())
-					mocks.AssertEquals(t, "name: someone", msg.GetUsername())
-					mocks.AssertEquals(t, "<@someone>", msg.GetUserLink())
-					mocks.AssertEquals(t, "someone", msg.GetUserID())
-					mocks.AssertEquals(t, false, msg.IsIM())
+				func(t *testing.T, ch chan meeseeks.Request) {
+					req := <-ch
+					mocks.AssertEquals(t, "echo", req.Command)
+					mocks.AssertEquals(t, []string{"something"}, req.Args)
+					mocks.AssertEquals(t, "general", req.ChannelID)
+					mocks.AssertEquals(t, "name: general", req.Channel)
+					mocks.AssertEquals(t, "<#general>", req.ChannelLink)
+					mocks.AssertEquals(t, "name: someone", req.Username)
+					mocks.AssertEquals(t, "<@someone>", req.UserLink)
+					mocks.AssertEquals(t, "someone", req.UserID)
+					mocks.AssertEquals(t, false, req.IsIM)
 				},
 			},
 			{
 				"valid with payload call",
-				tk,
+				validToken,
 				"with arguments that will be attached",
 				assertHttpStatus(http.StatusAccepted),
-				func(t *testing.T, ch chan meeseeks.Message) {
-					msg := <-ch
-					mocks.AssertEquals(t, "echo something with arguments that will be attached", msg.GetText())
+				func(t *testing.T, ch chan meeseeks.Request) {
+					req := <-ch
+					mocks.AssertEquals(t, "echo", req.Command)
+					mocks.AssertEquals(t, []string{"something", "with", "arguments", "that", "will", "be", "attached"}, req.Args)
 				},
 			},
 		}
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
-
 				values := make(url.Values)
 				if tc.payload != "" {
 					values.Add("message", tc.payload)
@@ -154,12 +155,11 @@ func TestAPIServer(t *testing.T) {
 				req.Header.Add("TOKEN", tc.reqToken)
 
 				resp, err := testSrv.Client().Do(req)
-				mocks.Must(t, "failed to do request", err)
+				mocks.Must(t, "failed to execute request", err)
 
 				tc.assertStatus(t, resp.Status)
-				tc.assertMessage(t, ch)
+				tc.assertRequest(t, ch)
 			})
 		}
-
 	}))
 }

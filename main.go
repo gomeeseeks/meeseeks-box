@@ -11,7 +11,6 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/messenger"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
 
@@ -29,27 +28,19 @@ func main() {
 	slackClient := connectToSlack(args)
 	httpServer := listenHTTP(slackClient, args)
 
-	msgs, err := messenger.Listen(slackClient, httpServer.GetListener())
-	// TODO This must change
-	// Instead of a messenger we should get a Requester that has a channel that serves
-	// JobRequests, the internal implementation of the listener is the one that creates
-	// the request internally
-	// This means that we need to hide the implementation of the message itself and only
-	// handle meeseeks.Requests
-	// This then changes the "messenger" name in a requester of sorts
-	if err != nil {
-		logrus.Fatalf("Could not initialize messaging subsystem: %s", err)
-	}
 	logrus.Info("Listening to slack messages")
 
-	meeseek := executor.New(slackClient, msgs)
-	go meeseek.Start()
+	exc := executor.New(slackClient)
+
+	exc.ListenTo(slackClient)
+	exc.ListenTo(httpServer)
+
+	go exc.Run()
 	logrus.Info("Started commands pipeline")
 
 	waitForSignals(func() { // this locks for good, but receives a shutdown function
 		httpServer.Shutdown()
-		msgs.Shutdown()
-		meeseek.Shutdown()
+		exc.Shutdown()
 	})
 
 	logrus.Info("Everything has been shut down, bye bye!")
