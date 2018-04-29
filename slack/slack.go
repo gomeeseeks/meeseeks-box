@@ -2,6 +2,7 @@ package slack
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/request/parser"
 
 	"github.com/nlopes/slack"
 	"github.com/sirupsen/logrus"
@@ -195,24 +197,24 @@ func (m *messageMatcher) init() {
 	}
 }
 
-func (m *messageMatcher) Matches(message *slack.MessageEvent) (Message, error) {
+func (m *messageMatcher) Matches(msg *slack.MessageEvent) (message, error) {
 	m.init()
 
-	if text, ok := m.shouldCare(message); ok {
-		username := m.getUser(message.User)
-		channel := m.getChannel(message.Channel)
-		isIM := m.isIMChannel(message.Channel)
+	if text, ok := m.shouldCare(msg); ok {
+		username := m.getUser(msg.User)
+		channel := m.getChannel(msg.Channel)
+		isIM := m.isIMChannel(msg.Channel)
 
-		return Message{
+		return message{
 			text:      text,
-			userID:    message.User,
-			channelID: message.Channel,
+			userID:    msg.User,
+			channelID: msg.Channel,
 			username:  username,
 			channel:   channel,
 			isIM:      isIM,
 		}, nil
 	}
-	return Message{}, errIgnoredMessage
+	return message{}, errIgnoredMessage
 }
 
 func (m *messageMatcher) isMyself(message *slack.MessageEvent) bool {
@@ -247,8 +249,8 @@ func (m *messageMatcher) shouldCare(message *slack.MessageEvent) (string, bool) 
 	return "", false
 }
 
-// ListenMessages listens to messages and sends the matching ones through the channel
-func (c *Client) ListenMessages(ch chan<- meeseeks.Message) {
+// Listen listens to slack messages and sends the matching ones through the channel as requests
+func (c *Client) Listen(ch chan<- meeseeks.Request) {
 	logrus.Infof("Listening Slack RTM Messages")
 
 	for msg := range c.rtm.IncomingEvents {
@@ -259,8 +261,15 @@ func (c *Client) ListenMessages(ch chan<- meeseeks.Message) {
 				continue
 			}
 
+			r, err := requestFromMessage(message)
+			if err != nil {
+				logrus.Debugf("Failed to parse message '%s' as a command: %s", message.GetText(), err)
+				c.Reply(formatter.Get().FailureReply(r, err))
+				continue
+			}
+
 			logrus.Debugf("Sending Slack message %#v to messages channel", message)
-			ch <- message
+			ch <- r
 
 		default:
 			logrus.Debugf("Ignored Slack Event %#v", ev)
@@ -332,8 +341,8 @@ func (t textReplyStyle) Reply(r formatter.Reply) {
 	}
 }
 
-// Message a chat message
-type Message struct {
+// message a chat message
+type message struct {
 	text      string
 	channel   string
 	channelID string
@@ -343,41 +352,77 @@ type Message struct {
 }
 
 // GetText returns the message text
-func (m Message) GetText() string {
+func (m message) GetText() string {
 	return m.text
 }
 
 // GetUserID returns the user ID
-func (m Message) GetUserID() string {
+func (m message) GetUserID() string {
 	return m.userID
 }
 
 // GetUserLink returns the user id formatted for using in a slack message
-func (m Message) GetUserLink() string {
+func (m message) GetUserLink() string {
 	return fmt.Sprintf("<@%s>", m.userID)
 }
 
 // GetUsername returns the user friendly username
-func (m Message) GetUsername() string {
+func (m message) GetUsername() string {
 	return m.username
 }
 
 // GetChannelID returns the channel id from the which the message was sent
-func (m Message) GetChannelID() string {
+func (m message) GetChannelID() string {
 	return m.channelID
 }
 
 // GetChannel returns the channel from which the message was sent
-func (m Message) GetChannel() string {
+func (m message) GetChannel() string {
 	return m.channel
 }
 
 // GetChannelLink returns the channel that slack will turn into a link
-func (m Message) GetChannelLink() string {
+func (m message) GetChannelLink() string {
 	return fmt.Sprintf("<#%s|%s>", m.channelID, m.channel)
 }
 
 // IsIM returns if the message is an IM message
-func (m Message) IsIM() bool {
+func (m message) IsIM() bool {
 	return m.isIM
+}
+
+// ErrNoCommandToRun is returned when a request can't identify a command to run
+var ErrNoCommandToRun = errors.New("no command to run")
+
+func requestFromMessage(msg meeseeks.Message) (meeseeks.Request, error) {
+	args, err := parser.Parse(msg.GetText())
+	logrus.Debugf("Command '%s' parsed as %#v", msg.GetText(), args)
+
+	if err != nil {
+		return meeseeks.Request{}, err
+	}
+
+	if len(args) == 0 {
+		return meeseeks.Request{
+			Username:    msg.GetUsername(),
+			UserID:      msg.GetUserID(),
+			UserLink:    msg.GetUserLink(),
+			Channel:     msg.GetChannel(),
+			ChannelID:   msg.GetChannelID(),
+			ChannelLink: msg.GetChannelLink(),
+			IsIM:        msg.IsIM(),
+		}, ErrNoCommandToRun
+	}
+
+	return meeseeks.Request{
+		Command:     args[0],
+		Args:        args[1:],
+		Username:    msg.GetUsername(),
+		UserID:      msg.GetUserID(),
+		UserLink:    msg.GetUserLink(),
+		Channel:     msg.GetChannel(),
+		ChannelID:   msg.GetChannelID(),
+		ChannelLink: msg.GetChannelLink(),
+		IsIM:        msg.IsIM(),
+	}, nil
 }

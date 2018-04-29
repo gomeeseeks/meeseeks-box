@@ -97,15 +97,15 @@ func (h Harness) Load() ClientStub {
 //
 // It implements the Client interface
 type ClientStub struct {
-	MessagesSent     chan SentMessage
-	receivedMessages chan meeseeks.Message
+	MessagesSent chan SentMessage
+	RequestsCh   chan meeseeks.Request
 }
 
 // NewClientStub returns a new empty but intialized Client stub
 func newClientStub() ClientStub {
 	return ClientStub{
-		MessagesSent:     make(chan SentMessage),
-		receivedMessages: make(chan meeseeks.Message),
+		MessagesSent: make(chan SentMessage),
+		RequestsCh:   make(chan meeseeks.Request),
 	}
 }
 
@@ -119,14 +119,9 @@ func (c ClientStub) Reply(r formatter.Reply) {
 	c.MessagesSent <- SentMessage{Text: text, Channel: r.ChannelID()}
 }
 
-// MessagesCh implements meeseeks.Client.MessagesCh interface
-func (c ClientStub) MessagesCh() chan meeseeks.Message {
-	return c.receivedMessages
-}
-
-// ListenMessages listens for messages and then passes it to the sent channel
-func (c ClientStub) ListenMessages(ch chan<- meeseeks.Message) {
-	for m := range c.receivedMessages {
+// Listen listens for messages and then passes it to the sent channel
+func (c ClientStub) Listen(ch chan<- meeseeks.Request) {
+	for m := range c.RequestsCh {
 		ch <- m
 	}
 }

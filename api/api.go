@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -11,9 +10,9 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/tokens"
 )
 
-// MetadataClient is a helper client used to augment the metadata of the user
+// Enricher is a helper client used to augment the metadata of the user
 // and channel extracted from the registered token.
-type MetadataClient interface {
+type Enricher interface {
 	ParseChannelLink(string) (string, error)
 	ParseUserLink(string) (string, error)
 	GetUsername(string) string
@@ -26,55 +25,56 @@ type MetadataClient interface {
 // Listener implements the message Listener API and is used to send the messaged
 // received from the API to the messaging pipeline
 type Listener struct {
-	metadata  MetadataClient
-	messageCh chan meeseeks.Message
+	enricher   Enricher
+	requestsCh chan meeseeks.Request
+	shutdown   chan bool
 }
 
-func (l Listener) sendMessage(token meeseeks.APIToken, message string) {
-	channelID, err := l.metadata.ParseChannelLink(token.ChannelLink)
+func (l Listener) sendMessage(token meeseeks.APIToken, message string) error {
+	channelID, err := l.enricher.ParseChannelLink(token.ChannelLink)
 	if err != nil {
 		logrus.Errorf("Failed to parse channel link %s: %s. Dropping message!", token.ChannelLink, err)
-		return
 		// TODO: this error should go to the administration channel
+		return err
 	}
 
-	userID, err := l.metadata.ParseUserLink(token.UserLink)
+	userID, err := l.enricher.ParseUserLink(token.UserLink)
 	if err != nil {
 		logrus.Errorf("Failed to parse user link %s: %s. Dropping message!", token.UserLink, err)
-		return
 		// TODO: this error should go to the administration channel
+		return err
 	}
 
-	m := apiMessage{
-		channelID:      channelID,
-		userID:         userID,
-		text:           token.Text,
-		metadata:       l.metadata,
-		messagePayload: message,
+	l.requestsCh <- meeseeks.Request{
+		UserID:      userID,
+		Username:    l.enricher.GetUsername(userID),
+		UserLink:    l.enricher.GetUserLink(userID),
+		ChannelID:   channelID,
+		Channel:     l.enricher.GetChannel(channelID),
+		ChannelLink: l.enricher.GetChannelLink(channelID),
+		IsIM:        l.enricher.IsIM(channelID),
 	}
-	logrus.Debugf("Sending API message %#v to messages channel", m)
-	l.messageCh <- m
+	return nil
 }
 
-// ListenMessages listens to messages and sends the matching ones through the channel
-func (l Listener) ListenMessages(ch chan<- meeseeks.Message) {
-	for m := range l.messageCh {
-		ch <- m
+// Listen starts a listening on
+func (l Listener) Listen(ch chan<- meeseeks.Request) {
+	shutdown := false
+	for !shutdown {
+		select {
+		case r := <-l.requestsCh:
+			ch <- r
+		case shutdown = <-l.shutdown:
+			break
+		}
 	}
 }
 
 // Shutdown closes the internal messages channel
 func (l Listener) Shutdown() {
 	logrus.Infof("Shutting down API messages channel")
-	close(l.messageCh)
-}
-
-// NewListener returns a new message listener unsing the provided metadata client
-func NewListener(client MetadataClient) Listener {
-	return Listener{
-		metadata:  client,
-		messageCh: make(chan meeseeks.Message),
-	}
+	l.shutdown <- true
+	close(l.requestsCh)
 }
 
 // Server is used to provide API access
@@ -84,9 +84,13 @@ type Server struct {
 }
 
 // NewServer returns a new API Server that will use the provided metadata client
-func NewServer(client MetadataClient, path, address string) *Server {
+func NewServer(enricher Enricher, path, address string) *Server {
 	s := Server{
-		listener: NewListener(client),
+		listener: Listener{
+			enricher,
+			make(chan meeseeks.Request),
+			make(chan bool),
+		},
 		httpServer: http.Server{
 			Addr: address,
 		},
@@ -129,60 +133,10 @@ func (s *Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.listener.sendMessage(token, r.FormValue("message"))
+	if err := s.listener.sendMessage(token, r.FormValue("message")); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+	}
 
 	w.WriteHeader(http.StatusAccepted)
-}
-
-// Message a chat message
-type apiMessage struct {
-	userID         string
-	channelID      string
-	text           string
-	messagePayload string
-	metadata       MetadataClient
-}
-
-// GetText returns the message text
-func (m apiMessage) GetText() string {
-	text := m.text
-	if m.messagePayload != "" {
-		text = strings.Join([]string{text, m.messagePayload}, " ")
-	}
-	return text
-}
-
-// GetUsernameID returns the user id formatted for using in a slack message
-func (m apiMessage) GetUserID() string {
-	return m.userID
-}
-
-// GetUsername returns the user friendly username
-func (m apiMessage) GetUsername() string {
-	return m.metadata.GetUsername(m.userID)
-}
-
-// GetUserLink
-func (m apiMessage) GetUserLink() string {
-	return m.metadata.GetUserLink(m.userID)
-}
-
-// GetChannelID returns the channel id from the which the message was sent
-func (m apiMessage) GetChannelID() string {
-	return m.channelID
-}
-
-// GetChannel returns the channel from which the message was sent
-func (m apiMessage) GetChannel() string {
-	return m.metadata.GetChannel(m.channelID)
-}
-
-// GetChannelLink returns the channel that slack will turn into a link
-func (m apiMessage) GetChannelLink() string {
-	return m.metadata.GetChannelLink(m.channelID)
-}
-
-// IsIM returns if the message is an IM message
-func (m apiMessage) IsIM() bool {
-	return m.metadata.IsIM(m.channelID)
 }

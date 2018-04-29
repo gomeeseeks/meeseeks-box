@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
-	"github.com/gomeeseeks/meeseeks-box/messenger"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/template"
 	"github.com/renstrom/dedent"
@@ -24,17 +24,19 @@ func Test_MeeseeksInteractions(t *testing.T) {
 	handshakeMatcher := fmt.Sprintf("^(%s)$", strings.Join(template.DefaultHandshakeMessages, "|"))
 
 	tt := []struct {
-		name     string
-		user     string
-		message  string
-		channel  string
-		expected []expectedMessage
+		name      string
+		userLink  string
+		cmd       string
+		args      []string
+		channelID string
+		expected  []expectedMessage
 	}{
 		{
-			name:    "basic case",
-			user:    "myuser",
-			message: "echo hello!",
-			channel: "general",
+			name:      "basic case",
+			userLink:  "<@myuser>",
+			channelID: "generalID",
+			cmd:       "echo",
+			args:      []string{"hello!"},
 			expected: []expectedMessage{
 				{
 					TextMatcher: handshakeMatcher,
@@ -49,10 +51,11 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			},
 		},
 		{
-			name:    "basic with cmds args",
-			user:    "myuser",
-			message: "args-echo hello!",
-			channel: "general",
+			name:      "basic with cmds args",
+			userLink:  "<@myuser>",
+			channelID: "generalID",
+			cmd:       "args-echo",
+			args:      []string{"hello!"},
 			expected: []expectedMessage{
 				{
 					TextMatcher: handshakeMatcher,
@@ -67,10 +70,11 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			},
 		},
 		{
-			name:    "unknown command case",
-			user:    "myuser",
-			message: "unknown-command hello!",
-			channel: "general",
+			name:      "unknown command case",
+			userLink:  "<@myuser>",
+			channelID: "generalID",
+			cmd:       "unknown-command",
+			args:      []string{"hello!"},
 			expected: []expectedMessage{
 				{
 					TextMatcher: "^<@myuser> Uuuh! no, I don't know how to do unknown-command$",
@@ -79,24 +83,25 @@ func Test_MeeseeksInteractions(t *testing.T) {
 				},
 			},
 		},
+		// { // This case has to be handled inside the slack client
+		// 	name:    "no command to run",
+		// 	user:    "myuser",
+		// 	message: "",
+		// 	channel: "general",
+		// 	expected: []expectedMessage{
+		// 		{
+		// 			TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: no command to run$",
+		// 			Channel:     "generalID",
+		// 			IsIM:        false,
+		// 		},
+		// 	},
+		// },
 		{
-			name:    "no command to run",
-			user:    "myuser",
-			message: "",
-			channel: "general",
-			expected: []expectedMessage{
-				{
-					TextMatcher: "^<@myuser> Uuuh!, no, it failed :disappointed: no command to run$",
-					Channel:     "generalID",
-					IsIM:        false,
-				},
-			},
-		},
-		{
-			name:    "disallowed command",
-			user:    "myuser",
-			message: "disallowed",
-			channel: "general",
+			name:      "disallowed command",
+			userLink:  "<@myuser>",
+			channelID: "generalID",
+			cmd:       "disallowed",
+			args:      []string{},
 			expected: []expectedMessage{
 				{
 					TextMatcher: "<@myuser> Uuuuh, yeah! you are not allowed to do disallowed",
@@ -106,10 +111,11 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			},
 		},
 		{
-			name:    "fail command",
-			user:    "myuser",
-			message: "fail",
-			channel: "general",
+			name:      "fail command",
+			userLink:  "<@myuser>",
+			channelID: "generalID",
+			cmd:       "fail",
+			args:      []string{},
 			expected: []expectedMessage{
 				{
 					TextMatcher: handshakeMatcher,
@@ -147,20 +153,19 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			    args: ["pre-message"]
 			`)).WithDBPath(dbpath).Load()
 
-		msgs, err := messenger.Listen(client)
-		if err != nil {
-			t.Fatalf("could not create listener: %s", err)
-		}
-		m := executor.New(client, msgs)
-		go m.Start()
+		e := executor.New(client)
+		e.ListenTo(client)
+
+		go e.Run()
 
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
 				logrus.Infof("starting test %s", tc.name)
-				client.MessagesCh() <- mocks.MessageStub{
-					Text:    tc.message,
-					Channel: tc.channel,
-					User:    tc.user,
+				client.RequestsCh <- meeseeks.Request{
+					Command:   tc.cmd,
+					Args:      tc.args,
+					UserLink:  tc.userLink,
+					ChannelID: tc.channelID,
 				}
 				logrus.Infof("message sent to channel on %s", tc.name)
 
@@ -183,7 +188,6 @@ func Test_MeeseeksInteractions(t *testing.T) {
 				}
 			})
 		}
-		m.Shutdown()
 	})
 
 }

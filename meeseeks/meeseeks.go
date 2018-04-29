@@ -104,3 +104,8 @@ type Alias struct {
 	Command string
 	Args    []string
 }
+
+// RequestListener provides a simple interface to start listening requests on a channel
+type RequestListener interface {
+	Listen(chan<- Request)
+}
