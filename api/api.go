@@ -93,7 +93,7 @@ func (s *Server) Listen(ch chan<- meeseeks.Request) {
 		case r := <-s.requestsCh:
 			ch <- r
 		case shutdown = <-s.shutdown:
-			break
+			// nothing to do here
 		}
 	}
 }
