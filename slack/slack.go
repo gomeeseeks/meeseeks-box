@@ -2,7 +2,6 @@ package slack
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -18,6 +17,7 @@ import (
 )
 
 var errIgnoredMessage = fmt.Errorf("ignore this message")
+var errNoCommandToRun = fmt.Errorf("no command to run")
 
 const (
 	textStyle = "text"
@@ -391,9 +391,6 @@ func (m message) IsIM() bool {
 	return m.isIM
 }
 
-// ErrNoCommandToRun is returned when a request can't identify a command to run
-var ErrNoCommandToRun = errors.New("no command to run")
-
 func requestFromMessage(msg meeseeks.Message) (meeseeks.Request, error) {
 	args, err := parser.Parse(msg.GetText())
 	logrus.Debugf("Command '%s' parsed as %#v", msg.GetText(), args)
@@ -403,15 +400,7 @@ func requestFromMessage(msg meeseeks.Message) (meeseeks.Request, error) {
 	}
 
 	if len(args) == 0 {
-		return meeseeks.Request{
-			Username:    msg.GetUsername(),
-			UserID:      msg.GetUserID(),
-			UserLink:    msg.GetUserLink(),
-			Channel:     msg.GetChannel(),
-			ChannelID:   msg.GetChannelID(),
-			ChannelLink: msg.GetChannelLink(),
-			IsIM:        msg.IsIM(),
-		}, ErrNoCommandToRun
+		return meeseeks.Request{}, errNoCommandToRun
 	}
 
 	return meeseeks.Request{
