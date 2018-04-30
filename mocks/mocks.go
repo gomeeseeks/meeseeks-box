@@ -119,7 +119,7 @@ func (c ClientStub) Reply(r formatter.Reply) {
 	c.MessagesSent <- SentMessage{Text: text, Channel: r.ChannelID()}
 }
 
-// Listen listens for messages and then passes it to the sent channel
+// Listen listens for requests and then passes them to the passed in channel
 func (c ClientStub) Listen(ch chan<- meeseeks.Request) {
 	for m := range c.RequestsCh {
 		ch <- m

@@ -85,7 +85,7 @@ func (s *Server) sendMessage(token meeseeks.APIToken, message string) error {
 	return nil
 }
 
-// Listen starts a listening on
+// Listen starts listen on the passed in channel
 func (s *Server) Listen(ch chan<- meeseeks.Request) {
 	shutdown := false
 	for !shutdown {
