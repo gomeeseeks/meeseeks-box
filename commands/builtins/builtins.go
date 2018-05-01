@@ -758,7 +758,7 @@ func (t auditLogsCommand) Execute(_ context.Context, job meeseeks.Job) (string, 
 	}
 	j := jobs[0]
 
-	jobLogs, err := logs.GetJobLogReader(j.ID).Get()
+	jobLogs, err := logs.Reader(j.ID).Get()
 	if err != nil {
 		return "", err
 	}
@@ -792,7 +792,7 @@ func (t tailCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", err
 	}
 
-	jobLogs, err := logs.GetJobLogReader(jobID).Tail(*limit)
+	jobLogs, err := logs.Reader(jobID).Tail(*limit)
 	if err != nil {
 		return "", err
 	}
@@ -826,7 +826,7 @@ func (h headCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", err
 	}
 
-	jobLogs, err := logs.GetJobLogReader(jobID).Head(*limit)
+	jobLogs, err := logs.Reader(jobID).Head(*limit)
 	if err != nil {
 		return "", err
 	}
@@ -866,7 +866,7 @@ func (t logsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 	}
 	j := jobs[0]
 
-	jobLogs, err := logs.GetJobLogReader(j.ID).Get()
+	jobLogs, err := logs.Reader(j.ID).Get()
 	if err != nil {
 		return "", err
 	}

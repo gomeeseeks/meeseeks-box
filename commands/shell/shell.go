@@ -46,8 +46,8 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 	ctx, cancelFunc := context.WithTimeout(ctx, c.Timeout())
 	defer cancelFunc()
 
-	logR := logs.GetJobLogReader(job.ID)
-	logW := logs.GetJobLogWriter(job.ID)
+	logR := logs.Reader(job.ID)
+	logW := logs.Writer(job.ID)
 
 	AppendLogs := func(line string) {
 		if e := logW.Append(line); e != nil {
