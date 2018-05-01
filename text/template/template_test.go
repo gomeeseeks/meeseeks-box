@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/template"
+	"github.com/gomeeseeks/meeseeks-box/text/template"
 )
 
 func Test_Templating(t *testing.T) {

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	bolt "github.com/coreos/bbolt"
-	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
+	"github.com/gomeeseeks/meeseeks-box/persistence/db"
 	"github.com/sirupsen/logrus"
 )
 

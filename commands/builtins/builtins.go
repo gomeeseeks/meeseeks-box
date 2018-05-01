@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/auth"
-	"github.com/gomeeseeks/meeseeks-box/jobs"
-	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/template"
-	"github.com/gomeeseeks/meeseeks-box/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
+	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
+	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
+	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
+	"github.com/gomeeseeks/meeseeks-box/text/template"
 	"github.com/gomeeseeks/meeseeks-box/version"
 	"github.com/renstrom/dedent"
 )

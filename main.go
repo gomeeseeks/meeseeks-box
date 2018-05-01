@@ -8,9 +8,9 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/api"
 	"github.com/gomeeseeks/meeseeks-box/config"
-	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
+	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
 

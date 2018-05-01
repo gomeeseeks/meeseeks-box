@@ -11,7 +11,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/api"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
 )
 
 /*

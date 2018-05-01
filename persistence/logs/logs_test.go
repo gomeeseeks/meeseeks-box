@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
+	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
 )
 
 func Test_Logs(t *testing.T) {

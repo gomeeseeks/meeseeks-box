@@ -11,8 +11,8 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 
 	"github.com/gomeeseeks/meeseeks-box/auth"
-	"github.com/gomeeseeks/meeseeks-box/db"
-	"github.com/gomeeseeks/meeseeks-box/formatter"
+	"github.com/gomeeseeks/meeseeks-box/persistence/db"
+	"github.com/gomeeseeks/meeseeks-box/text/formatter"
 
 	yaml "gopkg.in/yaml.v2"
 )

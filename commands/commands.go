@@ -3,10 +3,10 @@ package commands
 import (
 	"sync"
 
-	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
+	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
 	"github.com/sirupsen/logrus"
 )
 

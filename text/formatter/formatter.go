@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/template"
+	"github.com/gomeeseeks/meeseeks-box/text/template"
 )
 
 // Default colors
@@ -47,45 +47,40 @@ func Configure(messages map[string][]string, cnf FormatConfig) {
 	}
 }
 
-// Get returns the configured singleton formatter
-func Get() *Formatter {
-	return formatter
-}
-
 // Templates returns a clone of the default templates ready to be consumed
-func (f Formatter) Templates() template.Templates {
-	return f.templates.Clone().Build()
+func Templates() template.Templates {
+	return formatter.templates.Clone().Build()
 }
 
 // WithTemplates returns a clone of the default templates with the templates
 // passed as argument applied on top
-func (f Formatter) WithTemplates(templates map[string]string) template.Templates {
-	return f.templates.Clone().WithTemplates(templates).Build()
+func WithTemplates(templates map[string]string) template.Templates {
+	return formatter.templates.Clone().WithTemplates(templates).Build()
 }
 
 // HandshakeReply creates a reply for a handshake message
-func (f Formatter) HandshakeReply(req meeseeks.Request) Reply {
-	return f.newReplier(template.Handshake, req)
+func HandshakeReply(req meeseeks.Request) Reply {
+	return formatter.newReplier(template.Handshake, req)
 }
 
 // UnknownCommandReply creates a reply for an UnknownCommand error message
-func (f Formatter) UnknownCommandReply(req meeseeks.Request) Reply {
-	return f.newReplier(template.UnknownCommand, req)
+func UnknownCommandReply(req meeseeks.Request) Reply {
+	return formatter.newReplier(template.UnknownCommand, req)
 }
 
 // UnauthorizedCommandReply creates a reply for an unauthorized command error message
-func (f Formatter) UnauthorizedCommandReply(req meeseeks.Request) Reply {
-	return f.newReplier(template.Unauthorized, req)
+func UnauthorizedCommandReply(req meeseeks.Request) Reply {
+	return formatter.newReplier(template.Unauthorized, req)
 }
 
 // FailureReply creates a reply for a generic command error message
-func (f Formatter) FailureReply(req meeseeks.Request, err error) Reply {
-	return f.newReplier(template.Failure, req).WithError(err)
+func FailureReply(req meeseeks.Request, err error) Reply {
+	return formatter.newReplier(template.Failure, req).WithError(err)
 }
 
 // SuccessReply creates a reply for a generic command success message
-func (f Formatter) SuccessReply(req meeseeks.Request) Reply {
-	return f.newReplier(template.Success, req)
+func SuccessReply(req meeseeks.Request) Reply {
+	return formatter.newReplier(template.Success, req)
 }
 
 func (f Formatter) newReplier(action string, req meeseeks.Request) Reply {
