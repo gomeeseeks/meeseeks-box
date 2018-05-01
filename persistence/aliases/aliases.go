@@ -6,8 +6,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	bolt "github.com/coreos/bbolt"
-	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/persistence/db"
 )
 
 var aliasesBucketKey = []byte("aliases")

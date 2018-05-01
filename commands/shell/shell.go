@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
 	"github.com/sirupsen/logrus"
 )
 

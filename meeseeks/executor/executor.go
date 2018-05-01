@@ -11,9 +11,9 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/formatter"
-	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
+	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
 )
 
 // ChatClient interface that provides a way of replying to messages on a channel

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/config"
-	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/gomeeseeks/meeseeks-box/formatter"
+	"github.com/gomeeseeks/meeseeks-box/persistence/db"
 	"github.com/renstrom/dedent"
 )
 

@@ -8,7 +8,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/parser"
-	"github.com/gomeeseeks/meeseeks-box/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
 )
 
 // Enricher is a helper client used to augment the metadata of the user

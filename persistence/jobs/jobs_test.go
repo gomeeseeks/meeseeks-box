@@ -3,9 +3,9 @@ package jobs_test
 import (
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
+	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
 )
 
 var req = meeseeks.Request{

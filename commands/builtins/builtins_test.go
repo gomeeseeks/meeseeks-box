@@ -6,16 +6,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/aliases"
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/jobs"
-	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
+	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
+	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
+	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
 )
 
 var basicGroups = map[string][]string{
