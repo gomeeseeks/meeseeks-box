@@ -9,7 +9,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/template"
+	"github.com/gomeeseeks/meeseeks-box/text/template"
 	"github.com/renstrom/dedent"
 	"github.com/sirupsen/logrus"
 )

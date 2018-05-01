@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/auth"
-	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/parser"
+	"github.com/gomeeseeks/meeseeks-box/text/formatter"
+	"github.com/gomeeseeks/meeseeks-box/text/parser"
 
 	"github.com/nlopes/slack"
 	"github.com/sirupsen/logrus"
@@ -264,7 +264,7 @@ func (c *Client) Listen(ch chan<- meeseeks.Request) {
 			r, err := requestFromMessage(message)
 			if err != nil {
 				logrus.Debugf("Failed to parse message '%s' as a command: %s", message.GetText(), err)
-				c.Reply(formatter.Get().FailureReply(r, err))
+				c.Reply(formatter.FailureReply(r, err))
 				continue
 			}
 

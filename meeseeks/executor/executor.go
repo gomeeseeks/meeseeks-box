@@ -10,10 +10,10 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
-	"github.com/gomeeseeks/meeseeks-box/formatter"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
+	"github.com/gomeeseeks/meeseeks-box/text/formatter"
 )
 
 // ChatClient interface that provides a way of replying to messages on a channel
@@ -76,13 +76,13 @@ func (m *Executor) Run() {
 
 		cmd, ok := commands.Find(&req)
 		if !ok {
-			m.client.Reply(formatter.Get().UnknownCommandReply(req))
+			m.client.Reply(formatter.UnknownCommandReply(req))
 			metrics.UnknownCommandsCount.Inc()
 			continue
 		}
 
 		if err := auth.Check(req, cmd); err != nil {
-			m.client.Reply(formatter.Get().UnauthorizedCommandReply(req))
+			m.client.Reply(formatter.UnauthorizedCommandReply(req))
 			metrics.RejectedCommandsCount.WithLabelValues(req.Command).Inc()
 			continue
 		}
@@ -93,7 +93,7 @@ func (m *Executor) Run() {
 
 		t, err := m.createTask(req, cmd)
 		if err != nil {
-			m.client.Reply(formatter.Get().FailureReply(req, fmt.Errorf("could not create task: %s", err)))
+			m.client.Reply(formatter.FailureReply(req, fmt.Errorf("could not create task: %s", err)))
 			continue
 		}
 
@@ -134,7 +134,7 @@ func (m *Executor) processTasks() {
 			cmd := t.cmd
 
 			if cmd.HasHandshake() {
-				m.client.Reply(formatter.Get().HandshakeReply(req))
+				m.client.Reply(formatter.HandshakeReply(req))
 			}
 
 			ctx := m.activeCommands.Add(t)
@@ -145,7 +145,7 @@ func (m *Executor) processTasks() {
 				logrus.Errorf("Command '%s' from user '%s' failed execution with error: %s",
 					req.Command, req.Username, err)
 
-				m.client.Reply(formatter.Get().FailureReply(req, err).WithOutput(out))
+				m.client.Reply(formatter.FailureReply(req, err).WithOutput(out))
 
 				metrics.FailedTasksCount.WithLabelValues(job.Request.Command).Inc()
 				jobs.Finish(job.ID, jobs.FailedStatus)
@@ -154,7 +154,7 @@ func (m *Executor) processTasks() {
 				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
 					req.Username)
 
-				m.client.Reply(formatter.Get().SuccessReply(req).WithOutput(out))
+				m.client.Reply(formatter.SuccessReply(req).WithOutput(out))
 
 				metrics.SuccessfulTasksCount.WithLabelValues(job.Request.Command).Inc()
 				jobs.Finish(job.ID, jobs.SuccessStatus)
