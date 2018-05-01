@@ -48,14 +48,18 @@ func Test_Logs(t *testing.T) {
 	}
 	mocks.WithTmpDB(func(_ string) {
 		for _, tc := range tt {
+			logs.Configure(logs.LoggerConfig{
+				LoggerType: "local",
+			})
 			t.Run(tc.name, func(t *testing.T) {
+				lw := logs.GetJobLogWriter(tc.jobID)
 				for _, line := range tc.logs {
-					logs.Append(tc.jobID, line)
+					lw.Append(line)
 				}
 				if tc.err != nil {
-					logs.SetError(tc.jobID, tc.err)
+					lw.SetError(tc.err)
 				}
-				actual, err := logs.Get(tc.jobID)
+				actual, err := logs.GetJobLogReader(tc.jobID).Get()
 				mocks.Must(t, "could not get job logs back", err)
 				mocks.AssertEquals(t, tc.expected, actual)
 			})
@@ -66,15 +70,21 @@ func Test_Logs(t *testing.T) {
 
 func Test_GetLoglessJob(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
-		_, err := logs.Get(1)
+		logs.Configure(logs.LoggerConfig{
+			LoggerType: "local",
+		})
+		_, err := logs.GetJobLogReader(1).Get()
 		mocks.AssertEquals(t, logs.ErrNoLogsForJob, err)
 	})
 }
 
 func Test_ErredOutJobHasError(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
-		logs.SetError(1, errors.New("nasty error"))
-		l, err := logs.Get(1)
+		logs.Configure(logs.LoggerConfig{
+			LoggerType: "local",
+		})
+		logs.GetJobLogWriter(1).SetError(errors.New("nasty error"))
+		l, err := logs.GetJobLogReader(1).Get()
 		mocks.Must(t, "should be able to get a job with only an error", err)
 		mocks.AssertEquals(t, meeseeks.JobLog{Error: "nasty error"}, l)
 	})
