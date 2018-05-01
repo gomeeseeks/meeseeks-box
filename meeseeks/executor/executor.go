@@ -14,8 +14,6 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/jobs"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/request"
-	"github.com/gomeeseeks/meeseeks-box/messenger"
 )
 
 // ChatClient interface that provides a way of replying to messages on a channel
@@ -23,10 +21,17 @@ type ChatClient interface {
 	Reply(formatter.Reply)
 }
 
-// Meeseeks is the command execution engine
-type Meeseeks struct {
+// Listener provides the necessary interface to start listening requests from a channel.
+type Listener interface {
+	Listen(chan<- meeseeks.Request)
+}
+
+// Executor is the command execution engine
+type Executor struct {
 	client    ChatClient
-	messenger *messenger.Messenger
+	listeners []Listener
+
+	requestsCh chan meeseeks.Request
 
 	tasksCh        chan task
 	wg             sync.WaitGroup
@@ -39,34 +44,34 @@ type task struct {
 }
 
 // New creates a new Meeseeks service
-func New(client ChatClient, messenger *messenger.Messenger) *Meeseeks {
+func New(client ChatClient) *Executor {
 	ac := newActiveCommands()
 	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel))
 	commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel))
 
-	m := Meeseeks{
-		messenger: messenger,
-		client:    client,
-		tasksCh:   make(chan task, 20),
+	e := Executor{
+		client:     client,
+		tasksCh:    make(chan task, 20),
+		requestsCh: make(chan meeseeks.Request),
 
 		wg:             sync.WaitGroup{},
 		activeCommands: ac,
 	}
 
-	go m.loop()
+	go e.processTasks()
 
-	return &m
+	return &e
 }
 
-// Start launches the meeseeks to read messages from the MessageCh
-func (m *Meeseeks) Start() {
-	for msg := range m.messenger.MessagesCh() {
-		req, err := request.FromMessage(msg)
-		if err != nil {
-			logrus.Debugf("Failed to parse message '%s' as a command: %s", msg.GetText(), err)
-			m.client.Reply(formatter.Get().FailureReply(req, err))
-			continue
-		}
+// ListenTo appends a listener to the list and starts listening to it
+func (m *Executor) ListenTo(l Listener) {
+	m.listeners = append(m.listeners, l)
+	go l.Listen(m.requestsCh)
+}
+
+// Run launches the meeseeks to read requests from the requests channel
+func (m *Executor) Run() {
+	for req := range m.requestsCh {
 		metrics.ReceivedCommandsCount.Inc()
 
 		cmd, ok := commands.Find(&req)
@@ -76,7 +81,7 @@ func (m *Meeseeks) Start() {
 			continue
 		}
 
-		if err = auth.Check(req, cmd); err != nil {
+		if err := auth.Check(req, cmd); err != nil {
 			m.client.Reply(formatter.Get().UnauthorizedCommandReply(req))
 			metrics.RejectedCommandsCount.WithLabelValues(req.Command).Inc()
 			continue
@@ -97,7 +102,7 @@ func (m *Meeseeks) Start() {
 	}
 }
 
-func (m *Meeseeks) createTask(req meeseeks.Request, cmd meeseeks.Command) (task, error) {
+func (m *Executor) createTask(req meeseeks.Request, cmd meeseeks.Command) (task, error) {
 	if !cmd.Record() {
 		return task{job: jobs.NullJob(req), cmd: cmd}, nil
 	}
@@ -108,7 +113,7 @@ func (m *Meeseeks) createTask(req meeseeks.Request, cmd meeseeks.Command) (task,
 
 // Shutdown initiates a shutdown process by waiting for jobs to finish and then
 // closing the tasks channel
-func (m *Meeseeks) Shutdown() {
+func (m *Executor) Shutdown() {
 	defer m.closeTasksChannel()
 
 	logrus.Info("Waiting for jobs to finish")
@@ -116,12 +121,12 @@ func (m *Meeseeks) Shutdown() {
 	logrus.Info("Done waiting, exiting")
 }
 
-func (m *Meeseeks) closeTasksChannel() {
+func (m *Executor) closeTasksChannel() {
 	logrus.Infof("Closing meeseeks tasks channel")
 	close(m.tasksCh)
 }
 
-func (m *Meeseeks) loop() {
+func (m *Executor) processTasks() {
 	for t := range m.tasksCh {
 		go func(t task) {
 			job := t.job

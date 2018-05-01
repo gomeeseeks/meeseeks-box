@@ -97,15 +97,15 @@ func (h Harness) Load() ClientStub {
 //
 // It implements the Client interface
 type ClientStub struct {
-	MessagesSent     chan SentMessage
-	receivedMessages chan meeseeks.Message
+	MessagesSent chan SentMessage
+	RequestsCh   chan meeseeks.Request
 }
 
 // NewClientStub returns a new empty but intialized Client stub
 func newClientStub() ClientStub {
 	return ClientStub{
-		MessagesSent:     make(chan SentMessage),
-		receivedMessages: make(chan meeseeks.Message),
+		MessagesSent: make(chan SentMessage),
+		RequestsCh:   make(chan meeseeks.Request),
 	}
 }
 
@@ -119,64 +119,11 @@ func (c ClientStub) Reply(r formatter.Reply) {
 	c.MessagesSent <- SentMessage{Text: text, Channel: r.ChannelID()}
 }
 
-// MessagesCh implements meeseeks.Client.MessagesCh interface
-func (c ClientStub) MessagesCh() chan meeseeks.Message {
-	return c.receivedMessages
-}
-
-// ListenMessages listens for messages and then passes it to the sent channel
-func (c ClientStub) ListenMessages(ch chan<- meeseeks.Message) {
-	for m := range c.receivedMessages {
+// Listen listens for requests and then passes them to the passed in channel
+func (c ClientStub) Listen(ch chan<- meeseeks.Request) {
+	for m := range c.RequestsCh {
 		ch <- m
 	}
-}
-
-// MessageStub is a simple stub that implements the Slack.Message interface
-type MessageStub struct {
-	Text    string
-	Channel string
-	User    string
-	IM      bool
-}
-
-// GetText implements the slack.Message.GetText interface
-func (m MessageStub) GetText() string {
-	return m.Text
-}
-
-// GetChannel implements the slack.Message.GetChannel interface
-func (m MessageStub) GetChannel() string {
-	return m.Channel
-}
-
-// GetChannelID implements the slack.Message.GetUserFrom interface
-func (m MessageStub) GetChannelID() string {
-	return m.Channel + "ID"
-}
-
-// GetChannelLink implements the slack.Message.GetUserFrom interface
-func (m MessageStub) GetChannelLink() string {
-	return m.Channel + "Link"
-}
-
-// GetUserLink implements the slack.Message.GetUserFrom interface
-func (m MessageStub) GetUserLink() string {
-	return fmt.Sprintf("<@%s>", m.User)
-}
-
-// GetUsername implements the slack.Message.GetUsername interface
-func (m MessageStub) GetUsername() string {
-	return m.User
-}
-
-// GetUserID implements the slack.Message.GetUsername interface
-func (m MessageStub) GetUserID() string {
-	return m.User + "ID"
-}
-
-// IsIM implements the slack.Message.IsIM
-func (m MessageStub) IsIM() bool {
-	return m.IM
 }
 
 // AssertEquals Helper function for asserting that a value is what we expect
@@ -224,52 +171,52 @@ func WithTmpDB(f func(dbpath string)) error {
 	return nil
 }
 
-// MetadataStub provides a stub object that implements the Metadata interface
-type MetadataStub struct {
+// EnricherStub provides a stub object that implements the Metadata interface
+type EnricherStub struct {
 	IM bool
 }
 
 // ParseChannelLink implements the Metadata interface
-func (m MetadataStub) ParseChannelLink(channelLink string) (string, error) {
+func (m EnricherStub) ParseChannelLink(channelLink string) (string, error) {
 	return strings.Replace(channelLink, "Link", "", -1), nil
 }
 
 // ParseUserLink implements the Metadata interface
-func (m MetadataStub) ParseUserLink(userLink string) (string, error) {
+func (m EnricherStub) ParseUserLink(userLink string) (string, error) {
 	return strings.Replace(userLink, "Link", "", -1), nil
 }
 
 // GetChannelLink implements the Metadata interface
-func (m MetadataStub) GetChannelLink(channelID string) string {
+func (m EnricherStub) GetChannelLink(channelID string) string {
 	return fmt.Sprintf("<#%s>", channelID)
 }
 
 // GetChannelID implements the Metadata interface
-func (m MetadataStub) GetChannelID(channelID string) string {
+func (m EnricherStub) GetChannelID(channelID string) string {
 	return channelID
 }
 
 // GetChannel implements the Metadata interface
-func (m MetadataStub) GetChannel(channelID string) string {
+func (m EnricherStub) GetChannel(channelID string) string {
 	return fmt.Sprintf("name: %s", channelID)
 }
 
 // GetUserLink implements the Metadata interface
-func (m MetadataStub) GetUserLink(userID string) string {
+func (m EnricherStub) GetUserLink(userID string) string {
 	return fmt.Sprintf("<@%s>", userID)
 }
 
 // GetUserID implements the Metadata interface
-func (m MetadataStub) GetUserID(userID string) string {
+func (m EnricherStub) GetUserID(userID string) string {
 	return userID
 }
 
 // GetUsername implements the Metadata interface
-func (m MetadataStub) GetUsername(userID string) string {
+func (m EnricherStub) GetUsername(userID string) string {
 	return fmt.Sprintf("name: %s", userID)
 }
 
 // IsIM implements the Metadata interface
-func (m MetadataStub) IsIM(_ string) bool {
+func (m EnricherStub) IsIM(_ string) bool {
 	return m.IM
 }
