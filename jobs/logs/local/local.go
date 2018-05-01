@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"fmt"
-	"github.com/gomeeseeks/meeseeks-box/db"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
+	"github.com/gomeeseeks/meeseeks-box/persistence/db"
 
 	bolt "github.com/coreos/bbolt"
 )

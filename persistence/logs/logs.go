@@ -7,7 +7,6 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs/local"
 	"github.com/gomeeseeks/meeseeks-box/jobs/logs/remote"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence/db"
 	"strings"
 )
