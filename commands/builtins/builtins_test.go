@@ -356,22 +356,23 @@ func Test_BuiltinCommands(t *testing.T) {
 					Args:     []string{"-limit", "1", "1"}},
 			},
 			setup: func() {
-				logs.Configure(logs.LoggerConfig{
-					LoggerType: "local",
-				})
 
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("line 1.1")
-				logs.GetJobLogWriter(j.ID).Append("line 1.2")
-				logs.GetJobLogWriter(j.ID).Append("line 1.3")
-				logs.GetJobLogWriter(j.ID).Append("line 1.4")
+
+				w := logs.Writer(j.ID)
+				w.Append("line 1.1")
+				w.Append("line 1.2")
+				w.Append("line 1.3")
+				w.Append("line 1.4")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("line 2.1")
-				logs.GetJobLogWriter(j.ID).Append("line 2.2")
-				logs.GetJobLogWriter(j.ID).Append("line 2.3")
+
+				w = logs.Writer(j.ID)
+				w.Append("line 2.1")
+				w.Append("line 2.2")
+				w.Append("line 2.3")
 			},
 			expected: "line 1.4",
 		},
@@ -386,21 +387,22 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "2"}},
 			},
 			setup: func() {
-				logs.Configure(logs.LoggerConfig{
-					LoggerType: "local",
-				})
 
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("line 1.1")
-				logs.GetJobLogWriter(j.ID).Append("line 1.2")
-				logs.GetJobLogWriter(j.ID).Append("line 1.3")
+
+				w := logs.Writer(j.ID)
+				w.Append("line 1.1")
+				w.Append("line 1.2")
+				w.Append("line 1.3")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("line 2.1")
-				logs.GetJobLogWriter(j.ID).Append("line 2.2")
-				logs.GetJobLogWriter(j.ID).Append("line 2.3")
+
+				w = logs.Writer(j.ID)
+				w.Append("line 2.1")
+				w.Append("line 2.2")
+				w.Append("line 2.3")
 			},
 			expected: "line 2.2\nline 2.3",
 		},
@@ -414,19 +416,19 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "2"}},
 			},
 			setup: func() {
-				logs.Configure(logs.LoggerConfig{
-					LoggerType: "local",
-				})
-
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("line 1.1\nline 1.2\nsomething to say 1")
+
+				w := logs.Writer(j.ID)
+				w.Append("line 1.1\nline 1.2\nsomething to say 1")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("line 2.1")
-				logs.GetJobLogWriter(j.ID).Append("line 2.2")
-				logs.GetJobLogWriter(j.ID).Append("something to say 2")
+
+				w = logs.Writer(j.ID)
+				w.Append("line 2.1")
+				w.Append("line 2.2")
+				w.Append("something to say 2")
 			},
 			expected: "line 2.1\nline 2.2",
 		},
@@ -440,21 +442,21 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "1", "1"}},
 			},
 			setup: func() {
-				logs.Configure(logs.LoggerConfig{
-					LoggerType: "local",
-				})
-
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("line 1.1")
-				logs.GetJobLogWriter(j.ID).Append("line 1.2")
-				logs.GetJobLogWriter(j.ID).Append("something to say 1")
+
+				w := logs.Writer(j.ID)
+				w.Append("line 1.1")
+				w.Append("line 1.2")
+				w.Append("something to say 1")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("line 2.1")
-				logs.GetJobLogWriter(j.ID).Append("line 2.2")
-				logs.GetJobLogWriter(j.ID).Append("something to say 2")
+
+				w = logs.Writer(j.ID)
+				w.Append("line 2.1")
+				w.Append("line 2.2")
+				w.Append("something to say 2")
 			},
 			expected: "line 1.1",
 		},
@@ -469,17 +471,15 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
-				logs.Configure(logs.LoggerConfig{
-					LoggerType: "local",
-				})
-
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("something to say 1")
+				w := logs.Writer(j.ID)
+				w.Append("something to say 1")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("something to say 2")
+				w = logs.Writer(j.ID)
+				w.Append("something to say 2")
 			},
 			expected: "something to say 1",
 		},
@@ -494,17 +494,15 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "admin_user", Args: []string{"1"}},
 			},
 			setup: func() {
-				logs.Configure(logs.LoggerConfig{
-					LoggerType: "local",
-				})
-
 				j, err := jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("something to say 1")
+				w := logs.Writer(j.ID)
+				w.Append("something to say 1")
 
 				j, err = jobs.Create(req)
 				mocks.Must(t, "create job", err)
-				logs.GetJobLogWriter(j.ID).Append("something to say 2")
+				w = logs.Writer(j.ID)
+				w.Append("something to say 2")
 			},
 			expected: "something to say 1",
 		},
@@ -683,7 +681,6 @@ func Test_FilterJobsAudit(t *testing.T) {
 }
 
 func TestAPITokenLifecycle(t *testing.T) {
-
 	exec := func(r meeseeks.Request) (string, error) {
 		cmd, ok := commands.Find(&r)
 		if !ok {

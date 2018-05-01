@@ -11,6 +11,8 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
+	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
+	"github.com/gomeeseeks/meeseeks-box/persistence/logs/provider"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
 
@@ -23,6 +25,7 @@ func main() {
 	setLogLevel(args)
 	loadConfiguration(args)
 
+	setupPersistentLogger()
 	cleanupPendingJobs()
 
 	slackClient := connectToSlack(args)
@@ -91,6 +94,10 @@ func setLogLevel(args args) {
 	if args.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+}
+
+func setupPersistentLogger() {
+	logs.Configure(provider.New(provider.LocalLogger)) // This will change when we start building the remote agent
 }
 
 func loadConfiguration(args args) {
