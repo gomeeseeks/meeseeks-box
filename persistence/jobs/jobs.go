@@ -27,8 +27,31 @@ var runningJobsBucketKey = []byte("running-jobs")
 // ErrNoJobWithID is returned when we can't find a job with the proposed id
 var ErrNoJobWithID = errors.New("no job could be found")
 
-// NullJob is used to handle requests that are not recorded
-func NullJob(req meeseeks.Request) meeseeks.Job {
+// Jobs creates a new Jobs object
+type Jobs struct{}
+
+// Null returns a null job that will not be tracked
+func (Jobs) Null(r meeseeks.Request) meeseeks.Job {
+	return Null(r)
+}
+
+// Create records a request in the DB and hands off a new job
+func (Jobs) Create(r meeseeks.Request) (meeseeks.Job, error) {
+	return Create(r)
+}
+
+// Fail accounds for the job ending and sets the status.
+func (Jobs) Fail(jobID uint64) error {
+	return Finish(jobID, FailedStatus)
+}
+
+// Succeed accounds for the job ending and sets the status.
+func (Jobs) Succeed(jobID uint64) error {
+	return Finish(jobID, SuccessStatus)
+}
+
+// Null is used to handle requests that are not recorded
+func Null(req meeseeks.Request) meeseeks.Job {
 	return meeseeks.Job{
 		ID:        0,
 		Request:   req,
@@ -113,7 +136,7 @@ func Finish(jobID uint64, status string) error {
 		job.Status = status
 
 		difference := job.EndTime.Sub(job.StartTime)
-		metrics.TaskDurations.WithLabelValues(job.Request.Command).Observe(difference.Seconds())
+		metrics.TaskDurations.WithLabelValues(job.Request.Command, status).Observe(difference.Seconds())
 
 		return save(job, bucket)
 	})

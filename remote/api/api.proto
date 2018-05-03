@@ -59,6 +59,11 @@ message LogEntry {
     string line = 2;
 }
 
+message ErrorLogEntry {
+    uint64 jobID = 1;
+    string error = 2;
+}
+
 service Registration {
     rpc Register(AgentRegistration) returns (AgentPrivateToken) {}
 }
@@ -68,7 +73,8 @@ service CommandPipeline {
     rpc Finish(CommandFinish) returns (Empty) {}
 }
 
-service CommandLogger {
-    rpc NewAppender(stream LogEntry) returns (Empty) {}
+service LogWriter {
+    rpc NewWriter(stream LogEntry) returns (Empty) {}
+    rpc SetError(ErrorLogEntry) returns (Empty) {}
 }
 

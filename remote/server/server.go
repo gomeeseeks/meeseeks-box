@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/jobs/logs"
+	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -20,7 +20,7 @@ type RemoteServer struct {
 
 func New(address string) RemoteServer {
 	server := grpc.NewServer()
-	api.RegisterCommandLoggerServer(server, CommandLoggerServer{})
+	api.RegisterLogWriterServer(server, CommandLoggerServer{})
 	api.RegisterCommandPipelineServer(server, CommandPipelineServer{})
 	return RemoteServer{
 		Address: address,

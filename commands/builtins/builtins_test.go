@@ -687,7 +687,7 @@ func TestAPITokenLifecycle(t *testing.T) {
 			t.Fatalf("could not find command %s", r.Command)
 		}
 
-		return cmd.Execute(context.Background(), jobs.NullJob(r))
+		return cmd.Execute(context.Background(), jobs.Null(r))
 	}
 
 	mocks.Must(t, "failed to audit the correct jobs", mocks.WithTmpDB(func(_ string) {
