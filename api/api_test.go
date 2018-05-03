@@ -11,7 +11,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/api"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 )
 
 /*
@@ -64,11 +64,11 @@ func TestAPIServer(t *testing.T) {
 		// This is necessary because we need to store and then load the token in the DB
 		mocks.NewHarness().WithEchoCommand().WithDBPath(dbpath).Load()
 
-		validToken, err := tokens.Create(tokens.NewTokenRequest{
-			UserLink:    "someoneLink",
-			ChannelLink: "generalLink",
-			Text:        "echo something",
-		})
+		validToken, err := persistence.APITokens().Create(
+			"someoneLink",
+			"generalLink",
+			"echo something",
+		)
 		mocks.Must(t, "failed to create the token", err)
 
 		s := api.NewServer(mocks.EnricherStub{

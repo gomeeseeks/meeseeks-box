@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -13,55 +12,60 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Jobs status
-const (
-	RunningStatus = "Running"
-	FailedStatus  = "Failed"
-	KilledStatus  = "Killed"
-	SuccessStatus = "Successful"
-)
-
 var jobsBucketKey = []byte("jobs")
 var runningJobsBucketKey = []byte("running-jobs")
-
-// ErrNoJobWithID is returned when we can't find a job with the proposed id
-var ErrNoJobWithID = errors.New("no job could be found")
 
 // Jobs creates a new Jobs object
 type Jobs struct{}
 
+// Get returns an existing job by id
+func (Jobs) Get(id uint64) (meeseeks.Job, error) {
+	return get(id)
+}
+
 // Null returns a null job that will not be tracked
 func (Jobs) Null(r meeseeks.Request) meeseeks.Job {
-	return Null(r)
+	return null(r)
 }
 
 // Create records a request in the DB and hands off a new job
 func (Jobs) Create(r meeseeks.Request) (meeseeks.Job, error) {
-	return Create(r)
+	return create(r)
 }
 
 // Fail accounds for the job ending and sets the status.
 func (Jobs) Fail(jobID uint64) error {
-	return Finish(jobID, FailedStatus)
+	return finish(jobID, meeseeks.JobFailedStatus)
 }
 
 // Succeed accounds for the job ending and sets the status.
 func (Jobs) Succeed(jobID uint64) error {
-	return Finish(jobID, SuccessStatus)
+	return finish(jobID, meeseeks.JobSuccessStatus)
 }
 
-// Null is used to handle requests that are not recorded
-func Null(req meeseeks.Request) meeseeks.Job {
+// FailRunningJobs flags as failed any jobs that is still in running state
+func (Jobs) FailRunningJobs() error {
+	return failRunningJobs()
+}
+
+// Find will walk through the values on the jobs bucket and will apply the Match function
+// to determine if the job matches a search criteria.
+//
+// Returns a list of jobs in descending order that match the filter
+func (Jobs) Find(filter meeseeks.JobFilter) ([]meeseeks.Job, error) {
+	return find(filter)
+}
+
+func null(req meeseeks.Request) meeseeks.Job {
 	return meeseeks.Job{
 		ID:        0,
 		Request:   req,
 		StartTime: time.Now().UTC(),
-		Status:    RunningStatus,
+		Status:    meeseeks.JobRunningStatus,
 	}
 }
 
-// Create registers a new job in running state in the database
-func Create(req meeseeks.Request) (meeseeks.Job, error) {
+func create(req meeseeks.Request) (meeseeks.Job, error) {
 	var job *meeseeks.Job
 	err := db.Update(func(tx *bolt.Tx) error {
 		jobID, bucket, err := db.NextSequenceFor(jobsBucketKey, tx)
@@ -73,7 +77,7 @@ func Create(req meeseeks.Request) (meeseeks.Job, error) {
 			ID:        jobID,
 			Request:   req,
 			StartTime: time.Now().UTC(),
-			Status:    RunningStatus,
+			Status:    meeseeks.JobRunningStatus,
 		}
 		logrus.Debugf("Creating job %#v", job)
 
@@ -81,7 +85,7 @@ func Create(req meeseeks.Request) (meeseeks.Job, error) {
 		if err != nil {
 			return fmt.Errorf("could not create running jobs bucket: %s", err)
 		}
-		if err = runningJobsBucket.Put(db.IDToBytes(job.ID), []byte(RunningStatus)); err != nil {
+		if err = runningJobsBucket.Put(db.IDToBytes(job.ID), []byte(meeseeks.JobRunningStatus)); err != nil {
 			return fmt.Errorf("could not save running job ID %d: %s", jobID, err)
 		}
 
@@ -93,17 +97,16 @@ func Create(req meeseeks.Request) (meeseeks.Job, error) {
 	return *job, nil
 }
 
-// Get returns a job by id
-func Get(id uint64) (meeseeks.Job, error) {
+func get(id uint64) (meeseeks.Job, error) {
 	job := &meeseeks.Job{}
 	err := db.View(func(tx *bolt.Tx) error {
 		jobsBucket := tx.Bucket(jobsBucketKey)
 		if jobsBucket == nil {
-			return ErrNoJobWithID
+			return meeseeks.ErrNoJobWithID
 		}
 		payload := jobsBucket.Get(db.IDToBytes(id))
 		if payload == nil {
-			return ErrNoJobWithID
+			return meeseeks.ErrNoJobWithID
 		}
 		return json.Unmarshal(payload, job)
 	})
@@ -114,17 +117,17 @@ func Get(id uint64) (meeseeks.Job, error) {
 // Finish sets the status of a job to whatever end state if it's current status is running
 //
 // It also sets the end time of the job
-func Finish(jobID uint64, status string) error {
-	if !(status == SuccessStatus || status == FailedStatus) {
+func finish(jobID uint64, status string) error {
+	if !(status == meeseeks.JobSuccessStatus || status == meeseeks.JobFailedStatus) {
 		return fmt.Errorf("invalid status %s", status)
 	}
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(jobsBucketKey)
-		job, err := Get(jobID)
+		job, err := get(jobID)
 		if err != nil {
 			return fmt.Errorf("could not get job with id %d: %s", jobID, err)
 		}
-		if job.Status != RunningStatus {
+		if job.Status != meeseeks.JobRunningStatus {
 			return fmt.Errorf("job is not in running status but %s", job.Status)
 		}
 		runningJobsBucket := tx.Bucket(runningJobsBucketKey)
@@ -142,29 +145,7 @@ func Finish(jobID uint64, status string) error {
 	})
 }
 
-// JobFilter provides the basic tooling to filter jobs when using Find
-type JobFilter struct {
-	Limit int
-	Match func(meeseeks.Job) bool
-}
-
-// MultiMatch builds a Match function from a list of Match functions
-func MultiMatch(matchers ...func(meeseeks.Job) bool) func(meeseeks.Job) bool {
-	return func(job meeseeks.Job) bool {
-		for _, matcher := range matchers {
-			if !matcher(job) {
-				return false
-			}
-		}
-		return true
-	}
-}
-
-// Find will walk through the values on the jobs bucket and will apply the Match function
-// to determine if the job matches a search criteria.
-//
-// Returns a list of jobs in descending order that match the filter
-func Find(filter JobFilter) ([]meeseeks.Job, error) {
+func find(filter meeseeks.JobFilter) ([]meeseeks.Job, error) {
 	latest := make([]meeseeks.Job, 0)
 	matcher := func(job meeseeks.Job) bool {
 		return true
@@ -198,16 +179,7 @@ func Find(filter JobFilter) ([]meeseeks.Job, error) {
 	return latest, err
 }
 
-func save(job meeseeks.Job, bucket *bolt.Bucket) error {
-	buffer, err := json.Marshal(job)
-	if err != nil {
-		return err
-	}
-	return bucket.Put(db.IDToBytes(job.ID), buffer)
-}
-
-// FailRunningJobs flags as failed any jobs that is still in running state
-func FailRunningJobs() error {
+func failRunningJobs() error {
 	return db.Update(func(tx *bolt.Tx) error {
 		runningJobsBucket := tx.Bucket(runningJobsBucketKey)
 		if runningJobsBucket == nil {
@@ -233,7 +205,7 @@ func FailRunningJobs() error {
 				return fmt.Errorf("could not read job %d from bucket: %s", jobID, err)
 			}
 
-			j.Status = KilledStatus
+			j.Status = meeseeks.JobKilledStatus
 			j.EndTime = time.Now().UTC()
 			if err := save(j, jobsBucket); err != nil {
 				return fmt.Errorf("could not save killed job %d: %s", jobID, err)
@@ -247,4 +219,12 @@ func FailRunningJobs() error {
 		}
 		return nil
 	})
+}
+
+func save(job meeseeks.Job, bucket *bolt.Bucket) error {
+	buffer, err := json.Marshal(job)
+	if err != nil {
+		return err
+	}
+	return bucket.Put(db.IDToBytes(job.ID), buffer)
 }

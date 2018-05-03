@@ -6,7 +6,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,7 +43,7 @@ func Add(name string, cmd meeseeks.Command) {
 // This method implements the map interface as in returning true of false in the
 // case the command exists in the map
 func Find(req *meeseeks.Request) (meeseeks.Command, bool) {
-	aliasedCommand, args, err := aliases.Get(req.UserID, req.Command)
+	aliasedCommand, args, err := persistence.Aliases().Get(req.UserID, req.Command)
 	if err != nil {
 		logrus.Debugf("Failed to get alias %s", req.Command)
 	}

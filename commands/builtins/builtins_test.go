@@ -12,10 +12,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
-	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
-	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
-	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 )
 
 var basicGroups = map[string][]string{
@@ -139,9 +136,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone"},
 			},
 			setup: func() {
-				j, err := jobs.Create(req)
+				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "could not create job", err)
-				jobs.Finish(j.ID, jobs.SuccessStatus)
+				persistence.Jobs().Succeed(j.ID)
 			},
 			expected: "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
 		},
@@ -156,9 +153,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{},
 			},
 			setup: func() {
-				j, err := jobs.Create(req)
+				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "could not create job", err)
-				jobs.Finish(j.ID, jobs.SuccessStatus)
+				persistence.Jobs().Succeed(j.ID)
 			},
 			expected: "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
 		},
@@ -173,8 +170,8 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit=1"}},
 			},
 			setup: func() {
-				jobs.Create(req)
-				jobs.Create(req)
+				persistence.Jobs().Create(req)
+				persistence.Jobs().Create(req)
 			},
 			expected: "*2* - now - *command* by *someone* in *<#123>* - *Running*\n",
 		},
@@ -189,7 +186,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone"},
 			},
 			setup: func() {
-				jobs.Create(meeseeks.Request{
+				persistence.Jobs().Create(meeseeks.Request{
 					Command:   "command",
 					Channel:   "general",
 					ChannelID: "123",
@@ -211,9 +208,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone"},
 			},
 			setup: func() {
-				jobs.Create(req)
-				jobs.Create(req)
-				jobs.Create(req)
+				persistence.Jobs().Create(req)
+				persistence.Jobs().Create(req)
+				persistence.Jobs().Create(req)
 			},
 			expected: "* *ID* 3\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
 		},
@@ -228,8 +225,8 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
-				jobs.Create(req)
-				jobs.Create(req)
+				persistence.Jobs().Create(req)
+				persistence.Jobs().Create(req)
 			},
 			expected: "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
 		},
@@ -262,10 +259,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				},
 			},
 			setup: func() {
-				err := aliases.Create("userid", "first", "command", []string{"-with args"}...)
+				err := persistence.Aliases().Create("userid", "first", "command", []string{"-with args"}...)
 				mocks.Must(t, "create first alias", err)
 
-				err = aliases.Create("userid", "second", "another", []string{"-command"}...)
+				err = persistence.Aliases().Create("userid", "second", "another", []string{"-command"}...)
 				mocks.Must(t, "create second alias", err)
 			},
 			expected: "- *first* - `command -with args`\n- *second* - `another -command`\n",
@@ -284,13 +281,13 @@ func Test_BuiltinCommands(t *testing.T) {
 				},
 			},
 			setup: func() {
-				err := aliases.Create("userid", "command", "command", []string{"-with", "args"}...)
+				err := persistence.Aliases().Create("userid", "command", "command", []string{"-with", "args"}...)
 				mocks.Must(t, "create first alias", err)
 
-				err = aliases.Create("userid", "second", "another", []string{"-command"}...)
+				err = persistence.Aliases().Create("userid", "second", "another", []string{"-command"}...)
 				mocks.Must(t, "create second alias", err)
 
-				err = aliases.Delete("userid", "command")
+				err = persistence.Aliases().Remove("userid", "command")
 				mocks.Must(t, "delete first alias", err)
 
 			},
@@ -310,7 +307,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				},
 			},
 			setup: func() {
-				err := aliases.Create("userid", "testalias", "audit", []string{"-limit", "1"}...)
+				err := persistence.Aliases().Create("userid", "testalias", "audit", []string{"-limit", "1"}...)
 				mocks.Must(t, "create an alias", err)
 
 				commands.Add("noop", shell.New(shell.CommandOpts{
@@ -318,7 +315,7 @@ func Test_BuiltinCommands(t *testing.T) {
 					Cmd:          "true",
 				}))
 
-				_, err = jobs.Create(
+				_, err = persistence.Jobs().Create(
 					meeseeks.Request{
 						Command: "noop",
 						UserID:  "userid",
@@ -339,8 +336,8 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
-				jobs.Create(req)
-				jobs.Create(req)
+				persistence.Jobs().Create(req)
+				persistence.Jobs().Create(req)
 			},
 			expected: "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
 		},
@@ -357,19 +354,19 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 
-				j, err := jobs.Create(req)
+				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w := logs.Writer(j.ID)
+				w := persistence.LoggerProvider().Writer(j.ID)
 				w.Append("line 1.1")
 				w.Append("line 1.2")
 				w.Append("line 1.3")
 				w.Append("line 1.4")
 
-				j, err = jobs.Create(req)
+				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w = logs.Writer(j.ID)
+				w = persistence.LoggerProvider().Writer(j.ID)
 				w.Append("line 2.1")
 				w.Append("line 2.2")
 				w.Append("line 2.3")
@@ -388,18 +385,18 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 			setup: func() {
 
-				j, err := jobs.Create(req)
+				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w := logs.Writer(j.ID)
+				w := persistence.LoggerProvider().Writer(j.ID)
 				w.Append("line 1.1")
 				w.Append("line 1.2")
 				w.Append("line 1.3")
 
-				j, err = jobs.Create(req)
+				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w = logs.Writer(j.ID)
+				w = persistence.LoggerProvider().Writer(j.ID)
 				w.Append("line 2.1")
 				w.Append("line 2.2")
 				w.Append("line 2.3")
@@ -416,16 +413,16 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "2"}},
 			},
 			setup: func() {
-				j, err := jobs.Create(req)
+				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w := logs.Writer(j.ID)
+				w := persistence.LoggerProvider().Writer(j.ID)
 				w.Append("line 1.1\nline 1.2\nsomething to say 1")
 
-				j, err = jobs.Create(req)
+				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w = logs.Writer(j.ID)
+				w = persistence.LoggerProvider().Writer(j.ID)
 				w.Append("line 2.1")
 				w.Append("line 2.2")
 				w.Append("something to say 2")
@@ -442,18 +439,18 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"-limit", "1", "1"}},
 			},
 			setup: func() {
-				j, err := jobs.Create(req)
+				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w := logs.Writer(j.ID)
+				w := persistence.LoggerProvider().Writer(j.ID)
 				w.Append("line 1.1")
 				w.Append("line 1.2")
 				w.Append("something to say 1")
 
-				j, err = jobs.Create(req)
+				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w = logs.Writer(j.ID)
+				w = persistence.LoggerProvider().Writer(j.ID)
 				w.Append("line 2.1")
 				w.Append("line 2.2")
 				w.Append("something to say 2")
@@ -471,14 +468,14 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
-				j, err := jobs.Create(req)
+				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
-				w := logs.Writer(j.ID)
+				w := persistence.LoggerProvider().Writer(j.ID)
 				w.Append("something to say 1")
 
-				j, err = jobs.Create(req)
+				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
-				w = logs.Writer(j.ID)
+				w = persistence.LoggerProvider().Writer(j.ID)
 				w.Append("something to say 2")
 			},
 			expected: "something to say 1",
@@ -494,14 +491,14 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "admin_user", Args: []string{"1"}},
 			},
 			setup: func() {
-				j, err := jobs.Create(req)
+				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
-				w := logs.Writer(j.ID)
+				w := persistence.LoggerProvider().Writer(j.ID)
 				w.Append("something to say 1")
 
-				j, err = jobs.Create(req)
+				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
-				w = logs.Writer(j.ID)
+				w = persistence.LoggerProvider().Writer(j.ID)
 				w.Append("something to say 2")
 			},
 			expected: "something to say 1",
@@ -529,11 +526,11 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "admin_user", IsIM: true},
 			},
 			setup: func() {
-				_, err := tokens.Create(tokens.NewTokenRequest{
-					ChannelLink: "channelLink",
-					UserLink:    "userLink",
-					Text:        "something",
-				})
+				_, err := persistence.APITokens().Create(
+					"userLink",
+					"channelLink",
+					"something",
+				)
 				mocks.Must(t, "create token", err)
 
 			},
@@ -550,10 +547,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
 			},
 			setup: func() {
-				_, err := jobs.Create(req)
+				_, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				_, err = jobs.Create(req)
+				_, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 			},
 			expected: "Issued command cancellation to job 1",
@@ -569,10 +566,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				Request: meeseeks.Request{Username: "someone", Args: []string{"2"}},
 			},
 			setup: func() {
-				_, err := jobs.Create(req)
+				_, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				_, err = jobs.Create(req)
+				_, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 			},
 			expected: "Issued command cancellation to job 2",
@@ -589,10 +586,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				},
 			},
 			setup: func() {
-				_, err := jobs.Create(req)
+				_, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				_, err = jobs.Create(req)
+				_, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 			},
 			expectedError: fmt.Errorf("no job could be found"),
@@ -648,11 +645,11 @@ func Test_FilterJobsAudit(t *testing.T) {
 		}
 
 		auth.Configure(basicGroups)
-		jobs.Create(r1)
-		jobs.Create(r2)
-		jobs.Create(r1)
-		jobs.Create(r1)
-		jobs.Create(r2)
+		persistence.Jobs().Create(r1)
+		persistence.Jobs().Create(r2)
+		persistence.Jobs().Create(r1)
+		persistence.Jobs().Create(r1)
+		persistence.Jobs().Create(r2)
 
 		cmd, ok := commands.Find(&meeseeks.Request{
 			Command: "audit",
@@ -687,7 +684,7 @@ func TestAPITokenLifecycle(t *testing.T) {
 			t.Fatalf("could not find command %s", r.Command)
 		}
 
-		return cmd.Execute(context.Background(), jobs.Null(r))
+		return cmd.Execute(context.Background(), persistence.Jobs().Null(r))
 	}
 
 	mocks.Must(t, "failed to audit the correct jobs", mocks.WithTmpDB(func(_ string) {

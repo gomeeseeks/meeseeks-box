@@ -129,3 +129,83 @@ type Alias struct {
 	Command string
 	Args    []string
 }
+
+// JobFilter provides the basic tooling to filter jobs when using Find
+type JobFilter struct {
+	Limit int
+	Match func(Job) bool
+}
+
+// Jobs status
+const (
+	JobRunningStatus = "Running"
+	JobFailedStatus  = "Failed"
+	JobKilledStatus  = "Killed"
+	JobSuccessStatus = "Successful"
+)
+
+// Jobs provides an interface to handle persistent access to recorded jobs
+type Jobs interface {
+	// Get returns an existing job by id
+	Get(id uint64) (Job, error)
+
+	// Null returns a null job that will not be tracked
+	Null(r Request) Job
+
+	// Create records a request in the DB and hands off a new job
+	Create(r Request) (Job, error)
+
+	// Fail accounds for the job ending and sets the status.
+	Fail(jobID uint64) error
+
+	// Succeed accounds for the job ending and sets the status.
+	Succeed(jobID uint64) error
+
+	// Find will walk through the values on the jobs bucket and will apply the Match function
+	// to determine if the job matches a search criteria.
+	//
+	// Returns a list of jobs in descending order that match the filter
+	Find(filter JobFilter) ([]Job, error)
+
+	// FailRunningJobs flags as failed any jobs that is still in running state
+	FailRunningJobs() error
+}
+
+// ErrNoJobWithID is returned when we can't find a job with the proposed id
+var ErrNoJobWithID = errors.New("no job could be found")
+
+// APITokens provides an interface to handle persisted api tokens
+type APITokens interface {
+	// Create creates a new token persistence record and returns the created token.
+	Create(userLink, channelLink, text string) (string, error)
+
+	// Get returns the token given an ID, it may return ErrTokenNotFound when there is no such token
+	Get(tokenID string) (APIToken, error)
+
+	// Revoke destroys a token by ID
+	Revoke(tokenID string) error
+
+	// Find returns a list of tokens that match the filter
+	Find(filter APITokenFilter) ([]APIToken, error)
+}
+
+// APITokenFilter is used to filter the tokens to be returned from a List query
+type APITokenFilter struct {
+	Limit int
+	Match func(APIToken) bool
+}
+
+// Aliases provides an interface to handle persisted aliases
+type Aliases interface {
+	// Get returns the command for an alias
+	Get(userID, alias string) (string, []string, error)
+
+	// List returns all configured aliases for a user ID
+	List(userID string) ([]Alias, error)
+
+	// Create adds a new alias for a user ID
+	Create(userID, alias, command string, args ...string) error
+
+	// Remove deletes an alias for a user ID
+	Remove(userID, alias string) error
+}

@@ -10,10 +10,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/auth"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
-	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
-	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
-	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/text/template"
 	"github.com/gomeeseeks/meeseeks-box/version"
 	"github.com/renstrom/dedent"
@@ -424,12 +421,12 @@ func (c cancelJobCommand) Execute(_ context.Context, job meeseeks.Job) (string, 
 	if err != nil {
 		return "", err
 	}
-	j, err := jobs.Get(jobID)
+	j, err := persistence.Jobs().Get(jobID)
 	if err != nil {
 		return "", err
 	}
 	if job.Request.Username != j.Request.Username {
-		return "", jobs.ErrNoJobWithID
+		return "", meeseeks.ErrNoJobWithID
 	}
 	c.cancelFunc(jobID)
 	return fmt.Sprintf("Issued command cancellation to job %d", jobID), nil
@@ -464,7 +461,7 @@ func (k killJobCommand) Execute(_ context.Context, job meeseeks.Job) (string, er
 	if err != nil {
 		return "", err
 	}
-	_, err = jobs.Get(jobID)
+	_, err = persistence.Jobs().Get(jobID)
 	if err != nil {
 		return "", err
 	}
@@ -527,6 +524,18 @@ var jobsTemplate = strings.Join([]string{
 	"{{ end }}",
 }, "")
 
+// jobMultiMatch builds a Match function from a list of Match functions
+func jobsMultiMatch(matchers ...func(meeseeks.Job) bool) func(meeseeks.Job) bool {
+	return func(job meeseeks.Job) bool {
+		for _, matcher := range matchers {
+			if !matcher(job) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
 func (j jobsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error) {
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
 	limit := flags.Int("limit", 5, "how many jobs to return")
@@ -537,9 +546,9 @@ func (j jobsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 
 	callingUser := job.Request.Username
 	requestedStatus := strings.Title(*status)
-	jobs, err := jobs.Find(jobs.JobFilter{
+	jobs, err := persistence.Jobs().Find(meeseeks.JobFilter{
 		Limit: *limit,
-		Match: jobs.MultiMatch(
+		Match: jobsMultiMatch(
 			isUser(callingUser),
 			isStatusOrEmpty(requestedStatus),
 		),
@@ -580,9 +589,9 @@ func (j auditCommand) Execute(_ context.Context, job meeseeks.Job) (string, erro
 
 	requestedStatus := strings.Title(*status)
 
-	jobs, err := jobs.Find(jobs.JobFilter{
+	jobs, err := persistence.Jobs().Find(meeseeks.JobFilter{
 		Limit: *limit,
-		Match: jobs.MultiMatch(
+		Match: jobsMultiMatch(
 			isStatusOrEmpty(requestedStatus),
 			func(j meeseeks.Job) bool {
 				if *user == "" {
@@ -629,7 +638,7 @@ var jobTemplate = `
 
 func (l lastCommand) Execute(_ context.Context, job meeseeks.Job) (string, error) {
 	callingUser := job.Request.Username
-	jobs, err := jobs.Find(jobs.JobFilter{
+	jobs, err := persistence.Jobs().Find(meeseeks.JobFilter{
 		Limit: 1,
 		Match: isUser(callingUser),
 	})
@@ -667,9 +676,9 @@ func (l findJobCommand) Execute(_ context.Context, job meeseeks.Job) (string, er
 	}
 
 	callingUser := job.Request.Username
-	jobs, err := jobs.Find(jobs.JobFilter{
+	jobs, err := persistence.Jobs().Find(meeseeks.JobFilter{
 		Limit: 1,
-		Match: jobs.MultiMatch(
+		Match: jobsMultiMatch(
 			isUser(callingUser),
 			isJobID(id)),
 	})
@@ -707,7 +716,7 @@ func (l auditJobCommand) Execute(_ context.Context, job meeseeks.Job) (string, e
 		return "", err
 	}
 
-	jobs, err := jobs.Find(jobs.JobFilter{
+	jobs, err := persistence.Jobs().Find(meeseeks.JobFilter{
 		Limit: 1,
 		Match: isJobID(id),
 	})
@@ -745,7 +754,7 @@ func (t auditLogsCommand) Execute(_ context.Context, job meeseeks.Job) (string, 
 		return "", err
 	}
 
-	jobs, err := jobs.Find(jobs.JobFilter{
+	jobs, err := persistence.Jobs().Find(meeseeks.JobFilter{
 		Limit: 1,
 		Match: isJobID(id),
 	})
@@ -758,7 +767,7 @@ func (t auditLogsCommand) Execute(_ context.Context, job meeseeks.Job) (string, 
 	}
 	j := jobs[0]
 
-	jobLogs, err := logs.Reader(j.ID).Get()
+	jobLogs, err := persistence.LoggerProvider().Reader(j.ID).Get()
 	if err != nil {
 		return "", err
 	}
@@ -792,7 +801,7 @@ func (t tailCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", err
 	}
 
-	jobLogs, err := logs.Reader(jobID).Tail(*limit)
+	jobLogs, err := persistence.LoggerProvider().Reader(jobID).Tail(*limit)
 	if err != nil {
 		return "", err
 	}
@@ -826,7 +835,7 @@ func (h headCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", err
 	}
 
-	jobLogs, err := logs.Reader(jobID).Head(*limit)
+	jobLogs, err := persistence.LoggerProvider().Reader(jobID).Head(*limit)
 	if err != nil {
 		return "", err
 	}
@@ -852,9 +861,9 @@ func (t logsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 	}
 
 	callingUser := job.Request.Username
-	jobs, err := jobs.Find(jobs.JobFilter{
+	jobs, err := persistence.Jobs().Find(meeseeks.JobFilter{
 		Limit: 1,
-		Match: jobs.MultiMatch(
+		Match: jobsMultiMatch(
 			isUser(callingUser),
 			isJobID(id)),
 	})
@@ -866,7 +875,7 @@ func (t logsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 	}
 	j := jobs[0]
 
-	jobLogs, err := logs.Reader(j.ID).Get()
+	jobLogs, err := persistence.LoggerProvider().Reader(j.ID).Get()
 	if err != nil {
 		return "", err
 	}
@@ -890,11 +899,11 @@ func (n newAPITokenCommand) Execute(_ context.Context, job meeseeks.Job) (string
 		return "", fmt.Errorf("not enough arguments passed in")
 	}
 
-	t, err := tokens.Create(tokens.NewTokenRequest{
-		UserLink:    job.Request.Args[0],
-		ChannelLink: job.Request.Args[1],
-		Text:        strings.Join(job.Request.Args[2:], " "),
-	})
+	t, err := persistence.APITokens().Create(
+		job.Request.Args[0],
+		job.Request.Args[1],
+		strings.Join(job.Request.Args[2:], " "),
+	)
 	return fmt.Sprintf("created token %s", t), err
 }
 
@@ -915,7 +924,7 @@ func (r revokeAPITokenCommand) Execute(_ context.Context, job meeseeks.Job) (str
 		return "", fmt.Errorf("only one token ID should be passed as an argument")
 	}
 	tokenID := job.Request.Args[0]
-	if err := tokens.Revoke(tokenID); err != nil {
+	if err := persistence.APITokens().Revoke(tokenID); err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("Token *%s* has been revoked", tokenID), nil
@@ -935,6 +944,18 @@ type listAPITokensCommand struct {
 
 var listTokensTemplate = `{{ if eq (len .tokens) 0 }}No tokens could be found{{ else }}{{ range $t := .tokens }}- *{{ $t.TokenID }}* {{ $t.UserLink }} at {{ $t.ChannelLink }} _{{ $t.Text}}_
 {{ end }}{{ end }}`
+
+// apiTokenMultiMatch builds a Match function from a list of Match functions
+func apiTokenMultiMatch(matchers ...func(meeseeks.APIToken) bool) func(meeseeks.APIToken) bool {
+	return func(token meeseeks.APIToken) bool {
+		for _, matcher := range matchers {
+			if !matcher(token) {
+				return false
+			}
+		}
+		return true
+	}
+}
 
 func (l listAPITokensCommand) Execute(_ context.Context, job meeseeks.Job) (string, error) {
 	flags := flag.NewFlagSet("jobs", flag.ContinueOnError)
@@ -967,9 +988,9 @@ func (l listAPITokensCommand) Execute(_ context.Context, job meeseeks.Job) (stri
 		})
 	}
 
-	t, err := tokens.Find(tokens.Filter{
+	t, err := persistence.APITokens().Find(meeseeks.APITokenFilter{
 		Limit: *limit,
-		Match: tokens.MultiMatch(matchers...),
+		Match: apiTokenMultiMatch(matchers...),
 	})
 	if err != nil {
 		return "", err
@@ -998,7 +1019,7 @@ func (l newAliasCommand) Execute(_ context.Context, job meeseeks.Job) (string, e
 	}
 
 	args := job.Request.Args
-	if err := aliases.Create(job.Request.UserID, args[0], args[1], args[2:]...); err != nil {
+	if err := persistence.Aliases().Create(job.Request.UserID, args[0], args[1], args[2:]...); err != nil {
 		return fmt.Sprintf("failed to create the alias. Error: %s", err), err
 	}
 
@@ -1022,7 +1043,7 @@ func (l deleteAliasCommand) Execute(_ context.Context, job meeseeks.Job) (string
 		return "", fmt.Errorf("unalias requires only one argument: the alias to delete")
 	}
 
-	if err := aliases.Delete(job.Request.UserID, job.Request.Args[0]); err != nil {
+	if err := persistence.Aliases().Remove(job.Request.UserID, job.Request.Args[0]); err != nil {
 		return fmt.Sprintf("failed to delete the alias. Error: %s", err), err
 	}
 	return "alias deleted successfully", nil
@@ -1045,7 +1066,7 @@ var getAliasesTemplate = `{{ if eq (len .aliases) 0 }}No alias could be found{{ 
 {{ end }}{{ end }}`
 
 func (l getAliasesCommand) Execute(_ context.Context, job meeseeks.Job) (string, error) {
-	a, err := aliases.List(job.Request.UserID)
+	a, err := persistence.Aliases().List(job.Request.UserID)
 	if err != nil {
 		return fmt.Sprintf("failed to load the aliases. Error: %s", err), err
 	}
@@ -1057,6 +1078,8 @@ func (l getAliasesCommand) Execute(_ context.Context, job meeseeks.Job) (string,
 		"aliases": a,
 	})
 }
+
+// Helper functions from now on
 
 func parseJobID(args []string) (uint64, error) {
 	if len(args) == 0 {
@@ -1092,7 +1115,7 @@ func isStatusOrEmpty(status string) func(meeseeks.Job) bool {
 }
 
 func findLastJobIDForUser(callingUser string) (uint64, error) {
-	jobs, err := jobs.Find(jobs.JobFilter{
+	jobs, err := persistence.Jobs().Find(meeseeks.JobFilter{
 		Limit: 1,
 		Match: isUser(callingUser),
 	})

@@ -12,7 +12,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/text/formatter"
 )
 
@@ -113,10 +113,10 @@ func (m *Executor) Run() {
 
 func (m *Executor) createTask(req meeseeks.Request, cmd meeseeks.Command) (task, error) {
 	if !cmd.Record() {
-		return task{job: jobs.NullJob(req), cmd: cmd}, nil
+		return task{job: persistence.Jobs().Null(req), cmd: cmd}, nil
 	}
 
-	j, err := jobs.Create(req)
+	j, err := persistence.Jobs().Create(req)
 	return task{job: j, cmd: cmd}, err
 }
 
@@ -156,8 +156,7 @@ func (m *Executor) processTasks() {
 
 				m.client.Reply(formatter.FailureReply(req, err).WithOutput(out))
 
-				metrics.FailedTasksCount.WithLabelValues(job.Request.Command).Inc()
-				jobs.Finish(job.ID, jobs.FailedStatus)
+				persistence.Jobs().Fail(job.ID)
 
 			} else {
 				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
@@ -165,9 +164,7 @@ func (m *Executor) processTasks() {
 
 				m.client.Reply(formatter.SuccessReply(req).WithOutput(out))
 
-				metrics.SuccessfulTasksCount.WithLabelValues(job.Request.Command).Inc()
-				jobs.Finish(job.ID, jobs.SuccessStatus)
-
+				persistence.Jobs().Succeed(job.ID)
 			}
 			m.wg.Done()
 		}(t)

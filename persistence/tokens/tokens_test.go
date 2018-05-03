@@ -5,22 +5,22 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 )
 
 func Test_TokenLifecycle(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
-		id, err := tokens.Create(tokens.NewTokenRequest{
-			UserLink:    "myuser",
-			ChannelLink: "mychannel",
-			Text:        "echo hello",
-		})
+		id, err := persistence.APITokens().Create(
+			"myuser",
+			"mychannel",
+			"echo hello",
+		)
 		mocks.Must(t, "could not create token", err)
 		if id == "" {
 			t.Fatal("create token returned an empty token id(?)")
 		}
 
-		tk, err := tokens.Get(id)
+		tk, err := persistence.APITokens().Get(id)
 		mocks.Must(t, "could not get token back", err)
 
 		mocks.AssertEquals(t, id, tk.TokenID)
@@ -32,42 +32,42 @@ func Test_TokenLifecycle(t *testing.T) {
 
 func Test_TokenListing(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
-		id, err := tokens.Create(tokens.NewTokenRequest{
-			Text:        "echo something",
-			UserLink:    "myuser",
-			ChannelLink: "mychannel",
-		})
+		id, err := persistence.APITokens().Create(
+			"echo something",
+			"myuser",
+			"mychannel",
+		)
 		mocks.Must(t, "could not create token", err)
 
-		t1, err := tokens.Get(id)
+		t1, err := persistence.APITokens().Get(id)
 		mocks.Must(t, "could not get token back", err)
 
-		id, err = tokens.Create(tokens.NewTokenRequest{
-			Text:        "echo something else",
-			UserLink:    "someone_else",
-			ChannelLink: "my_other_channel",
-		})
+		id, err = persistence.APITokens().Create(
+			"echo something else",
+			"someone_else",
+			"my_other_channel",
+		)
 		mocks.Must(t, "could not create token", err)
 
-		t2, err := tokens.Get(id)
+		t2, err := persistence.APITokens().Get(id)
 		mocks.Must(t, "could not get token back", err)
 
 		tt := []struct {
 			Name     string
-			Filter   tokens.Filter
+			Filter   meeseeks.APITokenFilter
 			Expected []meeseeks.APIToken
 		}{
 			{
 				Name:     "empty list",
 				Expected: []meeseeks.APIToken{},
-				Filter: tokens.Filter{
+				Filter: meeseeks.APITokenFilter{
 					Limit: 0,
 				},
 			},
 			{
 				Name:     "filter by username works",
 				Expected: []meeseeks.APIToken{t2},
-				Filter: tokens.Filter{
+				Filter: meeseeks.APITokenFilter{
 					Limit: 5,
 					Match: func(tk meeseeks.APIToken) bool {
 						return tk.UserLink == t2.UserLink
@@ -77,7 +77,7 @@ func Test_TokenListing(t *testing.T) {
 			{
 				Name:     "filter by channel works",
 				Expected: []meeseeks.APIToken{t1},
-				Filter: tokens.Filter{
+				Filter: meeseeks.APITokenFilter{
 					Limit: 5,
 					Match: func(tk meeseeks.APIToken) bool {
 						return tk.ChannelLink == t1.ChannelLink
@@ -87,7 +87,7 @@ func Test_TokenListing(t *testing.T) {
 		}
 		for _, tc := range tt {
 			t.Run(tc.Name, func(t *testing.T) {
-				token, err := tokens.Find(tc.Filter)
+				token, err := persistence.APITokens().Find(tc.Filter)
 				mocks.Must(t, "failed to list tokens", err)
 				mocks.AssertEquals(t, tc.Expected, token)
 			})

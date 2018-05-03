@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/text/parser"
 )
 
@@ -117,7 +117,7 @@ func (s *Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 	}
 	logrus.Debugf("received token %s through API", tokenID) // Add requester info
 
-	token, err := tokens.Get(tokenID)
+	token, err := persistence.APITokens().Get(tokenID)
 	if err != nil {
 		logrus.Debugf("Token %s is unknown", token) // Add requester info
 		http.Error(w, err.Error(), http.StatusUnauthorized)
