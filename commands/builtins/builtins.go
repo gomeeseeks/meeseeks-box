@@ -767,7 +767,7 @@ func (t auditLogsCommand) Execute(_ context.Context, job meeseeks.Job) (string, 
 	}
 	j := jobs[0]
 
-	jobLogs, err := persistence.LoggerProvider().Reader(j.ID).Get()
+	jobLogs, err := persistence.LoggerProvider().Reader().Get(j.ID)
 	if err != nil {
 		return "", err
 	}
@@ -801,7 +801,7 @@ func (t tailCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", err
 	}
 
-	jobLogs, err := persistence.LoggerProvider().Reader(jobID).Tail(*limit)
+	jobLogs, err := persistence.LoggerProvider().Reader().Tail(jobID, *limit)
 	if err != nil {
 		return "", err
 	}
@@ -835,7 +835,7 @@ func (h headCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 		return "", err
 	}
 
-	jobLogs, err := persistence.LoggerProvider().Reader(jobID).Head(*limit)
+	jobLogs, err := persistence.LoggerProvider().Reader().Head(jobID, *limit)
 	if err != nil {
 		return "", err
 	}
@@ -875,7 +875,7 @@ func (t logsCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 	}
 	j := jobs[0]
 
-	jobLogs, err := persistence.LoggerProvider().Reader(j.ID).Get()
+	jobLogs, err := persistence.LoggerProvider().Reader().Get(j.ID)
 	if err != nil {
 		return "", err
 	}

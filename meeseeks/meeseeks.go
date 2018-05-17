@@ -33,14 +33,14 @@ type Message interface {
 
 // LoggerProvider wraps the specific logger implementation
 type LoggerProvider interface {
-	Reader(jobID uint64) LogReader
-	Writer(jobID uint64) LogWriter
+	Reader() LogReader
+	Writer() LogWriter
 }
 
 // LogWriter is an interface to write logs to a given job
 type LogWriter interface {
-	Append(content string) error
-	SetError(jobErr error) error
+	Append(jobID uint64, content string) error
+	SetError(jobID uint64, jobErr error) error
 }
 
 // ErrNoLogsForJob is returned when we try to extract the logs of a non existing job
@@ -49,11 +49,11 @@ var ErrNoLogsForJob = errors.New("No logs for job")
 // LogReader is an interface to read logs from a given job
 type LogReader interface {
 	// Returns the whole log output of a given job
-	Get() (JobLog, error)
+	Get(jobID uint64) (JobLog, error)
 	// Head returns the top <limit> log lines
-	Head(limit int) (JobLog, error)
+	Head(jobID uint64, limit int) (JobLog, error)
 	// Tail returns the bottm <limit> log lines
-	Tail(limit int) (JobLog, error)
+	Tail(jobID uint64, limit int) (JobLog, error)
 }
 
 // Request is a structure that holds a command execution request

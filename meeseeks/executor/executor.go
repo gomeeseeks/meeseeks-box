@@ -37,7 +37,6 @@ type Jobs interface {
 // Executor is the command execution engine
 type Executor struct {
 	client    ChatClient
-	jobs      Jobs
 	listeners []Listener
 
 	requestsCh chan meeseeks.Request

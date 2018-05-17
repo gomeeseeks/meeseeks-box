@@ -46,16 +46,16 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 	ctx, cancelFunc := context.WithTimeout(ctx, c.Timeout())
 	defer cancelFunc()
 
-	logR := logs.Reader(job.ID)
-	logW := logs.Writer(job.ID)
+	logR := logs.Reader()
+	logW := logs.Writer()
 
 	AppendLogs := func(line string) {
-		if e := logW.Append(line); e != nil {
+		if e := logW.Append(job.ID, line); e != nil {
 			logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
 		}
 	}
 	SetError := func(err error) error {
-		if e := logW.SetError(err); e != nil {
+		if e := logW.SetError(job.ID, err); e != nil {
 			logrus.Errorf("Could set error to job %d: %s", job.ID, e)
 		}
 		return err
@@ -104,7 +104,7 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 		return "", SetError(err)
 	}
 
-	jobLog, err := logR.Get()
+	jobLog, err := logR.Get(job.ID)
 	if err != nil {
 		logrus.Errorf("failed to read back output for job %d: %s", job.ID, err)
 	}

@@ -195,8 +195,8 @@ func newLoggerProvider(conn *grpc.ClientConn) grpcLoggerProvider {
 }
 
 // Reader implements
-func (g grpcLoggerProvider) Reader(jobID uint64) meeseeks.LogReader {
-	return nullReader{jobID}
+func (g grpcLoggerProvider) Reader() meeseeks.LogReader {
+	return nullReader{}
 }
 
 type nullReader struct {
@@ -204,22 +204,22 @@ type nullReader struct {
 }
 
 // Get implements meeseeks.LogReader.Get
-func (n nullReader) Get() (meeseeks.JobLog, error) {
+func (n nullReader) Get(_ uint64) (meeseeks.JobLog, error) {
 	return meeseeks.JobLog{}, nil
 }
 
 // Head implements meeseeks.LogReader.Head
-func (n nullReader) Head(int) (meeseeks.JobLog, error) {
+func (n nullReader) Head(_ uint64, _ int) (meeseeks.JobLog, error) {
 	return meeseeks.JobLog{}, nil
 }
 
 // Tail implements meeseeks.LogReader.Tail
-func (n nullReader) Tail(int) (meeseeks.JobLog, error) {
+func (n nullReader) Tail(_ uint64, _ int) (meeseeks.JobLog, error) {
 	return meeseeks.JobLog{}, nil
 }
 
 // Writer returns a LogWriter
-func (g grpcLoggerProvider) Writer(jobID uint64) meeseeks.LogWriter {
+func (g grpcLoggerProvider) Writer() meeseeks.LogWriter {
 	client := api.NewLogWriterClient(g.conn)
 	appender, err := client.NewWriter(context.Background()) // TODO improve this with some options
 	if err != nil {
@@ -227,30 +227,28 @@ func (g grpcLoggerProvider) Writer(jobID uint64) meeseeks.LogWriter {
 	}
 
 	return grpcLogWriter{
-		jobID:    jobID,
 		client:   client,
 		appender: appender,
 	}
 }
 
 type grpcLogWriter struct {
-	jobID    uint64
 	client   api.LogWriterClient
 	appender api.LogWriter_NewWriterClient
 }
 
 // Append implements LogWritter.Append
-func (g grpcLogWriter) Append(content string) error {
+func (g grpcLogWriter) Append(jobID uint64, content string) error {
 	return g.appender.Send(&api.LogEntry{
-		JobID: g.jobID,
+		JobID: jobID,
 		Line:  content,
 	})
 }
 
 // SetError implements LogWritter.SetError
-func (g grpcLogWriter) SetError(jobErr error) error {
+func (g grpcLogWriter) SetError(jobID uint64, jobErr error) error {
 	_, err := g.client.SetError(context.Background(), &api.ErrorLogEntry{
-		JobID: g.jobID,
+		JobID: jobID,
 		Error: jobErr.Error(),
 	})
 	return err
