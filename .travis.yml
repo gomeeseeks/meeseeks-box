@@ -20,14 +20,12 @@ before_script:
 - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
 
 script:
-- test -z $(gofmt -s -l $GO_FILES)
-- find . -iname '*.go' -type f -not -path './vendor/*' -exec gofmt -s -l {} \;
-- gocyclo -over 19 $GO_FILES
-- find . -iname '*_test.go' -type f | grep -v /vendor/ | sed -E 's|/[^/]+$||' | xargs -I {} -L 1 go test -coverprofile={}/.coverprofile {}
-- gover
+- make fmt
+- make cyclo
+- make megacheck
+- make lint
+- make coverage
 - goveralls -v -coverprofile=gover.coverprofile -service=travis-ci
-- megacheck $(go list ./...)
-- golint -set_exit_status $(go list ./...)
 - go build
 
 notifications:
