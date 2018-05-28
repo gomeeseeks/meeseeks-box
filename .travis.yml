@@ -17,11 +17,11 @@ install:
 - dep ensure
 
 script:
-- make fmt
-- make cyclo
-- make megacheck
-- make lint
-- make coverage
+- make fmt || travis_terminate 1
+- make cyclo || travis_terminate 1
+- make megacheck || travis_terminate 1
+- make lint || travis_terminate 1
+- make coverage || travis_terminate 1
 - goveralls -v -coverprofile=gover.coverprofile -service=travis-ci
 - go build
 
