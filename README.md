@@ -4,7 +4,7 @@
 
 [![Go Report Card](http://goreportcard.com/badge/github.com/gomeeseeks/meeseeks-box)](https://goreportcard.com/report/github.com/gomeeseeks/meeseeks-box)
 
-[![Coverage Status](https://coveralls.io/repos/github/gomeeseeks/meeseeks-box/badge.svg?branch=pc%2Fadd-coveralls-integration)](https://coveralls.io/github/gomeeseeks/meeseeks-box?branch=pc%2Fadd-coveralls-integration)
+[![Coverage Status](https://coveralls.io/repos/github/gomeeseeks/meeseeks-box/badge.svg?branch=master)](https://coveralls.io/github/gomeeseeks/meeseeks-box?branch=master)
 
 > You make a request
 >
