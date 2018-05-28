@@ -7,12 +7,13 @@ matrix:
 
 before_install:
 - go get github.com/mattn/goveralls
+- go get github.com/modocache/gover
 - go get github.com/golang/lint/golint
 - go get honnef.co/go/tools/cmd/megacheck
 - go get github.com/fzipp/gocyclo
+- go get -u github.com/golang/dep/...
 
 install:
-- go get -u github.com/golang/dep/...
 - dep ensure
 
 before_script:
@@ -21,9 +22,11 @@ before_script:
 script:
 - test -z $(gofmt -s -l $GO_FILES)
 - find . -iname '*.go' -type f -not -path './vendor/*' -exec gofmt -s -l {} \;
-- $HOME/gopath/bin/goveralls -v -service=travis-ci
-- megacheck $(go list ./...)
 - gocyclo -over 19 $GO_FILES
+- go list -f '{{if len .TestGoFiles}}"go test -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | xargs -L 1 sh -c
+- gover
+- goveralls -v -coverprofile=gover.coverprofile -service=travis-ci
+- megacheck $(go list ./...)
 - golint -set_exit_status $(go list ./...)
 - go build
 
