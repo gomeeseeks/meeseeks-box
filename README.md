@@ -4,6 +4,8 @@
 
 [![Go Report Card](http://goreportcard.com/badge/github.com/gomeeseeks/meeseeks-box)](https://goreportcard.com/report/github.com/gomeeseeks/meeseeks-box)
 
+[![Coverage Status](https://coveralls.io/repos/github/gomeeseeks/meeseeks-box/badge.svg?branch=pc%2Fadd-coveralls-integration)](https://coveralls.io/github/gomeeseeks/meeseeks-box?branch=pc%2Fadd-coveralls-integration)
+
 > You make a request
 >
 > The Meeseek fulfills the request
