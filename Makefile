@@ -11,7 +11,8 @@ coverage:
 	find . -iname "*_test.go" -type f | \
 		grep -v /vendor/ | \
 		sed -E 's|/[^/]+$$||' | \
-		xargs -I {} -L 1 go test -coverprofile={}/.coverprofile {}
+		awk '{ print "go test -coverprofile=" $$1 "/.coverprofile " $$1 }' | \
+		xargs -0 bash -c
 	gover
 
 fmt:
