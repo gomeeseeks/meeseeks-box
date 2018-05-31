@@ -1,11 +1,26 @@
 src = $(wildcard *.go)
 
-.PHONY: all clean lint megacheck release snapshot test
+.PHONY: all clean fmt lint megacheck release snapshot test
 
 all: test
 
 clean:
 	rm -rf ./dist
+
+coverage:
+	find . -iname "*_test.go" -type f | \
+		grep -v /vendor/ | \
+		sed -E 's|/[^/]+$$||' | \
+		awk '{ print "go test -coverprofile=" $$1 "/.coverprofile " $$1 }' | \
+		xargs -0 bash -c
+	gover
+
+fmt:
+	find . -iname '*.go' -type f -not -path './vendor/*' -exec gofmt -s -l {} \;
+	test -z $(gofmt -s -l $(find . -iname '*.go' -type f | grep -v /vendor/))
+
+cyclo:
+	gocyclo -over 19 -avg $$(find . -iname '*.go' -type f | grep -v /vendor/)
 
 lint:
 	golint -set_exit_status $(go list ./...)

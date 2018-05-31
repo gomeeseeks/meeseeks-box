@@ -1,29 +1,32 @@
 language: go
 go:
-- 1.9.x
+- 1.10.x
 
 matrix:
   fast_finish: true
 
-before_script:
-- GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
+before_install:
+- go get github.com/mattn/goveralls
+- go get github.com/modocache/gover
 - go get github.com/golang/lint/golint
 - go get honnef.co/go/tools/cmd/megacheck
 - go get github.com/fzipp/gocyclo
+- go get -u github.com/golang/dep/...
 
 install:
-- go get -u github.com/golang/dep/...
 - dep ensure
 
 script:
-- test -z $(gofmt -s -l $GO_FILES)
-- find . -iname '*.go' -type f -not -path './vendor/*' -exec gofmt -s -l {} \;
-- go test -v -race ./...
-- go vet ./...
-- megacheck $(go list ./...)
-- gocyclo -over 19 $GO_FILES
-- golint -set_exit_status $(go list ./...)
+- make fmt || travis_terminate 1
+- make cyclo || travis_terminate 1
+- make megacheck || travis_terminate 1
+- make lint || travis_terminate 1
+- make coverage || travis_terminate 1
+- goveralls -v -coverprofile=gover.coverprofile -service=travis-ci
 - go build
+
+after_success:
+- test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
 
 notifications:
   slack:
