@@ -167,6 +167,8 @@ func Test_ConfigurationLoadNonExistingFile(t *testing.T) {
 func Test_ConfigurationBasicLoading(t *testing.T) {
 	c, err := config.LoadFile("./test-fixtures/basic-config.yml")
 	mocks.AssertEquals(t, nil, err)
-	mocks.AssertEquals(t, "/var/lib/meeseeks/meeseeks-workspace.db", c.Database.Path)
+	mocks.AssertEquals(t, "./meeseeks-workspace.db", c.Database.Path)
 	mocks.AssertEquals(t, 1, len(c.Commands))
+
+	mocks.Must(t, "failed to load configuration", config.LoadConfig(c))
 }

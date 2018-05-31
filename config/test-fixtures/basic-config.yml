@@ -5,7 +5,7 @@ format:
   reply_styles:
     success: text
 database:
-  path: /var/lib/meeseeks/meeseeks-workspace.db
+  path: ./meeseeks-workspace.db
 commands:
   echo:
     command: "echo"
