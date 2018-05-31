@@ -357,7 +357,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w := persistence.LoggerProvider().Writer()
+				w := persistence.LogWriter()
 				w.Append(j.ID, "line 1.1")
 				w.Append(j.ID, "line 1.2")
 				w.Append(j.ID, "line 1.3")
@@ -366,7 +366,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w = persistence.LoggerProvider().Writer()
+				w = persistence.LogWriter()
 				w.Append(j.ID, "line 2.1")
 				w.Append(j.ID, "line 2.2")
 				w.Append(j.ID, "line 2.3")
@@ -388,7 +388,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w := persistence.LoggerProvider().Writer()
+				w := persistence.LogWriter()
 				w.Append(j.ID, "line 1.1")
 				w.Append(j.ID, "line 1.2")
 				w.Append(j.ID, "line 1.3")
@@ -396,7 +396,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w = persistence.LoggerProvider().Writer()
+				w = persistence.LogWriter()
 				w.Append(j.ID, "line 2.1")
 				w.Append(j.ID, "line 2.2")
 				w.Append(j.ID, "line 2.3")
@@ -416,13 +416,13 @@ func Test_BuiltinCommands(t *testing.T) {
 				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w := persistence.LoggerProvider().Writer()
+				w := persistence.LogWriter()
 				w.Append(j.ID, "line 1.1\nline 1.2\nsomething to say 1")
 
 				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w = persistence.LoggerProvider().Writer()
+				w = persistence.LogWriter()
 				w.Append(j.ID, "line 2.1")
 				w.Append(j.ID, "line 2.2")
 				w.Append(j.ID, "something to say 2")
@@ -442,7 +442,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w := persistence.LoggerProvider().Writer()
+				w := persistence.LogWriter()
 				w.Append(j.ID, "line 1.1")
 				w.Append(j.ID, "line 1.2")
 				w.Append(j.ID, "something to say 1")
@@ -450,7 +450,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 
-				w = persistence.LoggerProvider().Writer()
+				w = persistence.LogWriter()
 				w.Append(j.ID, "line 2.1")
 				w.Append(j.ID, "line 2.2")
 				w.Append(j.ID, "something to say 2")
@@ -470,12 +470,12 @@ func Test_BuiltinCommands(t *testing.T) {
 			setup: func() {
 				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
-				w := persistence.LoggerProvider().Writer()
+				w := persistence.LogWriter()
 				w.Append(j.ID, "something to say 1")
 
 				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
-				w = persistence.LoggerProvider().Writer()
+				w = persistence.LogWriter()
 				w.Append(j.ID, "something to say 2")
 			},
 			expected: "something to say 1",
@@ -493,12 +493,12 @@ func Test_BuiltinCommands(t *testing.T) {
 			setup: func() {
 				j, err := persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
-				w := persistence.LoggerProvider().Writer()
+				w := persistence.LogWriter()
 				w.Append(j.ID, "something to say 1")
 
 				j, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
-				w = persistence.LoggerProvider().Writer()
+				w = persistence.LogWriter()
 				w.Append(j.ID, "something to say 2")
 			},
 			expected: "something to say 1",

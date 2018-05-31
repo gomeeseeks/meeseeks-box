@@ -11,20 +11,13 @@ import (
 	bolt "github.com/coreos/bbolt"
 )
 
-// New returns a new local LoggerProvider
-func New() meeseeks.LoggerProvider {
-	return localLoggerProvider{}
-}
-
-type localLoggerProvider struct{}
-
-// Reader Implements LoggerProvider.Reader
-func (localLoggerProvider) Reader() meeseeks.LogReader {
+// NewReader Creates a new log reader
+func NewReader() meeseeks.LogReader {
 	return localReader{}
 }
 
-// Writer Implements LoggerProvider.Writer
-func (localLoggerProvider) Writer() meeseeks.LogWriter {
+// NewWriter Createts a new log writer
+func NewWriter() meeseeks.LogWriter {
 	return localWriter{}
 }
 

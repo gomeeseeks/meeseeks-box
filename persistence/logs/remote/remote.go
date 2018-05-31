@@ -5,14 +5,8 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 )
 
-type remoteProvider struct{}
-
-// New returns a new Remote Logger Provider
-func New() meeseeks.LoggerProvider {
-	return remoteProvider{}
-}
-
-func (remoteProvider) Reader() meeseeks.LogReader {
+// NewReader creates a new log reader
+func NewReader() meeseeks.LogReader {
 	return nullReader{}
 }
 
@@ -31,8 +25,8 @@ func (nullReader) Tail(_ uint64, _ int) (meeseeks.JobLog, error) {
 	return meeseeks.JobLog{}, nil
 }
 
-// Writer implements LoggerProvider.Writer
-func (remoteProvider) Writer() meeseeks.LogWriter {
+// NewWriter creates a new remote log writer
+func NewWriter() meeseeks.LogWriter {
 	return remoteLogWriter{}
 }
 

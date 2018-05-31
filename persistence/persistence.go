@@ -4,7 +4,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
 	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
-	logs "github.com/gomeeseeks/meeseeks-box/persistence/logs/provider"
+	logs "github.com/gomeeseeks/meeseeks-box/persistence/logs/local"
 	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
 )
 
@@ -12,19 +12,21 @@ var provider Provider
 
 func init() {
 	provider = Provider{
-		Aliases:        aliases.Aliases{},
-		Jobs:           jobs.Jobs{},
-		APITokens:      tokens.Tokens{},
-		LoggerProvider: logs.New(logs.LocalLogger),
+		Aliases:   aliases.Aliases{},
+		Jobs:      jobs.Jobs{},
+		APITokens: tokens.Tokens{},
+		LogReader: logs.NewReader(),
+		LogWriter: logs.NewWriter(),
 	}
 }
 
 // Provider holds different service implementations to access them, must be initialized
 type Provider struct {
-	Aliases        meeseeks.Aliases
-	Jobs           meeseeks.Jobs
-	APITokens      meeseeks.APITokens
-	LoggerProvider meeseeks.LoggerProvider
+	Aliases   meeseeks.Aliases
+	Jobs      meeseeks.Jobs
+	APITokens meeseeks.APITokens
+	LogReader meeseeks.LogReader
+	LogWriter meeseeks.LogWriter
 }
 
 // Aliases returns an actual instance of the aliases service
@@ -42,7 +44,12 @@ func APITokens() meeseeks.APITokens {
 	return provider.APITokens
 }
 
-// LoggerProvider returns an actual instance of the loggerProvider service
-func LoggerProvider() meeseeks.LoggerProvider {
-	return provider.LoggerProvider
+// LogReader returns an actual instance of the log reader service
+func LogReader() meeseeks.LogReader {
+	return provider.LogReader
+}
+
+// LogWriter returns an actual instance of the log writer service
+func LogWriter() meeseeks.LogWriter {
+	return provider.LogWriter
 }

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,8 +46,8 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 	ctx, cancelFunc := context.WithTimeout(ctx, c.Timeout())
 	defer cancelFunc()
 
-	logR := logs.Reader()
-	logW := logs.Writer()
+	logR := persistence.LogReader()
+	logW := persistence.LogWriter()
 
 	AppendLogs := func(line string) {
 		if e := logW.Append(job.ID, line); e != nil {

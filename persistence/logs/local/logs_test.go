@@ -1,4 +1,4 @@
-package logs_test
+package local_test
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 )
 
 func Test_Logs(t *testing.T) {
@@ -49,14 +49,14 @@ func Test_Logs(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
 		for _, tc := range tt {
 			t.Run(tc.name, func(t *testing.T) {
-				lw := logs.Writer()
+				lw := persistence.LogWriter()
 				for _, line := range tc.logs {
 					lw.Append(tc.jobID, line)
 				}
 				if tc.err != nil {
 					lw.SetError(tc.jobID, tc.err)
 				}
-				actual, err := logs.Reader().Get(tc.jobID)
+				actual, err := persistence.LogReader().Get(tc.jobID)
 				mocks.Must(t, "could not get job logs back", err)
 				mocks.AssertEquals(t, tc.expected, actual)
 			})
@@ -67,7 +67,7 @@ func Test_Logs(t *testing.T) {
 
 func Test_GetLoglessJob(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
-		_, err := logs.Reader().Get(1)
+		_, err := persistence.LogReader().Get(1)
 
 		mocks.AssertEquals(t, meeseeks.ErrNoLogsForJob, err)
 	})
@@ -75,9 +75,9 @@ func Test_GetLoglessJob(t *testing.T) {
 
 func Test_ErredOutJobHasError(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
-		logs.Writer().SetError(1, errors.New("nasty error"))
+		persistence.LogWriter().SetError(1, errors.New("nasty error"))
 
-		l, err := logs.Reader().Get(1)
+		l, err := persistence.LogReader().Get(1)
 
 		mocks.Must(t, "should be able to get a job with only an error", err)
 		mocks.AssertEquals(t, meeseeks.JobLog{Error: "nasty error"}, l)
