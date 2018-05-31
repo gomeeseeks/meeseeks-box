@@ -1,0 +1,15 @@
+---
+groups:
+  admin: ["pablo"]
+format:
+  reply_styles:
+    success: text
+database:
+  path: /var/lib/meeseeks/meeseeks-workspace.db
+commands:
+  echo:
+    command: "echo"
+    auth_strategy: any
+    timeout: 5
+    help: 
+      summary: "command that prints back the arguments passed"
