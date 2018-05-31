@@ -14,6 +14,7 @@ func Test_Logs(t *testing.T) {
 		name     string
 		jobID    uint64
 		logs     []string
+		getter   func(uint64) (meeseeks.JobLog, error)
 		err      error
 		expected meeseeks.JobLog
 	}{
@@ -22,6 +23,9 @@ func Test_Logs(t *testing.T) {
 			jobID: 1,
 			logs:  []string{"something"},
 			err:   nil,
+			getter: func(jobID uint64) (meeseeks.JobLog, error) {
+				return persistence.LogReader().Get(jobID)
+			},
 			expected: meeseeks.JobLog{
 				Output: "something",
 			},
@@ -31,6 +35,9 @@ func Test_Logs(t *testing.T) {
 			jobID: 2,
 			logs:  []string{"something", "something else"},
 			err:   nil,
+			getter: func(jobID uint64) (meeseeks.JobLog, error) {
+				return persistence.LogReader().Get(jobID)
+			},
 			expected: meeseeks.JobLog{
 				Output: "something\nsomething else",
 			},
@@ -40,9 +47,36 @@ func Test_Logs(t *testing.T) {
 			jobID: 3,
 			logs:  []string{"bla"},
 			err:   errors.New("something bad happened"),
+			getter: func(jobID uint64) (meeseeks.JobLog, error) {
+				return persistence.LogReader().Get(jobID)
+			},
 			expected: meeseeks.JobLog{
 				Output: "bla",
 				Error:  "something bad happened",
+			},
+		},
+		{
+			name:  "with multiple lines but doing head",
+			jobID: 4,
+			logs:  []string{"something", "something else"},
+			err:   nil,
+			getter: func(jobID uint64) (meeseeks.JobLog, error) {
+				return persistence.LogReader().Head(jobID, 1)
+			},
+			expected: meeseeks.JobLog{
+				Output: "something",
+			},
+		},
+		{
+			name:  "with multiple lines but doing tail",
+			jobID: 5,
+			logs:  []string{"something", "something else"},
+			err:   nil,
+			getter: func(jobID uint64) (meeseeks.JobLog, error) {
+				return persistence.LogReader().Tail(jobID, 1)
+			},
+			expected: meeseeks.JobLog{
+				Output: "something else",
 			},
 		},
 	}
@@ -56,7 +90,7 @@ func Test_Logs(t *testing.T) {
 				if tc.err != nil {
 					lw.SetError(tc.jobID, tc.err)
 				}
-				actual, err := persistence.LogReader().Get(tc.jobID)
+				actual, err := tc.getter(tc.jobID)
 				mocks.Must(t, "could not get job logs back", err)
 				mocks.AssertEquals(t, tc.expected, actual)
 			})
@@ -69,6 +103,21 @@ func Test_GetLoglessJob(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
 		_, err := persistence.LogReader().Get(1)
 
+		mocks.AssertEquals(t, meeseeks.ErrNoLogsForJob, err)
+	})
+}
+
+func Test_AppendEmptyStringToLogDoesntCreateALog(t *testing.T) {
+	mocks.WithTmpDB(func(_ string) {
+		lw := persistence.LogWriter()
+
+		err := lw.Append(1, "")
+		mocks.Must(t, "should be able to write an empty string to a log", err)
+
+		err = lw.SetError(1, nil)
+		mocks.Must(t, "should be able to get set a nil error in a log", err)
+
+		_, err = persistence.LogReader().Get(1)
 		mocks.AssertEquals(t, meeseeks.ErrNoLogsForJob, err)
 	})
 }
