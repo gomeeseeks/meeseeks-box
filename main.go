@@ -8,6 +8,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/api"
 	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/http"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
@@ -26,14 +27,15 @@ func main() {
 	cleanupPendingJobs()
 
 	slackClient := connectToSlack(args)
-	httpServer := listenHTTP(slackClient, args)
-
 	logrus.Info("Listening to slack messages")
+
+	httpServer := listenHTTP(args)
+	apiService := startAPI(slackClient, args)
 
 	exc := executor.New(slackClient)
 
 	exc.ListenTo(slackClient)
-	exc.ListenTo(httpServer)
+	exc.ListenTo(apiService)
 
 	go exc.Run()
 	logrus.Info("Started commands pipeline")
@@ -47,14 +49,16 @@ func main() {
 }
 
 type args struct {
-	ConfigFile  string
-	DebugMode   bool
-	StealthMode bool
-	DebugSlack  bool
-	APIAddress  string
-	APIPath     string
-	MetricsPath string
-	SlackToken  string
+	ConfigFile    string
+	DebugMode     bool
+	StealthMode   bool
+	DebugSlack    bool
+	Address       string
+	APIPath       string
+	MetricsPath   string
+	SlackToken    string
+	ExecutionMode string
+	RemoteServer  string
 }
 
 func parseArgs() args {
@@ -62,11 +66,13 @@ func parseArgs() args {
 	debugMode := flag.Bool("debug", false, "enabled debug mode")
 	debugSlack := flag.Bool("debug-slack", false, "enabled debug mode for slack")
 	showVersion := flag.Bool("version", false, "print the version and exit")
-	apiAddress := flag.String("api-endpoint", ":9696", "api endpoint in which to listen for api calls")
+	address := flag.String("endpoint", ":9696", "http endpoint in which to listen")
 	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
 	metricsPath := flag.String("metrics-path", "/metrics", "path to in which to expose prometheus metrics")
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
 	slackToken := flag.String("slack-token", os.Getenv("SLACK_TOKEN"), "slack token, by default loaded from the SLACK_TOKEN environment variable")
+	executionMode := flag.String("mode", "standalone", "sets the execution mode, possible modes are standalone (default), server and agent")
+	remoteServer := flag.String("server", "", "remote server to connect to, needed when executing in agent mode")
 
 	flag.Parse()
 
@@ -76,14 +82,16 @@ func parseArgs() args {
 	}
 
 	return args{
-		ConfigFile:  *configFile,
-		DebugMode:   *debugMode,
-		StealthMode: *slackStealth,
-		DebugSlack:  *debugSlack,
-		SlackToken:  *slackToken,
-		APIAddress:  *apiAddress,
-		APIPath:     *apiPath,
-		MetricsPath: *metricsPath,
+		ConfigFile:    *configFile,
+		DebugMode:     *debugMode,
+		StealthMode:   *slackStealth,
+		DebugSlack:    *debugSlack,
+		SlackToken:    *slackToken,
+		Address:       *address,
+		APIPath:       *apiPath,
+		MetricsPath:   *metricsPath,
+		ExecutionMode: *executionMode,
+		RemoteServer:  *remoteServer,
 	}
 }
 
@@ -125,19 +133,24 @@ func connectToSlack(args args) *slack.Client {
 	return slackClient
 }
 
-func listenHTTP(client *slack.Client, args args) *api.Server {
+func listenHTTP(args args) *http.Server {
+
+	httpServer := http.New(args.Address)
 	metrics.RegisterPath(args.MetricsPath)
 
-	httpServer := api.NewServer(client, args.APIPath, args.APIAddress)
 	go func() {
 		err := httpServer.ListenAndServe()
 		if err != nil {
 			logrus.Fatalf("Could not start HTTP server: %s", err)
 		}
 	}()
-	logrus.Infof("Started HTTP server on %s", args.APIAddress)
+	logrus.Infof("Started HTTP server on %s", args.Address)
 
 	return httpServer
+}
+
+func startAPI(client *slack.Client, args args) *api.Service {
+	return api.New(client, args.APIPath)
 }
 
 func waitForSignals(shutdownGracefully func()) {

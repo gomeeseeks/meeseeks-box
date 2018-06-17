@@ -1,10 +1,8 @@
 package api
 
 import (
-	"context"
-	"net/http"
-
 	"github.com/sirupsen/logrus"
+	"net/http"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
@@ -23,35 +21,25 @@ type Enricher interface {
 	IsIM(string) bool
 }
 
-// Server is used to provide API access
-type Server struct {
-	httpServer http.Server
-
+// Service provides a service suitable to manage command requests through the API:w
+type Service struct {
 	enricher   Enricher
 	requestsCh chan meeseeks.Request
 	shutdown   chan bool
 }
 
-// NewServer returns a new API Server that will use the provided metadata client
-func NewServer(enricher Enricher, path, address string) *Server {
-	s := Server{
-		http.Server{
-			Addr: address,
-		},
+// New returns a new API service instance
+func New(enricher Enricher, path string) *Service {
+	s := &Service{
 		enricher,
 		make(chan meeseeks.Request),
 		make(chan bool),
 	}
 	http.HandleFunc(path, s.HandlePostToken)
-	return &s
+	return s
 }
 
-// ListenAndServe starts listening on the provided address, then serving http requests
-func (s *Server) ListenAndServe() error {
-	return s.httpServer.ListenAndServe()
-}
-
-func (s *Server) sendMessage(token meeseeks.APIToken, message string) error {
+func (s *Service) sendMessage(token meeseeks.APIToken, message string) error {
 	channelID, err := s.enricher.ParseChannelLink(token.ChannelLink)
 	if err != nil {
 		logrus.Errorf("Failed to parse channel link %s: %s. Dropping message!", token.ChannelLink, err)
@@ -86,7 +74,7 @@ func (s *Server) sendMessage(token meeseeks.APIToken, message string) error {
 }
 
 // Listen starts listen on the passed in channel
-func (s *Server) Listen(ch chan<- meeseeks.Request) {
+func (s *Service) Listen(ch chan<- meeseeks.Request) {
 	shutdown := false
 	for !shutdown {
 		select {
@@ -99,17 +87,16 @@ func (s *Server) Listen(ch chan<- meeseeks.Request) {
 }
 
 // Shutdown shuts down the http server gracefully
-func (s *Server) Shutdown() error {
-	logrus.Infof("Shutting down API messages channel")
+func (s *Service) Shutdown() error {
+	logrus.Infof("Shutting down API Service")
 	s.shutdown <- true
 	close(s.requestsCh)
 
-	logrus.Infof("Shutting down API server")
-	return s.httpServer.Shutdown(context.TODO())
+	return nil
 }
 
-// HandlePostToken handles a request
-func (s *Server) HandlePostToken(w http.ResponseWriter, r *http.Request) {
+// HandlePostToken implements the http handle request function interface
+func (s *Service) HandlePostToken(w http.ResponseWriter, r *http.Request) {
 	tokenID := r.Header.Get("TOKEN")
 	if tokenID == "" {
 		http.Error(w, "no token", http.StatusBadRequest)
