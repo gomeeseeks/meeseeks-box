@@ -23,10 +23,16 @@ func Reset() {
 	defer mutex.Unlock()
 
 	commands = make(map[string]meeseeks.Command)
+}
+
+// LoadBuiltins loads the builtin commands
+func LoadBuiltins() {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	for name, cmd := range builtins.Commands {
 		commands[name] = cmd
 	}
-
 	builtins.AddHelpCommand(commands)
 }
 

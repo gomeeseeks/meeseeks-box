@@ -140,7 +140,11 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			    args: ["pre-message"]
 			`)).WithDBPath(dbpath).Load()
 
-		e := executor.New(client)
+		e := executor.New(executor.Args{
+			ChatClient:          client,
+			WithBuiltinCommands: true,
+			ConcurrentTaskCount: 1,
+		})
 		e.ListenTo(client)
 
 		go e.Run()

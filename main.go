@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +13,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
+	"github.com/gomeeseeks/meeseeks-box/remote/client"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
 
@@ -22,27 +24,17 @@ func main() {
 	args := parseArgs()
 
 	setLogLevel(args)
-	loadConfiguration(args)
-
-	cleanupPendingJobs()
-
-	slackClient := connectToSlack(args)
-	logrus.Info("Listening to slack messages")
-
 	httpServer := listenHTTP(args)
-	apiService := startAPI(slackClient, args)
 
-	exc := executor.New(slackClient)
-
-	exc.ListenTo(slackClient)
-	exc.ListenTo(apiService)
-
-	go exc.Run()
-	logrus.Info("Started commands pipeline")
+	shutdownFunc, err := launch(args)
+	if err != nil {
+		logrus.Printf("Could not launch meeseeks-box: %s", err)
+		os.Exit(1)
+	}
 
 	waitForSignals(func() { // this locks for good, but receives a shutdown function
 		httpServer.Shutdown()
-		exc.Shutdown()
+		shutdownFunc()
 	})
 
 	logrus.Info("Everything has been shut down, bye bye!")
@@ -71,7 +63,6 @@ func parseArgs() args {
 	metricsPath := flag.String("metrics-path", "/metrics", "path to in which to expose prometheus metrics")
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
 	slackToken := flag.String("slack-token", os.Getenv("SLACK_TOKEN"), "slack token, by default loaded from the SLACK_TOKEN environment variable")
-	executionMode := flag.String("mode", "standalone", "sets the execution mode, possible modes are standalone (default), server and agent")
 	remoteServer := flag.String("server", "", "remote server to connect to, needed when executing in agent mode")
 
 	flag.Parse()
@@ -79,6 +70,19 @@ func parseArgs() args {
 	if *showVersion {
 		logrus.Printf("Version: %s Commit: %s Date: %s", version.Version, version.Commit, version.Date)
 		os.Exit(0)
+	}
+
+	var executionMode string
+	if flag.NArg() == 0 {
+		executionMode = "server"
+	} else {
+		executionMode = flag.Arg(1)
+	}
+
+	if !(executionMode == "server" || executionMode == "agent") {
+		logrus.Println("Invalid execution mode. Valid modes are server (default), and agent")
+		flag.Usage()
+		os.Exit(1)
 	}
 
 	return args{
@@ -90,8 +94,54 @@ func parseArgs() args {
 		Address:       *address,
 		APIPath:       *apiPath,
 		MetricsPath:   *metricsPath,
-		ExecutionMode: *executionMode,
+		ExecutionMode: executionMode,
 		RemoteServer:  *remoteServer,
+	}
+}
+
+func launch(args args) (func(), error) {
+	switch args.ExecutionMode {
+	case "server":
+		loadConfiguration(args)
+		cleanupPendingJobs()
+
+		slackClient := connectToSlack(args)
+		apiService := startAPI(slackClient, args)
+
+		exc := executor.New(executor.Args{
+			ConcurrentTaskCount: 20,
+			WithBuiltinCommands: true,
+			ChatClient:          slackClient,
+		})
+
+		exc.ListenTo(slackClient)
+		exc.ListenTo(apiService)
+
+		go exc.Run()
+
+		return func() {
+			exc.Shutdown()
+		}, nil
+
+	case "agent":
+		remoteClient := client.New(client.Configuration{})
+		exc := executor.New(executor.Args{
+			ConcurrentTaskCount: 20,
+			WithBuiltinCommands: false,
+			ChatClient:          executor.NullChatClient{},
+		})
+
+		exc.ListenTo(remoteClient.Requester())
+
+		go exc.Run()
+
+		return func() {
+			exc.Shutdown()
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("Invalid execution mode %s, Valid execution modes are server (default), and agent",
+			args.ExecutionMode)
 	}
 }
 

@@ -32,6 +32,7 @@ var req = meeseeks.Request{
 
 func Test_BuiltinCommands(t *testing.T) {
 	auth.Configure(basicGroups)
+	commands.LoadBuiltins()
 
 	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(
 		func(_ uint64) {}))

@@ -21,6 +21,12 @@ type ChatClient interface {
 	Reply(formatter.Reply)
 }
 
+// NullChatClient is a client that implements the interface but does nothing
+type NullChatClient struct{}
+
+// Reply implements ChatClient.Reply
+func (NullChatClient) Reply(_ formatter.Reply) {}
+
 // Listener provides the necessary interface to start listening requests from a channel.
 type Listener interface {
 	Listen(chan<- meeseeks.Request)
@@ -51,15 +57,25 @@ type task struct {
 	cmd meeseeks.Command
 }
 
+// Args is handy to set multiple arguments
+type Args struct {
+	ConcurrentTaskCount int
+	WithBuiltinCommands bool
+	ChatClient          ChatClient
+}
+
 // New creates a new Meeseeks service
-func New(client ChatClient) *Executor {
+func New(args Args) *Executor {
 	ac := newActiveCommands()
-	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel))
-	commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel))
+	if args.WithBuiltinCommands {
+		commands.LoadBuiltins()
+		commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel))
+		commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel))
+	}
 
 	e := Executor{
-		client:     client,
-		tasksCh:    make(chan task, 20),
+		client:     args.ChatClient,
+		tasksCh:    make(chan task, args.ConcurrentTaskCount),
 		requestsCh: make(chan meeseeks.Request),
 
 		wg:             sync.WaitGroup{},
