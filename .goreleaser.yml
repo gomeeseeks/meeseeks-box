@@ -50,17 +50,16 @@ dockers:
     goarm: ''
     binary: meeseeks-box
     dockerfile: Dockerfile.amd64
-    latest: true
   - image: gomeeseeks/meeseeks-box-armv6
     goos: linux
     goarch: arm
     goarm: '6'
     binary: meeseeks-box
     dockerfile: Dockerfile.armv6
-    latest: true
   - image: gomeeseeks/meeseeks-box-arm64
     goos: linux
     goarch: arm64
     binary: meeseeks-box
     dockerfile: Dockerfile.arm64
-    latest: true
+env_files:
+  github_token: ~/.goreleaser.token
