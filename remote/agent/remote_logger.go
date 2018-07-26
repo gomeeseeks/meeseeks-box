@@ -1,0 +1,59 @@
+package agent
+
+import (
+	"context"
+	"time"
+
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
+	"github.com/gomeeseeks/meeseeks-box/remote/api"
+)
+
+type grpcLogWriter struct {
+	client         api.LogWriterClient
+	timeoutSeconds time.Duration
+}
+
+// Append implements LogWritter.Append
+func (g grpcLogWriter) Append(jobID uint64, content string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), g.timeoutSeconds)
+	defer cancel()
+
+	w, e := g.client.NewWriter(ctx)
+	if e != nil {
+		return e
+	}
+
+	metrics.LogLinesCount.Inc()
+	return w.Send(&api.LogEntry{
+		JobID: jobID,
+		Line:  content,
+	})
+}
+
+// SetError implements LogWritter.SetError
+func (g grpcLogWriter) SetError(jobID uint64, jobErr error) error {
+	ctx, cancel := context.WithTimeout(context.Background(), g.timeoutSeconds)
+	defer cancel()
+
+	_, err := g.client.SetError(ctx, &api.ErrorLogEntry{
+		JobID: jobID,
+		Error: jobErr.Error(),
+	})
+	return err
+}
+
+type nullReader struct {
+}
+
+func (nullReader) Get(_ uint64) (meeseeks.JobLog, error) {
+	return meeseeks.JobLog{}, nil
+}
+
+func (nullReader) Head(_ uint64, _ int) (meeseeks.JobLog, error) {
+	return meeseeks.JobLog{}, nil
+}
+
+func (nullReader) Tail(_ uint64, _ int) (meeseeks.JobLog, error) {
+	return meeseeks.JobLog{}, nil
+}

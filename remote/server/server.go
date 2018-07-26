@@ -1,14 +1,15 @@
 package server
 
 import (
-	// "context"
+	"context"
+	"errors"
 	// "fmt"
 	// "io"
 	// "net"
 	// "time"
 
-	// "github.com/gomeeseeks/meeseeks-box/persistence/logs"
-	// "github.com/gomeeseeks/meeseeks-box/remote/api"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
+	"github.com/gomeeseeks/meeseeks-box/remote/api"
 	// "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -17,6 +18,45 @@ import (
 type RemoteServer struct {
 	Address string
 	server  *grpc.Server
+}
+
+// Register registers the different servers in the grpc server
+func (s *RemoteServer) Register() {
+	api.RegisterLogWriterServer(s.server, LogWriterServer{})
+	api.RegisterCommandPipelineServer(s.server, CommandPipelineServer{})
+}
+
+type LogWriterServer struct {
+}
+
+func (_ LogWriterServer) NewWriter(x api.LogWriter_NewWriterServer) error {
+
+	return nil
+}
+
+// SetError implements LogWriterServer SetError
+func (LogWriterServer) SetError(ctx context.Context, entry *api.ErrorLogEntry) (*api.Empty, error) {
+	return &api.Empty{}, persistence.LogWriter().SetError(entry.GetJobID(), errors.New(entry.GetError()))
+}
+
+// CommandPipelineServer is a specific implementation for a command pipeline
+type CommandPipelineServer struct {
+}
+
+// RegisterAgent registers a new agent service
+func (CommandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent api.CommandPipeline_RegisterAgentServer) error {
+	// in agent configuration is used to register the remote commands that can be executed
+	return nil
+}
+
+// Succeed sets a command as successful
+func (CommandPipelineServer) Succeed(ctx context.Context, cmd *api.Command) (*api.Empty, error) {
+	return &api.Empty{}, persistence.Jobs().Succeed(cmd.GetJobID())
+}
+
+// Fail makes a command fail
+func (CommandPipelineServer) Fail(ctx context.Context, cmd *api.Command) (*api.Empty, error) {
+	return &api.Empty{}, persistence.Jobs().Fail(cmd.GetJobID())
 }
 
 // func New(address string) RemoteServer {

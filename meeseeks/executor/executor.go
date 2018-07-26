@@ -32,14 +32,6 @@ type Listener interface {
 	Listen(chan<- meeseeks.Request)
 }
 
-// Jobs interface provides the basic tooling to handle jobs
-type Jobs interface {
-	Null(meeseeks.Request) meeseeks.Job
-	Create(meeseeks.Request) (meeseeks.Job, error)
-	Fail(jobID uint64) error
-	Succeed(jobID uint64) error
-}
-
 // Executor is the command execution engine
 type Executor struct {
 	client    ChatClient

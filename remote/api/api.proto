@@ -17,10 +17,8 @@ message AgentConfiguration {
     map<string, RemoteCommand> commands = 2;
 }
 
-message CommandFinish {
+message Command {
     uint64 jobID = 1;
-    string status = 2;
-    string error = 3;
 }
 
 message Help {
@@ -70,7 +68,8 @@ service Registration {
 
 service CommandPipeline {
     rpc RegisterAgent(AgentConfiguration) returns (stream CommandRequest) {}
-    rpc Finish(CommandFinish) returns (Empty) {}
+    rpc Succeed(Command) returns (Empty) {}
+    rpc Fail(Command) returns (Empty) {}
 }
 
 service LogWriter {

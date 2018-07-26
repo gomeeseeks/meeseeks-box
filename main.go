@@ -123,7 +123,17 @@ func launch(args args) (func(), error) {
 	case "agent":
 		remoteClient := agent.New(agent.Configuration{})
 		must("could not connect to remote server: %s", remoteClient.Connect())
-		must("could not start the remote requester: %s", remoteClient.Requester().Start())
+
+		req, err := remoteClient.CreateRequester()
+		must("could not start the remote requester: %s", err)
+
+		persistence.Register(
+			persistence.Providers{
+				Jobs:      remoteClient.RemoteJobs(),
+				LogReader: remoteClient.RemoteLogReader(),
+				LogWriter: remoteClient.RemoteLogWriter(),
+			},
+		)
 
 		exc := executor.New(executor.Args{
 			ConcurrentTaskCount: 20,
@@ -131,7 +141,7 @@ func launch(args args) (func(), error) {
 			ChatClient:          executor.NullChatClient{},
 		})
 
-		exc.ListenTo(remoteClient.Requester())
+		exc.ListenTo(req)
 
 		go exc.Run()
 
