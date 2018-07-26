@@ -13,7 +13,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
-	"github.com/gomeeseeks/meeseeks-box/remote/client"
+	"github.com/gomeeseeks/meeseeks-box/remote/agent"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
 
@@ -27,10 +27,7 @@ func main() {
 	httpServer := listenHTTP(args)
 
 	shutdownFunc, err := launch(args)
-	if err != nil {
-		logrus.Printf("Could not launch meeseeks-box: %s", err)
-		os.Exit(1)
-	}
+	must("could not launch meeseeks-box: %s", err)
 
 	waitForSignals(func() { // this locks for good, but receives a shutdown function
 		httpServer.Shutdown()
@@ -124,7 +121,10 @@ func launch(args args) (func(), error) {
 		}, nil
 
 	case "agent":
-		remoteClient := client.New(client.Configuration{})
+		remoteClient := agent.New(agent.Configuration{})
+		must("could not connect to remote server: %s", remoteClient.Connect())
+		must("could not start the remote requester: %s", remoteClient.Requester().Start())
+
 		exc := executor.New(executor.Args{
 			ConcurrentTaskCount: 20,
 			WithBuiltinCommands: false,
@@ -153,19 +153,14 @@ func setLogLevel(args args) {
 
 func loadConfiguration(args args) {
 	cnf, err := config.LoadFile(args.ConfigFile)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	if err := config.LoadConfig(cnf); err != nil {
-		logrus.Fatalf("Could not load configuration: %s", err)
-	}
+	must("could not load configuration file: %s", err)
+	must("could not load configuration: %s", config.LoadConfig(cnf))
+
 	logrus.Info("Configuration loaded")
 }
 
 func cleanupPendingJobs() {
-	if err := persistence.Jobs().FailRunningJobs(); err != nil {
-		logrus.Fatalf("Could not flush running jobs after: %s", err)
-	}
+	must("Could not flush running jobs after: %s", persistence.Jobs().FailRunningJobs())
 }
 
 func connectToSlack(args args) *slack.Client {
@@ -175,9 +170,8 @@ func connectToSlack(args args) *slack.Client {
 			Token:   args.SlackToken,
 			Stealth: args.StealthMode,
 		})
-	if err != nil {
-		logrus.Fatalf("Could not connect to slack: %s", err)
-	}
+
+	must("Could not connect to slack: %s", err)
 	logrus.Info("Connected to slack")
 
 	return slackClient
@@ -190,9 +184,7 @@ func listenHTTP(args args) *http.Server {
 
 	go func() {
 		err := httpServer.ListenAndServe()
-		if err != nil {
-			logrus.Fatalf("Could not start HTTP server: %s", err)
-		}
+		must("Could not start HTTP server: %s", err)
 	}()
 	logrus.Infof("Started HTTP server on %s", args.Address)
 
@@ -213,4 +205,10 @@ func waitForSignals(shutdownGracefully func()) {
 	logrus.Infof("Got signal %s, shutting down gracefully", sig)
 
 	shutdownGracefully()
+}
+
+func must(message string, err error) {
+	if err != nil {
+		logrus.Fatalf(message, err)
+	}
 }
