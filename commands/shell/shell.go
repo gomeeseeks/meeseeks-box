@@ -6,44 +6,29 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/sirupsen/logrus"
 )
 
-// CommandOpts are the options used to build a new shell command
-type CommandOpts struct {
-	Cmd             string
-	Args            []string
-	AllowedGroups   []string
-	AuthStrategy    string
-	AllowedChannels []string
-	ChannelStrategy string
-	HasHandshake    bool
-	Timeout         time.Duration
-	Templates       map[string]string
-	Help            meeseeks.Help
-}
-
 // New return a new ShellCommand based on the passed in opts
-func New(opts CommandOpts) meeseeks.Command {
+func New(opts meeseeks.CommandOpts) meeseeks.Command {
 	return shellCommand{
-		opts: opts,
+		opts,
 	}
 }
 
 type shellCommand struct {
-	opts CommandOpts
+	meeseeks.CommandOpts
 }
 
 // Execute implements Command.Execute for the ShellCommand
 func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
-	cmdArgs := append(c.Args(), job.Request.Args...)
-	logrus.Debugf("Calling command %s with args %#v", c.Cmd(), cmdArgs)
+	cmdArgs := append(c.GetArgs(), job.Request.Args...)
+	logrus.Debugf("Calling command %s with args %#v", c.GetCmd(), cmdArgs)
 
-	ctx, cancelFunc := context.WithTimeout(ctx, c.Timeout())
+	ctx, cancelFunc := context.WithTimeout(ctx, c.GetTimeout())
 	defer cancelFunc()
 
 	logR := persistence.LogReader()
@@ -61,7 +46,7 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 		return err
 	}
 
-	cmd := exec.CommandContext(ctx, c.Cmd(), cmdArgs...)
+	cmd := exec.CommandContext(ctx, c.GetCmd(), cmdArgs...)
 	op, err := cmd.StdoutPipe()
 	if err != nil {
 		return "", SetError(fmt.Errorf("could not create stdout pipe: %s", err))
@@ -110,91 +95,4 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 	}
 
 	return jobLog.Output, jobLog.GetError()
-}
-
-func (c shellCommand) HasHandshake() bool {
-	return c.opts.HasHandshake
-}
-
-func (c shellCommand) Templates() map[string]string {
-	if c.opts.Templates == nil {
-		return map[string]string{}
-	}
-	return c.opts.Templates
-}
-
-func (c shellCommand) AuthStrategy() string {
-	if c.opts.AuthStrategy == "" {
-		return "none"
-	}
-	return c.opts.AuthStrategy
-}
-
-func (c shellCommand) AllowedGroups() []string {
-	if c.opts.AllowedGroups == nil {
-		return []string{}
-	}
-	return c.opts.AllowedGroups
-}
-
-func (c shellCommand) ChannelStrategy() string {
-	if c.opts.ChannelStrategy == "" {
-		return "any"
-	}
-	return c.opts.ChannelStrategy
-}
-
-func (c shellCommand) AllowedChannels() []string {
-	if c.opts.AllowedChannels == nil {
-		return []string{}
-	}
-	return c.opts.AllowedChannels
-}
-
-func (c shellCommand) Args() []string {
-	logrus.Debug("Returning shell command args ", c.opts.Args)
-	if c.opts.Args == nil {
-		return []string{}
-	}
-	return c.opts.Args
-}
-
-func (c shellCommand) Timeout() time.Duration {
-	if c.opts.Timeout == 0 {
-		return meeseeks.DefaultCommandTimeout
-	}
-	return c.opts.Timeout
-}
-
-func (c shellCommand) Cmd() string {
-	return c.opts.Cmd
-}
-
-func (c shellCommand) Help() meeseeks.Help {
-	return c.opts.Help
-}
-
-func (c shellCommand) Record() bool {
-	return true
-}
-
-type shellHelp struct {
-	summary string
-	args    []string
-}
-
-func (h shellHelp) GetSummary() string {
-	return h.summary
-}
-
-func (h shellHelp) GetArgs() []string {
-	return h.args
-}
-
-// NewHelp returns a new command help implementation for the shell command
-func NewHelp(summary string, args ...string) meeseeks.Help {
-	return shellHelp{
-		summary,
-		append([]string{}, args...),
-	}
 }

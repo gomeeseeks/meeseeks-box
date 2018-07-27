@@ -317,7 +317,7 @@ func Test_BuiltinCommands(t *testing.T) {
 
 				commands.Add(
 					commands.CommandRegistration{
-						Name: "noop", Cmd: shell.New(shell.CommandOpts{
+						Name: "noop", Cmd: shell.New(meeseeks.CommandOpts{
 							AuthStrategy: "any",
 							Cmd:          "true",
 						})})

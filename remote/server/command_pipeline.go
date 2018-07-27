@@ -3,9 +3,10 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
-	// "github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 )
 
@@ -48,10 +49,17 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 	// TODO: check the in.GetToken()
 	// TODO: register the commands using the in.GetLabels()
 
+	cmds := make([]commands.CommandRegistration, len(in.GetCommands()))
 	// for name, cmd := range in.Commands {
-	// 	commands.Add
+	// 	cmds = append(cmds, commands.CommandRegistration{
+	// 		Name: name,
+	// 		Cmd:  remoteCommand{},
+	// 	})
 	// }
 
+	if err := commands.Add(cmds...); err != nil {
+		return fmt.Errorf("failed to register remote commands: %s", err)
+	}
 	p.agent = agent
 	return nil
 }
@@ -71,6 +79,9 @@ func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFini
 	cmd <- finishPayload{err}
 
 	return nil, nil
+}
+
+type remoteCommand struct {
 }
 
 // func New(address string) RemoteServer {

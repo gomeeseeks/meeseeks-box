@@ -119,7 +119,7 @@ func (r *RemoteClient) start(pipeline api.CommandPipeline_RegisterAgentClient) {
 				return
 			}
 
-			ctx, cancelShellCmd := context.WithTimeout(context.Background(), localCmd.Timeout())
+			ctx, cancelShellCmd := context.WithTimeout(context.Background(), localCmd.GetTimeout())
 			defer cancelShellCmd()
 
 			_, err = localCmd.Execute(ctx, meeseeks.Job{

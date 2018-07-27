@@ -123,7 +123,7 @@ func (m *Executor) Run() {
 }
 
 func (m *Executor) createTask(req meeseeks.Request, cmd meeseeks.Command) (task, error) {
-	if !cmd.Record() {
+	if !cmd.MustRecord() {
 		return task{job: persistence.Jobs().Null(req), cmd: cmd}, nil
 	}
 

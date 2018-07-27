@@ -194,7 +194,7 @@ func AddHelpCommand(c map[string]meeseeks.Command) {
 
 type plainTemplates struct{}
 
-func (p plainTemplates) Templates() map[string]string {
+func (p plainTemplates) GetTemplates() map[string]string {
 	return map[string]string{
 		template.Success: fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}{{ with $out := .output }}\n{{ $out }}{{ end }}", template.Success),
 	}
@@ -203,65 +203,65 @@ func (p plainTemplates) Templates() map[string]string {
 type defaultTemplates struct {
 }
 
-func (d defaultTemplates) Templates() map[string]string {
+func (d defaultTemplates) GetTemplates() map[string]string {
 	return template.GetDefaultTemplates()
 }
 
 type defaultTimeout struct{}
 
-func (d defaultTimeout) Timeout() time.Duration {
+func (d defaultTimeout) GetTimeout() time.Duration {
 	return meeseeks.DefaultCommandTimeout
 }
 
 type emptyArgs struct{}
 
-func (b emptyArgs) Args() []string {
+func (b emptyArgs) GetArgs() []string {
 	return []string{}
 }
 
 type noRecord struct{}
 
-func (n noRecord) Record() bool {
+func (n noRecord) MustRecord() bool {
 	return false
 }
 
 type imOnlyChannel struct{}
 
-func (i imOnlyChannel) AllowedChannels() []string {
+func (i imOnlyChannel) GetAllowedChannels() []string {
 	return []string{}
 }
 
-func (i imOnlyChannel) ChannelStrategy() string {
+func (i imOnlyChannel) GetChannelStrategy() string {
 	return auth.ChannelStrategyIMOnly
 }
 
 type anyChannel struct{}
 
-func (a anyChannel) AllowedChannels() []string {
+func (a anyChannel) GetAllowedChannels() []string {
 	return []string{}
 }
 
-func (a anyChannel) ChannelStrategy() string {
+func (a anyChannel) GetChannelStrategy() string {
 	return auth.ChannelStrategyAny
 }
 
 type allowAll struct{}
 
-func (a allowAll) AuthStrategy() string {
+func (a allowAll) GetAuthStrategy() string {
 	return auth.AuthStrategyAny
 }
 
-func (a allowAll) AllowedGroups() []string {
+func (a allowAll) GetAllowedGroups() []string {
 	return []string{}
 }
 
 type allowAdmins struct{}
 
-func (a allowAdmins) AuthStrategy() string {
+func (a allowAdmins) GetAuthStrategy() string {
 	return auth.AuthStrategyAllowedGroup
 }
 
-func (a allowAdmins) AllowedGroups() []string {
+func (a allowAdmins) GetAllowedGroups() []string {
 	return []string{auth.AdminGroup}
 }
 
@@ -276,7 +276,7 @@ type cmd struct {
 	cmd string
 }
 
-func (c cmd) Cmd() string {
+func (c cmd) GetCmd() string {
 	return c.cmd
 }
 
@@ -299,32 +299,16 @@ func (v versionCommand) Execute(_ context.Context, job meeseeks.Job) (string, er
 
 func newHelp(summary string, args ...string) help {
 	return help{
-		commandHelp{
-			summary: summary,
-			args:    append([]string{}, args...),
-		},
+		meeseeks.NewHelp(summary, args...),
 	}
 }
 
 type help struct {
-	commandHelp commandHelp
+	commandHelp meeseeks.Help
 }
 
-func (h help) Help() meeseeks.Help {
+func (h help) GetHelp() meeseeks.Help {
 	return h.commandHelp
-}
-
-type commandHelp struct {
-	summary string
-	args    []string
-}
-
-func (h commandHelp) GetSummary() string {
-	return h.summary
-}
-
-func (h commandHelp) GetArgs() []string {
-	return h.args
 }
 
 type helpCommand struct {
@@ -340,7 +324,7 @@ type helpCommand struct {
 	commands map[string]meeseeks.Command
 }
 
-var helpListTemplate = `{{ range $name, $c := .commands }}- {{ $name }}: {{ $c.Help.GetSummary }}
+var helpListTemplate = `{{ range $name, $c := .commands }}- {{ $name }}: {{ $c.GetHelp.GetSummary }}
 {{ end }}`
 
 var helpCommandTemplate = `*{{ .name }}* - {{ .help.GetSummary }}
@@ -382,7 +366,7 @@ func (h helpCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 			}
 			return tmpl.Render(map[string]interface{}{
 				"name": flags.Arg(0),
-				"help": cmd.Help(),
+				"help": cmd.GetHelp(),
 			})
 		}
 		return "", fmt.Errorf("could not find command %s", flags.Arg(0))

@@ -6,6 +6,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
 	"google.golang.org/grpc"
@@ -62,15 +63,15 @@ func (c *Configuration) registerLocalCommands() error {
 	for name, cmd := range c.Commands {
 		cmds = append(cmds, commands.CommandRegistration{
 			Name: name,
-			Cmd: shell.New(shell.CommandOpts{
+			Cmd: shell.New(meeseeks.CommandOpts{
 				AuthStrategy:    cmd.AuthStrategy,
 				AllowedGroups:   cmd.AllowedGroups,
 				ChannelStrategy: cmd.ChannelStrategy,
 				AllowedChannels: cmd.AllowedChannels,
 				Args:            cmd.Args,
-				HasHandshake:    !cmd.NoHandshake,
+				Handshake:       !cmd.NoHandshake,
 				Cmd:             cmd.Cmd,
-				Help: shell.NewHelp(
+				Help: meeseeks.NewHelp(
 					cmd.Help.Summary,
 					cmd.Help.Args...),
 				Templates: cmd.Templates,

@@ -17,33 +17,33 @@ func Test_Auth(t *testing.T) {
 	commands.Add(
 		commands.CommandRegistration{
 			Name: "any",
-			Cmd: shell.New(shell.CommandOpts{
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:          "any",
 				AuthStrategy: auth.AuthStrategyAny,
 			})},
 		commands.CommandRegistration{
 			Name: "none",
-			Cmd: shell.New(shell.CommandOpts{
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:          "none",
 				AuthStrategy: auth.AuthStrategyNone,
 			})},
 		commands.CommandRegistration{
 			Name: "admins",
-			Cmd: shell.New(shell.CommandOpts{
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:           "none",
 				AuthStrategy:  auth.AuthStrategyAllowedGroup,
 				AllowedGroups: []string{auth.AdminGroup},
 			})},
 		commands.CommandRegistration{
 			Name: "general-channel-only",
-			Cmd: shell.New(shell.CommandOpts{
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:             "none",
 				AuthStrategy:    auth.AuthStrategyAny,
 				AllowedChannels: []string{"general"},
 				ChannelStrategy: "channel",
 			})},
 		commands.CommandRegistration{
-			Name: "im-only", Cmd: shell.New(shell.CommandOpts{
+			Name: "im-only", Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:             "none",
 				AuthStrategy:    auth.AuthStrategyAny,
 				ChannelStrategy: "im_only",

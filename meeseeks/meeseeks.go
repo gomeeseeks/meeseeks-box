@@ -104,17 +104,18 @@ type APIToken struct {
 // Command is the base interface for any command
 type Command interface {
 	Execute(context.Context, Job) (string, error)
-	Cmd() string
+
+	GetCmd() string
 	HasHandshake() bool
-	Templates() map[string]string
-	AuthStrategy() string
-	AllowedGroups() []string
-	ChannelStrategy() string
-	AllowedChannels() []string
-	Args() []string
-	Timeout() time.Duration
-	Help() Help
-	Record() bool
+	GetTemplates() map[string]string
+	GetAuthStrategy() string
+	GetAllowedGroups() []string
+	GetChannelStrategy() string
+	GetAllowedChannels() []string
+	GetArgs() []string
+	GetTimeout() time.Duration
+	GetHelp() Help
+	MustRecord() bool
 }
 
 // Help is the base interface for any command help
@@ -208,4 +209,118 @@ type Aliases interface {
 
 	// Remove deletes an alias for a user ID
 	Remove(userID, alias string) error
+}
+
+// CommandOpts are the options used to build a new shell command
+type CommandOpts struct {
+	Cmd             string
+	Args            []string
+	AllowedGroups   []string
+	AuthStrategy    string
+	AllowedChannels []string
+	ChannelStrategy string
+	Handshake       bool
+	Timeout         time.Duration
+	Templates       map[string]string
+	Help            Help
+}
+
+// HasHandshake indicates if this command should show the handshake message or not
+func (o CommandOpts) HasHandshake() bool {
+	return o.Handshake
+}
+
+// GetTemplates returns the templates used to show different kinds of replies
+func (o CommandOpts) GetTemplates() map[string]string {
+	if o.Templates == nil {
+		return map[string]string{}
+	}
+	return o.Templates
+}
+
+// GetAuthStrategy returns the defined auth strategy, or none
+func (o CommandOpts) GetAuthStrategy() string {
+	if o.AuthStrategy == "" {
+		return "none"
+	}
+	return o.AuthStrategy
+}
+
+// GetAllowedGroups returns the map of groups allowed to run this command
+func (o CommandOpts) GetAllowedGroups() []string {
+	if o.AllowedGroups == nil {
+		return []string{}
+	}
+	return o.AllowedGroups
+}
+
+// GetChannelStrategy returns the strategy of channel permissions
+func (o CommandOpts) GetChannelStrategy() string {
+	if o.ChannelStrategy == "" {
+		return "any"
+	}
+	return o.ChannelStrategy
+}
+
+// GetAllowedChannels returns the channels in which this command is allowed
+func (o CommandOpts) GetAllowedChannels() []string {
+	if o.AllowedChannels == nil {
+		return []string{}
+	}
+	return o.AllowedChannels
+}
+
+// GetArgs returns the arguments that this command injects by default
+func (o CommandOpts) GetArgs() []string {
+	if o.Args == nil {
+		return []string{}
+	}
+	return o.Args
+}
+
+// GetTimeout returns the duration of the command until it times out
+func (o CommandOpts) GetTimeout() time.Duration {
+	if o.Timeout == 0 {
+		return DefaultCommandTimeout
+	}
+	return o.Timeout
+}
+
+// GetCmd returns the command that is actually executed
+func (o CommandOpts) GetCmd() string {
+	return o.Cmd
+}
+
+// GetHelp returns the help object
+func (o CommandOpts) GetHelp() Help {
+	return o.Help
+}
+
+// MustRecord returns a boolean indicating if this command should or not be recorded
+func (o CommandOpts) MustRecord() bool {
+	return true
+}
+
+// CommandHelp represents the help of a given command
+type CommandHelp struct {
+	summary string
+	args    []string
+}
+
+// GetSummary returns the help summary
+func (h CommandHelp) GetSummary() string {
+	return h.summary
+}
+
+// GetArgs returns the help for arguments
+func (h CommandHelp) GetArgs() []string {
+	return h.args
+}
+
+// NewHelp returns a new command help implementation for the shell command
+func NewHelp(summary string, args ...string) Help {
+	return CommandHelp{
+		summary,
+		append([]string{}, args...),
+	}
 }
