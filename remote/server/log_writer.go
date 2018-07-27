@@ -13,19 +13,25 @@ import (
 type logWriterServer struct{}
 
 func (logWriterServer) Append(writer api.LogWriter_AppendServer) error {
-	entry, err := writer.Recv()
-	if err == io.EOF {
-		return nil
+	for {
+		entry, err := writer.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logrus.Errorf("got error receiving log entry: %s", err)
+			break
+		}
+		if err := persistence.LogWriter().Append(entry.GetJobID(), entry.GetLine()); err != nil {
+			logrus.Errorf("got error receiving log entry: %s", err)
+			break
+		}
 	}
-	if err != nil {
-		logrus.Errorf("got error receiving log entry: %s", err)
-		return nil
-	}
-
-	return persistence.LogWriter().Append(entry.GetJobID(), entry.GetLine())
+	return writer.SendAndClose(&api.Empty{})
 }
 
 // SetError implements LogWriterServer SetError
 func (logWriterServer) SetError(ctx context.Context, entry *api.ErrorLogEntry) (*api.Empty, error) {
+	// Do I even need this?
 	return &api.Empty{}, persistence.LogWriter().SetError(entry.GetJobID(), errors.New(entry.GetError()))
 }

@@ -4,9 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"io"
 	"sync"
+	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 )
 
@@ -15,32 +20,18 @@ type finishPayload struct {
 }
 
 type commandPipelineServer struct {
-	wg              sync.WaitGroup
-	runningCommands map[uint64]chan finishPayload
+	runningCommands map[uint64]chan interface{}
 	agent           api.CommandPipeline_RegisterAgentServer
+
+	wg   sync.WaitGroup
+	lock sync.Mutex
 }
 
 func newCommandPipelineServer() *commandPipelineServer {
-	// When an agent is registered we need to create and add RemoteCommands to the commands map
-	//
-	// These commands cannot track the state as execution will happen in any order, because of this
-	// they will have to contain some form of synchronization (probably a channel) which then will
-	// need to be unlocked when we get the "finish" signal.
-	//
-	// Probably the right interface is to use an unbuffered channel that gets a
-	// FinishState which will need to be managed through a map which pivots on the
-	// jobID. Then the remote command will be reading from this channel such that
-	// when we get the message it will unblock and return the error, if there is one.
-	//
-	// chan FinishState
-	//
-	// FinishState{
-	//     Error string
-	// }
-
 	return &commandPipelineServer{
 		wg:              sync.WaitGroup{},
-		runningCommands: make(map[uint64]chan finishPayload),
+		lock:            sync.Mutex{},
+		runningCommands: make(map[uint64]chan interface{}),
 	}
 }
 
@@ -50,12 +41,26 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 	// TODO: register the commands using the in.GetLabels()
 
 	cmds := make([]commands.CommandRegistration, len(in.GetCommands()))
-	// for name, cmd := range in.Commands {
-	// 	cmds = append(cmds, commands.CommandRegistration{
-	// 		Name: name,
-	// 		Cmd:  remoteCommand{},
-	// 	})
-	// }
+	for name, cmd := range in.Commands {
+		cmds = append(cmds, commands.CommandRegistration{
+			Name: name,
+			Cmd: remoteCommand{
+				CommandOpts: meeseeks.CommandOpts{
+					Cmd:             name,
+					AllowedChannels: cmd.GetAllowedChannels(),
+					AllowedGroups:   cmd.GetAllowedGroups(),
+					AuthStrategy:    cmd.GetAuthStrategy(),
+					ChannelStrategy: cmd.GetChannelStrategy(),
+					Templates:       cmd.GetTemplates(),
+					Timeout:         time.Duration(cmd.GetTimeout()),
+					Help: meeseeks.NewHelp(
+						cmd.GetHelp().GetSummary(),
+						cmd.GetHelp().GetArgs()...),
+				},
+				server: p,
+			},
+		})
+	}
 
 	if err := commands.Add(cmds...); err != nil {
 		return fmt.Errorf("failed to register remote commands: %s", err)
@@ -66,124 +71,95 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 
 // Finish implements the finish server method
 func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFinish) (*api.Empty, error) {
-	cmd, ok := p.runningCommands[fin.GetJobID()]
-	if !ok {
-
-	}
-
 	var err error
-	if fin.GetError() == "" {
+	if fin.GetError() != "" {
 		err = errors.New(fin.GetError())
 	}
 
-	cmd <- finishPayload{err}
+	return &api.Empty{}, p.finishJob(fin.GetJobID(), err)
+}
 
-	return nil, nil
+func (p *commandPipelineServer) appendJob(job meeseeks.Job) (chan interface{}, error) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	_, ok := p.runningCommands[job.ID]
+	if ok {
+		return nil, fmt.Errorf("Job %d is already in the list", job.ID)
+	}
+
+	req := job.Request
+	err := p.agent.Send(&api.CommandRequest{
+		Command: req.Command,
+		Args:    req.Args,
+
+		IsIM:        req.IsIM,
+		Channel:     req.Channel,
+		ChannelID:   req.ChannelID,
+		ChannelLink: req.ChannelLink,
+		UserID:      req.UserID,
+		UserLink:    req.UserLink,
+		Username:    req.Username,
+
+		JobID: job.ID,
+	})
+	if err == io.EOF {
+		return nil, fmt.Errorf("failed to send job %#v the remote stream is closed: %s", job, err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to send job %#v to remote executor: %s", job, err)
+	}
+
+	p.wg.Add(1)
+
+	c := make(chan interface{})
+	p.runningCommands[job.ID] = c
+
+	return c, nil
+}
+
+func (p *commandPipelineServer) finishJob(jobID uint64, joberr error) error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	c, ok := p.runningCommands[jobID]
+	if !ok {
+		return fmt.Errorf("Job %d is not registered as a running job", jobID)
+	}
+
+	defer p.wg.Done()
+
+	if err := persistence.LogWriter().SetError(jobID, joberr); err != nil {
+		logrus.Errorf("Failed to set error for job %d: %s", jobID, err)
+	}
+
+	c <- jobID
+
+	return nil
 }
 
 type remoteCommand struct {
+	meeseeks.CommandOpts
+	server *commandPipelineServer
 }
 
-// func New(address string) RemoteServer {
-// 	server := grpc.NewServer()
-// 	api.RegisterLogWriterServer(server, CommandLoggerServer{})
-// 	api.RegisterCommandPipelineServer(server, CommandPipelineServer{})
-// 	return RemoteServer{
-// 		Address: address,
-// 		server:  server,
-// 	}
-// }
+func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
+	c, err := r.server.appendJob(job)
+	if err != nil {
+		return "", fmt.Errorf("failed to append remote job: %s", err)
+	}
 
-// func (this RemoteServer) Listen() error {
-// 	address, err := net.Listen("tcp", this.Address)
-// 	if err != nil {
-// 		return fmt.Errorf("could parse address %s: %s", this.Address, err)
-// 	}
+	select {
+	case <-ctx.Done():
+		return "", fmt.Errorf("command failed because of context done: %s", ctx.Err())
 
-// 	if err := this.server.Serve(address); err != nil {
-// 		return fmt.Errorf("failed to start listening on address %s: %s", this.Address, err)
-// 	}
-// 	return nil
-// }
+	case <-c:
+		jobLog, err := persistence.LogReader().Get(job.ID)
+		if err != nil {
+			return "", fmt.Errorf("failed to get the execution log from job %d", job.ID)
+		}
+		return jobLog.Output, jobLog.GetError()
 
-// // CommandLoggerServer implements the remote logger interface
-// type CommandLoggerServer struct{}
+	}
 
-// // NewAppender creates a logging stream receiver
-// func (l CommandLoggerServer) NewAppender(stream api.CommandLogger_NewAppenderServer) error {
-// 	for {
-// 		l, err := stream.Recv()
-// 		if err == io.EOF {
-// 			break
-// 		} else if err != nil {
-// 			return err
-// 		}
-// 		if err := logs.Append(l.JobID, l.Line); err != nil {
-// 			logrus.Errorf("Failed to record log entry %#v", l)
-// 		}
-// 	}
-// 	return stream.SendAndClose(&api.Empty{})
-// }
-
-// // CommandPipelineServer is used to send commands to remote executors
-// type CommandPipelineServer struct{}
-
-// // RegisterAgent registers the remote agent and makes it available to start getting commands
-// //
-// // It receives an AgentConfiguration which declares the commands that the remote
-// // executor is capable of running and a stream that will be used to send commands to
-// //
-// // It's not directly called, but using the remote client.
-// func (c CommandPipelineServer) RegisterAgent(cfg *api.AgentConfiguration, stream api.CommandPipeline_RegisterAgentServer) error {
-// 	logrus.Infof("Token: %s", cfg.Token)
-// 	logrus.Infof("Labels: %s", cfg.Labels)
-// 	logrus.Infof("Commands: %s", cfg.Commands)
-
-// 	// I've a list of commands, these commands should be appended as remote commands
-// 	// as a rule of thumb the way they should work is by starting a goroutine that
-// 	// will wait on any command to be "executed", and when this happens, we simply
-// 	// forward to command to the right downstream.
-// 	//
-// 	// Additionally we need to keep track of those commands so we can remove them when the
-// 	// remote goes away. This should be done by token.
-// 	//
-// 	// This means that I need to register the remote commands in the commands map.
-// 	// But then I also need to be able of removing commands from the map.
-
-// 	var jobID uint64
-// 	for {
-// 		jobID++
-// 		err := stream.Send(&api.CommandRequest{
-// 			Command:     fmt.Sprintf("cmd-for-%s", cfg.Token),
-// 			Args:        []string{"arg1", "arg2"},
-// 			Channel:     "channel",
-// 			ChannelID:   "channelID",
-// 			ChannelLink: "channelLink",
-// 			UserID:      "userID",
-// 			Username:    "username",
-// 			UserLink:    "userlink",
-// 			JobID:       jobID,
-// 			IsIM:        false,
-// 		})
-// 		if err == io.EOF {
-// 			logrus.Info("The stream has been closed")
-// 			return nil
-// 		} else if err != nil {
-// 			logrus.Errorf("Failed to send command %d to client: %s", jobID, err)
-// 			return fmt.Errorf("something something")
-// 		}
-// 		select {
-// 		case <-time.After(5 * time.Second):
-// 			logrus.Debug("No data in over 5 seconds... looping.")
-// 			continue
-// 		case <-stream.Context().Done():
-// 			logrus.Debug("bailing out, the context is done")
-// 			return nil
-// 		}
-// 	}
-// }
-
-// func (c CommandPipelineServer) Finish(_ context.Context, in *api.CommandFinish) (*api.Empty, error) {
-// 	logrus.Infof("Changing job %d status to %s with error %s", in.JobID, in.Status, in.Error)
-// 	return &api.Empty{}, nil
-// }
+}
