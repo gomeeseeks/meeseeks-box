@@ -7,8 +7,13 @@ package agent
 import (
 	"context"
 	"fmt"
+	"io"
+	"sync"
+	"time"
 
+	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
 	"github.com/sirupsen/logrus"
@@ -22,12 +27,16 @@ type RemoteClient struct {
 
 	cmdClient api.CommandPipelineClient
 	logClient api.LogWriterClient
+
+	wg         sync.WaitGroup
+	cancelFunc context.CancelFunc
 }
 
 // New creates a new remote requester
 func New(c Configuration) *RemoteClient {
 	return &RemoteClient{
 		config: c,
+		wg:     sync.WaitGroup{},
 	}
 }
 
@@ -42,90 +51,99 @@ func (r *RemoteClient) Connect() error {
 	r.logClient = api.NewLogWriterClient(c)
 	r.grpcClient = c
 
+	persistence.Register(
+		persistence.Providers{
+			LogReader: nullReader{},
+			LogWriter: grpcLogWriter{
+				client:         r.logClient,
+				timeoutSeconds: r.config.GetGRPCTimeout(),
+			},
+		},
+	)
+
 	return nil
 }
 
-// RemoteLogReader returns a new remote log reader
-func (r *RemoteClient) RemoteLogReader() meeseeks.LogReader {
-	return nullReader{}
-}
-
-// RemoteLogWriter creates a new LogWriter
-func (r *RemoteClient) RemoteLogWriter() meeseeks.LogWriter {
-	return grpcLogWriter{
-		client:         r.logClient,
-		timeoutSeconds: r.config.GetTimeout(),
-	}
-}
-
-// RemoteJobs creates a new Jobs object that implements the meeseeks.Jobs interface
-func (r *RemoteClient) RemoteJobs() meeseeks.Jobs {
-	return remoteJobs{
-		client:         r.cmdClient,
-		timeoutSeconds: r.config.GetTimeout(),
-	}
-}
-
-// CreateRequester creates a new requester, registering the agent and starting it so it is ready to take remote requests
-func (r *RemoteClient) CreateRequester() (*RemoteRequester, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.config.GetTimeout())
-	defer cancel()
+// RegisterAndRun creates a new requester, registering the agent and starting it so it is ready to take remote requests
+func (r *RemoteClient) RegisterAndRun() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	r.cancelFunc = cancel
 
 	// Register the commands and start listening on the stream of remote commands
 	// On startup it has to send all the commands that the meeseeks knows how to handle (except builtins)
 	commandStream, err := r.cmdClient.RegisterAgent(ctx, r.config.createAgentConfiguration())
 	if err != nil {
-		return nil, fmt.Errorf("failed to register commands on remote server: %s", err)
+		return fmt.Errorf("failed to register commands on remote server: %s", err)
 	}
 
-	requester := &RemoteRequester{
-		pipeline:   commandStream,
-		requestsCh: make(chan meeseeks.Request, r.config.Pool),
-	}
+	go r.start(commandStream)
 
-	go requester.start()
-
-	return requester, nil
+	return nil
 }
 
-// RemoteRequester is an implementation of an executor.Listener
-type RemoteRequester struct {
-	pipeline api.CommandPipeline_RegisterAgentClient
-
-	requestsCh chan meeseeks.Request
-	stopCh     chan bool
-}
-
-// Listen implements Requester.Listen
-func (r *RemoteRequester) Listen(ch chan<- meeseeks.Request) {
-	for keepRunning := true; keepRunning; {
-		select {
-		case rq := <-r.requestsCh:
-			ch <- rq
-		case keepRunning = <-r.stopCh:
-			// do nothing
-		}
-	}
-}
-func (r *RemoteRequester) start() {
+func (r *RemoteClient) start(pipeline api.CommandPipeline_RegisterAgentClient) {
 	for {
-		cmd, err := r.pipeline.Recv()
+		cmd, err := pipeline.Recv()
+		if err == io.EOF {
+			return
+		}
 		if err != nil {
-			logrus.Errorf("failed to receive command: %#v", err)
+			logrus.Errorf("error receiving command: %#v", err)
 			return
 		}
 
-		// add a metric to account for remotely received commands
-		r.requestsCh <- meeseeks.Request{
-			Command:     cmd.Command,
-			Args:        cmd.Args,
-			Channel:     cmd.Channel,
-			ChannelID:   cmd.ChannelID,
-			ChannelLink: cmd.ChannelLink,
-			IsIM:        cmd.IsIM,
-			UserID:      cmd.UserID,
-			Username:    cmd.Username,
-			UserLink:    cmd.UserLink,
-		}
+		r.wg.Add(1)
+		go func(cmd api.CommandRequest) {
+			defer r.wg.Done()
+
+			// add a metric to account for remotely received commands
+			rq := meeseeks.Request{
+				Command:     cmd.Command,
+				Args:        cmd.Args,
+				Channel:     cmd.Channel,
+				ChannelID:   cmd.ChannelID,
+				ChannelLink: cmd.ChannelLink,
+				IsIM:        cmd.IsIM,
+				UserID:      cmd.UserID,
+				Username:    cmd.Username,
+				UserLink:    cmd.UserLink,
+			}
+
+			localCmd, ok := commands.Find(&rq)
+			if !ok {
+				ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
+				defer cancel()
+
+				r.cmdClient.Finish(ctx, &api.CommandFinish{
+					JobID: cmd.GetJobID(),
+					Error: fmt.Sprintf("could not find command %s in remote agent", cmd.GetCommand()),
+				})
+				return
+			}
+
+			ctx, cancelShellCmd := context.WithTimeout(context.Background(), r.config.GetCommandTimeout())
+			defer cancelShellCmd()
+
+			_, err = localCmd.Execute(ctx, meeseeks.Job{
+				ID:        cmd.GetJobID(),
+				Request:   rq,
+				Status:    meeseeks.JobRunningStatus,
+				StartTime: time.Now(),
+			})
+
+			ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
+			defer cancel()
+
+			r.cmdClient.Finish(ctx, &api.CommandFinish{
+				JobID: cmd.GetJobID(),
+				Error: err.Error(),
+			})
+		}(*cmd)
 	}
+}
+
+// Shutdown will close the stream and wait for all the commands to finish execution
+func (r *RemoteClient) Shutdown() {
+	r.cancelFunc()
+	r.wg.Wait()
 }

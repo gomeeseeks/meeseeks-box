@@ -123,30 +123,10 @@ func launch(args args) (func(), error) {
 	case "agent":
 		remoteClient := agent.New(agent.Configuration{}) // This is deeply wrong and must be completed
 		must("could not connect to remote server: %s", remoteClient.Connect())
-
-		req, err := remoteClient.CreateRequester()
-		must("could not start the remote requester: %s", err)
-
-		persistence.Register(
-			persistence.Providers{
-				Jobs:      remoteClient.RemoteJobs(),
-				LogReader: remoteClient.RemoteLogReader(),
-				LogWriter: remoteClient.RemoteLogWriter(),
-			},
-		)
-
-		exc := executor.New(executor.Args{
-			ConcurrentTaskCount: 20,
-			WithBuiltinCommands: false,
-			ChatClient:          executor.NullChatClient{},
-		})
-
-		exc.ListenTo(req)
-
-		go exc.Run()
+		must("could not register and run this agent: %s", remoteClient.RegisterAndRun())
 
 		return func() {
-			exc.Shutdown()
+			remoteClient.Shutdown()
 		}, nil
 
 	default:

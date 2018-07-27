@@ -30,7 +30,6 @@ type LogWriterServer struct {
 }
 
 func (_ LogWriterServer) NewWriter(x api.LogWriter_NewWriterServer) error {
-
 	return nil
 }
 
@@ -45,18 +44,29 @@ type CommandPipelineServer struct {
 
 // RegisterAgent registers a new agent service
 func (CommandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent api.CommandPipeline_RegisterAgentServer) error {
-	// in agent configuration is used to register the remote commands that can be executed
+	// When an agent is registered we need to create and add RemoteCommands to the commands map
+	//
+	// These commands cannot track the state as execution will happen in any order, because of this
+	// they will have to contain some form of synchronization (probably a channel) which then will
+	// need to be unlocked when we get the "finish" signal.
+	//
+	// Probably the right interface is to use an unbuffered channel that gets a
+	// FinishState which will need to be managed through a map which pivots on the
+	// jobID. Then the remote command will be reading from this channel such that
+	// when we get the message it will unblock and return the error, if there is one.
+	//
+	// chan FinishState
+	//
+	// FinishState{
+	//     Error string
+	// }
+
 	return nil
 }
 
-// Succeed sets a command as successful
-func (CommandPipelineServer) Succeed(ctx context.Context, cmd *api.Command) (*api.Empty, error) {
-	return &api.Empty{}, persistence.Jobs().Succeed(cmd.GetJobID())
-}
-
-// Fail makes a command fail
-func (CommandPipelineServer) Fail(ctx context.Context, cmd *api.Command) (*api.Empty, error) {
-	return &api.Empty{}, persistence.Jobs().Fail(cmd.GetJobID())
+// Finish implements the finish server method
+func (CommandPipelineServer) Finish(context.Context, *api.CommandFinish) (*api.Empty, error) {
+	return nil, nil
 }
 
 // func New(address string) RemoteServer {
