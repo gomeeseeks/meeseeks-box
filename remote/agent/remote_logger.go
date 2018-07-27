@@ -19,7 +19,7 @@ func (g grpcLogWriter) Append(jobID uint64, content string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), g.timeoutSeconds)
 	defer cancel()
 
-	w, e := g.client.NewWriter(ctx)
+	w, e := g.client.Append(ctx)
 	if e != nil {
 		return e
 	}

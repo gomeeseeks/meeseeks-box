@@ -73,7 +73,7 @@ service CommandPipeline {
 }
 
 service LogWriter {
-    rpc NewWriter(stream LogEntry) returns (Empty) {}
+    rpc Append(stream LogEntry) returns (Empty) {}
     rpc SetError(ErrorLogEntry) returns (Empty) {}
 }
 
