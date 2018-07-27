@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
@@ -36,12 +37,36 @@ func LoadBuiltins() {
 	builtins.AddHelpCommand(commands)
 }
 
+// CommandRegistration is used to register a new command in the commands map
+type CommandRegistration struct {
+	Name string
+	Cmd  meeseeks.Command
+}
+
 // Add adds a new command to the map
-func Add(name string, cmd meeseeks.Command) {
+func Add(cmds ...CommandRegistration) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	commands[name] = cmd
+	for _, cmd := range cmds {
+		if _, ok := commands[cmd.Name]; ok {
+			return fmt.Errorf("command %s is already registered", cmd.Name)
+		}
+	}
+
+	for _, cmd := range cmds {
+		commands[cmd.Name] = cmd.Cmd
+	}
+	return nil
+}
+
+// Replace replaces an already registered command
+func Replace(cmd CommandRegistration) error {
+	if _, ok := commands[cmd.Name]; !ok {
+		return fmt.Errorf("command %s not found", cmd.Name)
+	}
+	commands[cmd.Name] = cmd.Cmd
+	return nil
 }
 
 // Find looks up the given command by name and returns.

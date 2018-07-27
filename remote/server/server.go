@@ -1,10 +1,6 @@
 package server
 
 import (
-	"context"
-	"errors"
-
-	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 	"google.golang.org/grpc"
 )
@@ -18,5 +14,5 @@ type RemoteServer struct {
 // Register registers the different servers in the grpc server
 func (s *RemoteServer) Register() {
 	api.RegisterLogWriterServer(s.server, logWriterServer{})
-	api.RegisterCommandPipelineServer(s.server, CommandPipelineServer{})
+	api.RegisterCommandPipelineServer(s.server, newCommandPipelineServer())
 }

@@ -2,16 +2,24 @@ package server
 
 import (
 	"context"
+	"errors"
+	"sync"
 
+	// "github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 )
 
-// CommandPipelineServer is a specific implementation for a command pipeline
-type CommandPipelineServer struct {
+type finishPayload struct {
+	err error
 }
 
-// RegisterAgent registers a new agent service
-func (CommandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent api.CommandPipeline_RegisterAgentServer) error {
+type commandPipelineServer struct {
+	wg              sync.WaitGroup
+	runningCommands map[uint64]chan finishPayload
+	agent           api.CommandPipeline_RegisterAgentServer
+}
+
+func newCommandPipelineServer() *commandPipelineServer {
 	// When an agent is registered we need to create and add RemoteCommands to the commands map
 	//
 	// These commands cannot track the state as execution will happen in any order, because of this
@@ -29,11 +37,39 @@ func (CommandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent api
 	//     Error string
 	// }
 
+	return &commandPipelineServer{
+		wg:              sync.WaitGroup{},
+		runningCommands: make(map[uint64]chan finishPayload),
+	}
+}
+
+// RegisterAgent registers a new agent service
+func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent api.CommandPipeline_RegisterAgentServer) error {
+	// TODO: check the in.GetToken()
+	// TODO: register the commands using the in.GetLabels()
+
+	// for name, cmd := range in.Commands {
+	// 	commands.Add
+	// }
+
+	p.agent = agent
 	return nil
 }
 
 // Finish implements the finish server method
-func (CommandPipelineServer) Finish(context.Context, *api.CommandFinish) (*api.Empty, error) {
+func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFinish) (*api.Empty, error) {
+	cmd, ok := p.runningCommands[fin.GetJobID()]
+	if !ok {
+
+	}
+
+	var err error
+	if fin.GetError() == "" {
+		err = errors.New(fin.GetError())
+	}
+
+	cmd <- finishPayload{err}
+
 	return nil, nil
 }
 

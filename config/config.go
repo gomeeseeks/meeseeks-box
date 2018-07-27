@@ -40,23 +40,27 @@ func LoadConfig(cnf Config) error {
 	auth.Configure(cnf.Groups)
 	formatter.Configure(cnf.Messages, cnf.Format)
 
+	cmds := make([]commands.CommandRegistration, 0)
+
 	for name, cmd := range cnf.Commands {
-		commands.Add(name, shell.New(shell.CommandOpts{
-			AuthStrategy:    cmd.AuthStrategy,
-			AllowedGroups:   cmd.AllowedGroups,
-			ChannelStrategy: cmd.ChannelStrategy,
-			AllowedChannels: cmd.AllowedChannels,
-			Args:            cmd.Args,
-			HasHandshake:    !cmd.NoHandshake,
-			Cmd:             cmd.Cmd,
-			Help: shell.NewHelp(
-				cmd.Help.Summary,
-				cmd.Help.Args...),
-			Templates: cmd.Templates,
-			Timeout:   cmd.Timeout * time.Second,
-		}))
+		cmds = append(cmds, commands.CommandRegistration{
+			Name: name,
+			Cmd: shell.New(shell.CommandOpts{
+				AuthStrategy:    cmd.AuthStrategy,
+				AllowedGroups:   cmd.AllowedGroups,
+				ChannelStrategy: cmd.ChannelStrategy,
+				AllowedChannels: cmd.AllowedChannels,
+				Args:            cmd.Args,
+				HasHandshake:    !cmd.NoHandshake,
+				Cmd:             cmd.Cmd,
+				Help: shell.NewHelp(
+					cmd.Help.Summary,
+					cmd.Help.Args...),
+				Templates: cmd.Templates,
+				Timeout:   cmd.Timeout * time.Second,
+			})})
 	}
-	return nil
+	return commands.Add(cmds...)
 }
 
 // New parses the configuration from a reader into an object and returns it

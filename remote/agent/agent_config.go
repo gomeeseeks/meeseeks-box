@@ -57,22 +57,25 @@ func (c *Configuration) createRemoteCommands() map[string]*api.RemoteCommand {
 	return remoteCommands
 }
 
-func (c *Configuration) registerLocalCommands() {
+func (c *Configuration) registerLocalCommands() error {
+	cmds := make([]commands.CommandRegistration, 0)
 	for name, cmd := range c.Commands {
-		commands.Add(name, shell.New(shell.CommandOpts{
-			AuthStrategy:    cmd.AuthStrategy,
-			AllowedGroups:   cmd.AllowedGroups,
-			ChannelStrategy: cmd.ChannelStrategy,
-			AllowedChannels: cmd.AllowedChannels,
-			Args:            cmd.Args,
-			HasHandshake:    !cmd.NoHandshake,
-			Cmd:             cmd.Cmd,
-			Help: shell.NewHelp(
-				cmd.Help.Summary,
-				cmd.Help.Args...),
-			Templates: cmd.Templates,
-			Timeout:   cmd.Timeout * time.Second,
-		}))
+		cmds = append(cmds, commands.CommandRegistration{
+			Name: name,
+			Cmd: shell.New(shell.CommandOpts{
+				AuthStrategy:    cmd.AuthStrategy,
+				AllowedGroups:   cmd.AllowedGroups,
+				ChannelStrategy: cmd.ChannelStrategy,
+				AllowedChannels: cmd.AllowedChannels,
+				Args:            cmd.Args,
+				HasHandshake:    !cmd.NoHandshake,
+				Cmd:             cmd.Cmd,
+				Help: shell.NewHelp(
+					cmd.Help.Summary,
+					cmd.Help.Args...),
+				Templates: cmd.Templates,
+				Timeout:   cmd.Timeout * time.Second,
+			})})
 	}
-
+	return commands.Add(cmds...)
 }

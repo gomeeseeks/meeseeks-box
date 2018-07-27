@@ -61,9 +61,7 @@ func (r *RemoteClient) Connect() error {
 		},
 	)
 
-	r.config.registerLocalCommands()
-
-	return nil
+	return r.config.registerLocalCommands()
 }
 
 // RegisterAndRun creates a new requester, registering the agent and starting it so it is ready to take remote requests

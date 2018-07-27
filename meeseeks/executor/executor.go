@@ -61,8 +61,12 @@ func New(args Args) *Executor {
 	ac := newActiveCommands()
 	if args.WithBuiltinCommands {
 		commands.LoadBuiltins()
-		commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel))
-		commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel))
+		if err := commands.Add(
+			commands.CommandRegistration{Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(ac.Cancel)},
+			commands.CommandRegistration{Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(ac.Cancel)},
+		); err != nil {
+			logrus.Fatalf("Could not register builtin commands: %s", err)
+		}
 	}
 
 	e := Executor{
