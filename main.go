@@ -121,7 +121,7 @@ func launch(args args) (func(), error) {
 		}, nil
 
 	case "agent":
-		remoteClient := agent.New(agent.Configuration{})
+		remoteClient := agent.New(agent.Configuration{}) // This is deeply wrong and must be completed
 		must("could not connect to remote server: %s", remoteClient.Connect())
 
 		req, err := remoteClient.CreateRequester()
