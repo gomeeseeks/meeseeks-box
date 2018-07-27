@@ -3,6 +3,8 @@ package agent
 import (
 	"time"
 
+	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
@@ -11,14 +13,13 @@ import (
 
 // Configuration holds the client configuration used to connect to the server
 type Configuration struct {
-	ServerURL      string
-	Options        grpc.DialOption // grpc.WithInsecure()
-	GRPCTimeout    time.Duration
-	Token          string
-	Pool           int
-	Labels         map[string]string
-	Commands       map[string]config.Command
-	CommandTimeout time.Duration
+	ServerURL   string
+	Options     grpc.DialOption // grpc.WithInsecure()
+	GRPCTimeout time.Duration
+	Token       string
+	Pool        int
+	Labels      map[string]string
+	Commands    map[string]config.Command
 }
 
 // GetGRPCTimeout returns the configured timeout or a default of 10 seconds
@@ -29,13 +30,6 @@ func (c *Configuration) GetGRPCTimeout() time.Duration {
 	return c.GRPCTimeout
 }
 
-// GetCommandTimeout returns the configured timeout or a default of 10 seconds
-func (c *Configuration) GetCommandTimeout() time.Duration {
-	if c.CommandTimeout == 0 {
-		return 1 * time.Minute
-	}
-	return c.CommandTimeout
-}
 func (c *Configuration) createAgentConfiguration() *api.AgentConfiguration {
 	return &api.AgentConfiguration{
 		Commands: c.createRemoteCommands(),
@@ -61,4 +55,24 @@ func (c *Configuration) createRemoteCommands() map[string]*api.RemoteCommand {
 		}
 	}
 	return remoteCommands
+}
+
+func (c *Configuration) registerLocalCommands() {
+	for name, cmd := range c.Commands {
+		commands.Add(name, shell.New(shell.CommandOpts{
+			AuthStrategy:    cmd.AuthStrategy,
+			AllowedGroups:   cmd.AllowedGroups,
+			ChannelStrategy: cmd.ChannelStrategy,
+			AllowedChannels: cmd.AllowedChannels,
+			Args:            cmd.Args,
+			HasHandshake:    !cmd.NoHandshake,
+			Cmd:             cmd.Cmd,
+			Help: shell.NewHelp(
+				cmd.Help.Summary,
+				cmd.Help.Args...),
+			Templates: cmd.Templates,
+			Timeout:   cmd.Timeout * time.Second,
+		}))
+	}
+
 }

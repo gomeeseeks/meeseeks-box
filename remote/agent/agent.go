@@ -61,6 +61,8 @@ func (r *RemoteClient) Connect() error {
 		},
 	)
 
+	r.config.registerLocalCommands()
+
 	return nil
 }
 
@@ -69,8 +71,6 @@ func (r *RemoteClient) RegisterAndRun() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
-	// Register the commands and start listening on the stream of remote commands
-	// On startup it has to send all the commands that the meeseeks knows how to handle (except builtins)
 	commandStream, err := r.cmdClient.RegisterAgent(ctx, r.config.createAgentConfiguration())
 	if err != nil {
 		return fmt.Errorf("failed to register commands on remote server: %s", err)
@@ -121,7 +121,7 @@ func (r *RemoteClient) start(pipeline api.CommandPipeline_RegisterAgentClient) {
 				return
 			}
 
-			ctx, cancelShellCmd := context.WithTimeout(context.Background(), r.config.GetCommandTimeout())
+			ctx, cancelShellCmd := context.WithTimeout(context.Background(), localCmd.Timeout())
 			defer cancelShellCmd()
 
 			_, err = localCmd.Execute(ctx, meeseeks.Job{
