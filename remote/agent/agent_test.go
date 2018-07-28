@@ -1,7 +1,6 @@
 package agent_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 

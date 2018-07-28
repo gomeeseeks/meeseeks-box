@@ -44,7 +44,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 					IsIM:        false,
 				},
 				{
-					TextMatcher: "^<@myuser> .*\n```\nhello!```$",
+					TextMatcher: "^<@myuser> .*\n```\nhello!\n```$",
 					Channel:     "generalID",
 					IsIM:        false,
 				},
@@ -63,7 +63,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 					IsIM:        false,
 				},
 				{
-					TextMatcher: "^<@myuser> .*\n```\npre-message hello!```$",
+					TextMatcher: "^<@myuser> .*\n```\npre-message hello!\n```$",
 					Channel:     "generalID",
 					IsIM:        false,
 				},

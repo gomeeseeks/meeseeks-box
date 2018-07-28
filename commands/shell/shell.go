@@ -2,6 +2,7 @@ package shell
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -31,13 +32,19 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 	ctx, cancelFunc := context.WithTimeout(ctx, c.GetTimeout())
 	defer cancelFunc()
 
-	logR := persistence.LogReader()
+	outputBuffer := bytes.NewBufferString("")
+
 	logW := persistence.LogWriter()
 
 	AppendLogs := func(line string) {
+
+		outputBuffer.WriteString(line)
+		outputBuffer.WriteString("\n")
+
 		if e := logW.Append(job.ID, line); e != nil {
 			logrus.Errorf("Could not append '%s' to job %d logs: %s", line, job.ID, e)
 		}
+
 	}
 	SetError := func(err error) error {
 		if e := logW.SetError(job.ID, err); e != nil {
@@ -89,10 +96,5 @@ func (c shellCommand) Execute(ctx context.Context, job meeseeks.Job) (string, er
 		return "", SetError(err)
 	}
 
-	jobLog, err := logR.Get(job.ID)
-	if err != nil {
-		logrus.Errorf("failed to read back output for job %d: %s", job.ID, err)
-	}
-
-	return jobLog.Output, jobLog.GetError()
+	return outputBuffer.String(), err
 }

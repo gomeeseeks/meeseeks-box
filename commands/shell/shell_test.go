@@ -46,7 +46,7 @@ func TestExecuteEcho(t *testing.T) {
 			Request: meeseeks.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
 		})
 		mocks.Must(t, "failed to execute echo command", err)
-		mocks.AssertEquals(t, "hello meeseeks\nsecond line", out)
+		mocks.AssertEquals(t, "hello meeseeks\nsecond line\n", out)
 	})
 }
 

@@ -34,14 +34,12 @@ func Test_BuiltinCommands(t *testing.T) {
 	auth.Configure(basicGroups)
 	commands.LoadBuiltins()
 
-	mocks.Must(t, "override builtin commands", commands.Replace(
-		commands.CommandRegistration{
-			Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(
-				func(_ uint64) {})}))
-	mocks.Must(t, "override builtin commands", commands.Replace(
-		commands.CommandRegistration{
-			Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(
-				func(_ uint64) {})}))
+	commands.Replace(commands.CommandRegistration{
+		Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(
+			func(_ uint64) {})})
+	commands.Replace(commands.CommandRegistration{
+		Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(
+			func(_ uint64) {})})
 
 	tt := []struct {
 		name          string
