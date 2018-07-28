@@ -54,6 +54,8 @@ func Add(cmds ...CommandRegistration) error {
 		}
 	}
 
+	logrus.Debugf("appending commands %#v", cmds)
+
 	for _, cmd := range cmds {
 		commands[cmd.Name] = cmd.Cmd
 	}
@@ -65,6 +67,7 @@ func Replace(cmd CommandRegistration) {
 	if _, ok := commands[cmd.Name]; !ok {
 		logrus.Infof("command %s not found for replacing", cmd.Name)
 	}
+	logrus.Debugf("replacing command %#v", cmd)
 	commands[cmd.Name] = cmd.Cmd
 }
 

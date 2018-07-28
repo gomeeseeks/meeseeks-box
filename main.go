@@ -19,6 +19,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
 
+	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
 )
 
@@ -140,6 +141,8 @@ func launch(args args) (func(), error) {
 		must("could not connect to remote server: %s", remoteClient.Connect())
 		must("could not register and run this agent: %s", remoteClient.RegisterAndRun())
 
+		logrus.Debugf("agent running connected to remote server: %s", args.AgentOf)
+
 		return func() {
 			remoteClient.Shutdown()
 		}, nil
@@ -151,6 +154,7 @@ func launch(args args) (func(), error) {
 }
 
 func setLogLevel(args args) {
+	logrus.AddHook(filename.NewHook())
 	if args.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
@@ -197,8 +201,10 @@ func startAPI(client *slack.Client, args args) *api.Service {
 func startRemoteServer(args args) *server.RemoteServer {
 	s := server.New()
 	if args.RemoteServerEnabled {
-		logrus.Debug("starting grpc remote server")
-		s.Register(args.RemoteServerPath)
+		logrus.Debug("starting grpc remote server on localhost:9697")
+		go func() {
+			must("could not start grpc server", s.Listen(":9697"))
+		}()
 	}
 
 	return s

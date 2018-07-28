@@ -9,6 +9,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -85,5 +86,6 @@ func (c *Configuration) registerLocalCommands() error {
 				Timeout:   cmd.Timeout * time.Second,
 			})})
 	}
+	logrus.Debugf("registering commands: %#v", cmds)
 	return commands.Add(cmds...)
 }

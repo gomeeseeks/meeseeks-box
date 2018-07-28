@@ -20,8 +20,9 @@ type finishPayload struct {
 }
 
 type commandPipelineServer struct {
-	runningCommands map[uint64]chan interface{}
-	agent           api.CommandPipeline_RegisterAgentServer
+	runningCommands map[uint64]chan finishedJob
+
+	pipe chan api.CommandRequest
 
 	wg   sync.WaitGroup
 	lock sync.Mutex
@@ -31,7 +32,8 @@ func newCommandPipelineServer() *commandPipelineServer {
 	return &commandPipelineServer{
 		wg:              sync.WaitGroup{},
 		lock:            sync.Mutex{},
-		runningCommands: make(map[uint64]chan interface{}),
+		runningCommands: make(map[uint64]chan finishedJob),
+		pipe:            make(chan api.CommandRequest),
 	}
 }
 
@@ -40,7 +42,7 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 	// TODO: check the in.GetToken()
 	// TODO: register the commands using the in.GetLabels()
 
-	cmds := make([]commands.CommandRegistration, len(in.GetCommands()))
+	cmds := make([]commands.CommandRegistration, 0)
 	for name, cmd := range in.Commands {
 		cmds = append(cmds, commands.CommandRegistration{
 			Name: name,
@@ -52,7 +54,7 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 					AuthStrategy:    cmd.GetAuthStrategy(),
 					ChannelStrategy: cmd.GetChannelStrategy(),
 					Templates:       cmd.GetTemplates(),
-					Timeout:         time.Duration(cmd.GetTimeout()),
+					Timeout:         time.Duration(cmd.GetTimeout()) * time.Second,
 					Help: meeseeks.NewHelp(
 						cmd.GetHelp().GetSummary(),
 						cmd.GetHelp().GetArgs()...),
@@ -62,24 +64,39 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 		})
 	}
 
+	logrus.Debugf("remote agent is registering %#v", cmds)
 	if err := commands.Add(cmds...); err != nil {
 		return fmt.Errorf("failed to register remote commands: %s", err)
 	}
-	p.agent = agent
+
+	for req := range p.pipe {
+		err := agent.Send(&req)
+		logrus.Debugf("request %#v sent to remote agent", req)
+
+		if err == io.EOF {
+			logrus.Warnf("remote agent is erring with EOF")
+			continue
+			// return nil //, fmt.Errorf("failed to send job %#v the remote stream is closed: %s", job, err)
+		}
+		if err != nil {
+			logrus.Warnf("remote agent is erring with %s", err)
+			return fmt.Errorf("failed to send job request %#v to remote executor: %s", req, err)
+		}
+	}
+
 	return nil
 }
 
 // Finish implements the finish server method
 func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFinish) (*api.Empty, error) {
-	var err error
-	if fin.GetError() != "" {
-		err = errors.New(fin.GetError())
-	}
-
-	return &api.Empty{}, p.finishJob(fin.GetJobID(), err)
+	logrus.Debugf("got %#v from remote agent", fin)
+	return &api.Empty{}, p.finishJob(fin.GetJobID(), finishedJob{
+		content: fin.GetContent(),
+		err:     fin.GetError(),
+	})
 }
 
-func (p *commandPipelineServer) appendJob(job meeseeks.Job) (chan interface{}, error) {
+func (p *commandPipelineServer) appendJob(job meeseeks.Job) (chan finishedJob, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -89,7 +106,7 @@ func (p *commandPipelineServer) appendJob(job meeseeks.Job) (chan interface{}, e
 	}
 
 	req := job.Request
-	err := p.agent.Send(&api.CommandRequest{
+	p.pipe <- api.CommandRequest{
 		Command: req.Command,
 		Args:    req.Args,
 
@@ -102,23 +119,16 @@ func (p *commandPipelineServer) appendJob(job meeseeks.Job) (chan interface{}, e
 		Username:    req.Username,
 
 		JobID: job.ID,
-	})
-	if err == io.EOF {
-		return nil, fmt.Errorf("failed to send job %#v the remote stream is closed: %s", job, err)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to send job %#v to remote executor: %s", job, err)
 	}
 
 	p.wg.Add(1)
-
-	c := make(chan interface{})
+	c := make(chan finishedJob)
 	p.runningCommands[job.ID] = c
 
 	return c, nil
 }
 
-func (p *commandPipelineServer) finishJob(jobID uint64, joberr error) error {
+func (p *commandPipelineServer) finishJob(jobID uint64, f finishedJob) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -129,11 +139,14 @@ func (p *commandPipelineServer) finishJob(jobID uint64, joberr error) error {
 
 	defer p.wg.Done()
 
-	if err := persistence.LogWriter().SetError(jobID, joberr); err != nil {
-		logrus.Errorf("Failed to set error for job %d: %s", jobID, err)
+	if f.getError() != nil {
+		if err := persistence.LogWriter().SetError(jobID, f.getError()); err != nil {
+			logrus.Errorf("Failed to set error for job %d: %s", jobID, err)
+		}
 	}
 
-	c <- jobID
+	logrus.Debugf("sending finished job %#v to channel", f)
+	c <- f
 
 	return nil
 }
@@ -144,6 +157,7 @@ type remoteCommand struct {
 }
 
 func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
+	logrus.Debug("start execution of job %#v", job)
 	c, err := r.server.appendJob(job)
 	if err != nil {
 		return "", fmt.Errorf("failed to append remote job: %s", err)
@@ -151,15 +165,28 @@ func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, e
 
 	select {
 	case <-ctx.Done():
+		logrus.Debug("job %#v failed with error %s", job, ctx.Err())
 		return "", fmt.Errorf("command failed because of context done: %s", ctx.Err())
 
-	case <-c:
-		jobLog, err := persistence.LogReader().Get(job.ID)
-		if err != nil {
-			return "", fmt.Errorf("failed to get the execution log from job %d", job.ID)
-		}
-		return jobLog.Output, jobLog.GetError()
+	case f := <-c:
+		logrus.Debug("successful execution of job %#v with result %#v", job, f)
+		return f.getContent(), f.getError()
 
 	}
+}
 
+type finishedJob struct {
+	content string
+	err     string
+}
+
+func (f finishedJob) getContent() string {
+	return f.content
+}
+
+func (f finishedJob) getError() error {
+	if f.err != "" {
+		return errors.New(f.err)
+	}
+	return nil
 }

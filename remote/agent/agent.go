@@ -34,6 +34,7 @@ type RemoteClient struct {
 
 // New creates a new remote requester
 func New(c Configuration) *RemoteClient {
+	logrus.Debugf("creating new remote agent with configuration %#v", c)
 	return &RemoteClient{
 		config: c,
 		wg:     sync.WaitGroup{},
@@ -42,11 +43,13 @@ func New(c Configuration) *RemoteClient {
 
 // Connect creates a connection to the remote server
 func (r *RemoteClient) Connect() error {
+	logrus.Debugf("connecting to remote server: %s", r.config.ServerURL)
 	c, err := grpc.Dial(r.config.ServerURL, r.config.GetOptions())
 	if err != nil {
 		return fmt.Errorf("could not connect to remote server %s: %s", r.config.ServerURL, err)
 	}
 
+	logrus.Infof("connected to remote server: %s", r.config.ServerURL)
 	r.cmdClient = api.NewCommandPipelineClient(c)
 	r.logClient = api.NewLogWriterClient(c)
 	r.grpcClient = c
@@ -74,15 +77,16 @@ func (r *RemoteClient) RegisterAndRun() error {
 		return fmt.Errorf("failed to register commands on remote server: %s", err)
 	}
 
-	go r.start(commandStream)
+	go r.run(commandStream) // TODO: when this method returns we should be quitting
 
 	return nil
 }
 
-func (r *RemoteClient) start(pipeline api.CommandPipeline_RegisterAgentClient) {
+func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 	for {
 		cmd, err := pipeline.Recv()
 		if err == io.EOF {
+			logrus.Debugf("received EOF from command pipeline, quitting")
 			return
 		}
 		if err != nil {
@@ -90,6 +94,7 @@ func (r *RemoteClient) start(pipeline api.CommandPipeline_RegisterAgentClient) {
 			return
 		}
 
+		logrus.Debugf("received command from pipeline: %#v", cmd)
 		r.wg.Add(1)
 		go func(cmd api.CommandRequest) {
 			defer r.wg.Done()
@@ -107,6 +112,7 @@ func (r *RemoteClient) start(pipeline api.CommandPipeline_RegisterAgentClient) {
 				UserLink:    cmd.UserLink,
 			}
 
+			logrus.Debugf("executing request: %#v", rq)
 			localCmd, ok := commands.Find(&rq)
 			if !ok {
 				ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
@@ -119,23 +125,32 @@ func (r *RemoteClient) start(pipeline api.CommandPipeline_RegisterAgentClient) {
 				return
 			}
 
+			logrus.Debugf("found command %#v", localCmd)
 			ctx, cancelShellCmd := context.WithTimeout(context.Background(), localCmd.GetTimeout())
 			defer cancelShellCmd()
 
-			_, err = localCmd.Execute(ctx, meeseeks.Job{
+			content, err := localCmd.Execute(ctx, meeseeks.Job{
 				ID:        cmd.GetJobID(),
 				Request:   rq,
 				Status:    meeseeks.JobRunningStatus,
 				StartTime: time.Now(),
 			})
 
+			var errString string
+			if err != nil {
+				errString = err.Error()
+			}
+
 			ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
 			defer cancel()
 
+			logrus.Debugf("sending command finish event %#v", cmd)
 			r.cmdClient.Finish(ctx, &api.CommandFinish{
-				JobID: cmd.GetJobID(),
-				Error: err.Error(),
+				JobID:   cmd.GetJobID(),
+				Content: content,
+				Error:   errString,
 			})
+			logrus.Debugf("command %#v finished execution", cmd)
 		}(*cmd)
 	}
 }

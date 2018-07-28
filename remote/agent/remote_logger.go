@@ -7,6 +7,8 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
+
+	"github.com/sirupsen/logrus"
 )
 
 type grpcLogWriter struct {
@@ -25,6 +27,7 @@ func (g grpcLogWriter) Append(jobID uint64, content string) error {
 	}
 
 	metrics.LogLinesCount.Inc()
+	logrus.Debugf("sending log line %d '%s'", jobID, content)
 	return w.Send(&api.LogEntry{
 		JobID: jobID,
 		Line:  content,

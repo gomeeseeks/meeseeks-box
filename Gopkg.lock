@@ -43,6 +43,12 @@
   revision = "1217b9d3e4304348a9be15c2afd80ad4691f31e5"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/onrik/logrus"
+  packages = ["filename"]
+  revision = "00f4ddfaeb23824ce8b9ce969095a9b2529b9eca"
+
+[[projects]]
   name = "github.com/prometheus/client_golang"
   packages = ["prometheus","prometheus/promhttp"]
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
@@ -123,6 +129,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d63d594b40e5eed19ad6c2944a36bfef2ae2dbf36f8cde89aebe58d478f5b960"
+  inputs-digest = "2b1ebf20aa32796c724aa8a8133754205ac0a73ce35725915781085308031cf0"
   solver-name = "gps-cdcl"
   solver-version = 1

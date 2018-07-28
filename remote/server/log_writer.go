@@ -16,6 +16,7 @@ func (logWriterServer) Append(writer api.LogWriter_AppendServer) error {
 	for {
 		entry, err := writer.Recv()
 		if err == io.EOF {
+			logrus.Errorf("got EOF receiving log entry")
 			break
 		}
 		if err != nil {
