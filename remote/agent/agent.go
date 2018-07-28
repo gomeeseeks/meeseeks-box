@@ -18,6 +18,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 // RemoteClient handles the configuration and the remote grpc client
@@ -28,7 +29,9 @@ type RemoteClient struct {
 	cmdClient api.CommandPipelineClient
 	logClient api.LogWriterClient
 
-	wg         sync.WaitGroup
+	wg sync.WaitGroup
+
+	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
 
@@ -71,6 +74,7 @@ func (r *RemoteClient) Connect() error {
 func (r *RemoteClient) RegisterAndRun() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
+	r.ctx = ctx
 
 	commandStream, err := r.cmdClient.RegisterAgent(ctx, r.config.createAgentConfiguration())
 	if err != nil {
@@ -86,11 +90,16 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 	for {
 		cmd, err := pipeline.Recv()
 		if err == io.EOF {
-			logrus.Debugf("received EOF from command pipeline, quitting")
+			logrus.Fatalf("received EOF from command pipeline, quitting")
 			return
 		}
 		if err != nil {
-			logrus.Errorf("error receiving command: %#v", err)
+			s, ok := status.FromError(err)
+			if !ok {
+				logrus.Errorf("unknown error: %#v", err)
+				continue
+			}
+			logrus.Errorf("grpc error: %#v", s)
 			return
 		}
 
@@ -115,7 +124,7 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 			logrus.Debugf("executing request: %#v", rq)
 			localCmd, ok := commands.Find(&rq)
 			if !ok {
-				ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
+				ctx, cancel := context.WithTimeout(r.ctx, r.config.GetGRPCTimeout())
 				defer cancel()
 
 				r.cmdClient.Finish(ctx, &api.CommandFinish{
@@ -126,7 +135,7 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 			}
 
 			logrus.Debugf("found command %#v", localCmd)
-			ctx, cancelShellCmd := context.WithTimeout(context.Background(), localCmd.GetTimeout())
+			ctx, cancelShellCmd := context.WithTimeout(r.ctx, localCmd.GetTimeout())
 			defer cancelShellCmd()
 
 			content, err := localCmd.Execute(ctx, meeseeks.Job{
@@ -141,7 +150,7 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 				errString = err.Error()
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
+			ctx, cancel := context.WithTimeout(r.ctx, r.config.GetGRPCTimeout())
 			defer cancel()
 
 			logrus.Debugf("sending command finish event %#v", cmd)
@@ -157,6 +166,11 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 
 // Shutdown will close the stream and wait for all the commands to finish execution
 func (r *RemoteClient) Shutdown() {
+	logrus.Debugf("invoking cancel function")
 	r.cancelFunc()
+
+	logrus.Debugf("waiting on sync wait group")
 	r.wg.Wait()
+
+	logrus.Debugf("done waiting, shutdown complete")
 }

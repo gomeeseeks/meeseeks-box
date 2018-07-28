@@ -39,18 +39,18 @@ func main() {
 }
 
 type args struct {
-	ConfigFile          string
-	DebugMode           bool
-	StealthMode         bool
-	DebugSlack          bool
-	Address             string
-	APIPath             string
-	MetricsPath         string
-	SlackToken          string
-	ExecutionMode       string
-	AgentOf             string
-	RemoteServerPath    string
-	RemoteServerEnabled bool
+	ConfigFile        string
+	DebugMode         bool
+	StealthMode       bool
+	DebugSlack        bool
+	Address           string
+	APIPath           string
+	MetricsPath       string
+	SlackToken        string
+	ExecutionMode     string
+	AgentOf           string
+	GRPCServerAddress string
+	GRPCServerEnabled bool
 }
 
 func parseArgs() args {
@@ -64,8 +64,8 @@ func parseArgs() args {
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
 	slackToken := flag.String("slack-token", os.Getenv("SLACK_TOKEN"), "slack token, by default loaded from the SLACK_TOKEN environment variable")
 	agentOf := flag.String("agent-of", "", "remote server to connect to, enables agent mode")
-	remoteServerPath := flag.String("grpc-path", "/remote", "grpc server path, used to connect remote agents")
-	remoteServerEnabled := flag.Bool("with-grpc-server", false, "enable grpc remote server to connect to")
+	grpcServerAddress := flag.String("grpc-address", ":9697", "grpc server endpoint, used to connect remote agents")
+	grpcServerEnabled := flag.Bool("with-grpc-server", false, "enable grpc remote server to connect to")
 
 	flag.Parse()
 
@@ -80,18 +80,18 @@ func parseArgs() args {
 	}
 
 	return args{
-		ConfigFile:          *configFile,
-		DebugMode:           *debugMode,
-		StealthMode:         *slackStealth,
-		DebugSlack:          *debugSlack,
-		SlackToken:          *slackToken,
-		Address:             *address,
-		APIPath:             *apiPath,
-		MetricsPath:         *metricsPath,
-		AgentOf:             *agentOf,
-		RemoteServerPath:    *remoteServerPath,
-		RemoteServerEnabled: *remoteServerEnabled,
-		ExecutionMode:       executionMode,
+		ConfigFile:        *configFile,
+		DebugMode:         *debugMode,
+		StealthMode:       *slackStealth,
+		DebugSlack:        *debugSlack,
+		SlackToken:        *slackToken,
+		Address:           *address,
+		APIPath:           *apiPath,
+		MetricsPath:       *metricsPath,
+		AgentOf:           *agentOf,
+		GRPCServerAddress: *grpcServerAddress,
+		GRPCServerEnabled: *grpcServerEnabled,
+		ExecutionMode:     executionMode,
 	}
 }
 
@@ -124,15 +124,15 @@ func launch(args args) (func(), error) {
 
 		return func() {
 			exc.Shutdown()
-			remoteServer.Shutdown()
 			httpServer.Shutdown()
+			remoteServer.Shutdown()
 		}, nil
 
 	case "agent":
 		remoteClient := agent.New(agent.Configuration{
 			ServerURL:   args.AgentOf,
 			Token:       "null-token",
-			GRPCTimeout: 5 * time.Second,
+			GRPCTimeout: 10 * time.Second,
 			Commands:    cnf.Commands,
 			Labels:      map[string]string{},
 			// Options: add some options so we have at least some security, or at least make insecure optional
@@ -155,6 +155,8 @@ func launch(args args) (func(), error) {
 
 func setLogLevel(args args) {
 	logrus.AddHook(filename.NewHook())
+	logrus.SetFormatter(&logrus.TextFormatter{})
+
 	if args.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
@@ -186,7 +188,9 @@ func listenHTTP(args args) *http.Server {
 
 	go func() {
 		logrus.Debug("Listening on http")
-		must("Could not start HTTP server: %s", httpServer.ListenAndServe())
+		// err :=
+		httpServer.ListenAndServe()
+		// must("Could not start HTTP server: %s", err)
 	}()
 	logrus.Infof("Started HTTP server on %s", args.Address)
 
@@ -200,10 +204,10 @@ func startAPI(client *slack.Client, args args) *api.Service {
 
 func startRemoteServer(args args) *server.RemoteServer {
 	s := server.New()
-	if args.RemoteServerEnabled {
-		logrus.Debug("starting grpc remote server on localhost:9697")
+	if args.GRPCServerEnabled {
+		logrus.Debugf("starting grpc remote server on %s", args.GRPCServerAddress)
 		go func() {
-			must("could not start grpc server", s.Listen(":9697"))
+			must("could not start grpc server", s.Listen(args.GRPCServerAddress))
 		}()
 	}
 
@@ -225,5 +229,6 @@ func waitForSignals(shutdownGracefully func()) {
 func must(message string, err error) {
 	if err != nil {
 		logrus.Fatalf(message, err)
+		os.Exit(1)
 	}
 }

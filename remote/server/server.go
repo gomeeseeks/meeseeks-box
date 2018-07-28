@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"net"
-	"net/http"
 
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 	"google.golang.org/grpc"
@@ -25,11 +25,6 @@ func New() *RemoteServer {
 	}
 }
 
-// Register registers the grpc server in an http path
-func (s RemoteServer) Register(handlerPath string) {
-	http.HandleFunc(handlerPath, s.server.ServeHTTP)
-}
-
 // Listen starts the listening of a remote server
 func (s RemoteServer) Listen(addr string) error {
 	address, err := net.Listen("tcp", addr)
@@ -45,5 +40,7 @@ func (s RemoteServer) Listen(addr string) error {
 
 // Shutdown stops listening for requests
 func (s RemoteServer) Shutdown() {
-	s.server.GracefulStop()
+	logrus.Debugf("gracefully stopping grpc server")
+	s.server.Stop()
+	logrus.Debugf("grpc server stopped")
 }
