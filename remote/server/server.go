@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net"
+	"net/http"
 
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 	"google.golang.org/grpc"
@@ -22,6 +23,11 @@ func New() *RemoteServer {
 	return &RemoteServer{
 		server: s,
 	}
+}
+
+// Register registers the grpc server in an http path
+func (s RemoteServer) Register(handlerPath string) {
+	http.HandleFunc(handlerPath, s.server.ServeHTTP)
 }
 
 // Listen starts the listening of a remote server

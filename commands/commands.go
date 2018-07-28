@@ -61,12 +61,11 @@ func Add(cmds ...CommandRegistration) error {
 }
 
 // Replace replaces an already registered command
-func Replace(cmd CommandRegistration) error {
+func Replace(cmd CommandRegistration) {
 	if _, ok := commands[cmd.Name]; !ok {
-		return fmt.Errorf("command %s not found", cmd.Name)
+		logrus.Infof("command %s not found for replacing", cmd.Name)
 	}
 	commands[cmd.Name] = cmd.Cmd
-	return nil
 }
 
 // Find looks up the given command by name and returns.

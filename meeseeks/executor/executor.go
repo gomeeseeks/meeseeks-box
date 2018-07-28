@@ -61,12 +61,8 @@ func New(args Args) *Executor {
 	ac := newActiveCommands()
 	if args.WithBuiltinCommands {
 		commands.LoadBuiltins()
-		if err := commands.Add(
-			commands.CommandRegistration{Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(ac.Cancel)},
-			commands.CommandRegistration{Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(ac.Cancel)},
-		); err != nil {
-			logrus.Fatalf("Could not register builtin commands: %s", err)
-		}
+		commands.Replace(commands.CommandRegistration{Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(ac.Cancel)})
+		commands.Replace(commands.CommandRegistration{Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(ac.Cancel)})
 	}
 
 	e := Executor{
@@ -85,6 +81,7 @@ func New(args Args) *Executor {
 
 // ListenTo appends a listener to the list and starts listening to it
 func (m *Executor) ListenTo(l Listener) {
+	logrus.Debugf("Executor: adding listener %#v", l)
 	m.listeners = append(m.listeners, l)
 	go l.Listen(m.requestsCh)
 }

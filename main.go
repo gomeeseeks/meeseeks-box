@@ -48,7 +48,7 @@ type args struct {
 	SlackToken          string
 	ExecutionMode       string
 	AgentOf             string
-	RemoteServerAddress string
+	RemoteServerPath    string
 	RemoteServerEnabled bool
 }
 
@@ -63,8 +63,8 @@ func parseArgs() args {
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
 	slackToken := flag.String("slack-token", os.Getenv("SLACK_TOKEN"), "slack token, by default loaded from the SLACK_TOKEN environment variable")
 	agentOf := flag.String("agent-of", "", "remote server to connect to, enables agent mode")
-	remoteServerAddress := flag.String("server-address", ":9697", "grpc server address, used to connect remote agents")
-	remoteServerEnabled := flag.Bool("with-remote-server", false, "enable grpc remote server to connect to")
+	remoteServerPath := flag.String("grpc-path", "/remote", "grpc server path, used to connect remote agents")
+	remoteServerEnabled := flag.Bool("with-grpc-server", false, "enable grpc remote server to connect to")
 
 	flag.Parse()
 
@@ -88,7 +88,7 @@ func parseArgs() args {
 		APIPath:             *apiPath,
 		MetricsPath:         *metricsPath,
 		AgentOf:             *agentOf,
-		RemoteServerAddress: *remoteServerAddress,
+		RemoteServerPath:    *remoteServerPath,
 		RemoteServerEnabled: *remoteServerEnabled,
 		ExecutionMode:       executionMode,
 	}
@@ -129,7 +129,7 @@ func launch(args args) (func(), error) {
 
 	case "agent":
 		remoteClient := agent.New(agent.Configuration{
-			ServerURL:   args.RemoteServerAddress,
+			ServerURL:   args.AgentOf,
 			Token:       "null-token",
 			GRPCTimeout: 5 * time.Second,
 			Commands:    cnf.Commands,
@@ -161,6 +161,7 @@ func cleanupPendingJobs() {
 }
 
 func connectToSlack(args args) *slack.Client {
+	logrus.Debug("Connecting to slack")
 	slackClient, err := slack.Connect(
 		slack.ConnectionOpts{
 			Debug:   args.DebugSlack,
@@ -175,13 +176,13 @@ func connectToSlack(args args) *slack.Client {
 }
 
 func listenHTTP(args args) *http.Server {
-
+	logrus.Debug("Creating a new http server")
 	httpServer := http.New(args.Address)
 	metrics.RegisterPath(args.MetricsPath)
 
 	go func() {
-		err := httpServer.ListenAndServe()
-		must("Could not start HTTP server: %s", err)
+		logrus.Debug("Listening on http")
+		must("Could not start HTTP server: %s", httpServer.ListenAndServe())
 	}()
 	logrus.Infof("Started HTTP server on %s", args.Address)
 
@@ -189,15 +190,15 @@ func listenHTTP(args args) *http.Server {
 }
 
 func startAPI(client *slack.Client, args args) *api.Service {
+	logrus.Debug("Starting api server")
 	return api.New(client, args.APIPath)
 }
 
 func startRemoteServer(args args) *server.RemoteServer {
 	s := server.New()
 	if args.RemoteServerEnabled {
-		go func() {
-			must("Failed to launch grpc server", s.Listen(args.RemoteServerAddress))
-		}()
+		logrus.Debug("starting grpc remote server")
+		s.Register(args.RemoteServerPath)
 	}
 
 	return s

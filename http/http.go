@@ -2,8 +2,9 @@ package http
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Service is a simple interface used to manage a service lifecycle
@@ -30,7 +31,7 @@ func New(address string) *Server {
 
 // ListenAndServe starts listening on http
 func (s *Server) ListenAndServe() error {
-	return s.ListenAndServe()
+	return s.server.ListenAndServe()
 }
 
 // Register starts and appends a service in the server
