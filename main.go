@@ -187,10 +187,10 @@ func startAPI(client *slack.Client, args args) *api.Service {
 }
 
 func startRemoteServer(args args) *server.RemoteServer {
-	s := server.New(args.RemoteServerAddress)
+	s := server.New()
 	if args.RemoteServerEnabled {
 		go func() {
-			must("Failed to launch grpc server", s.Listen())
+			must("Failed to launch grpc server", s.Listen(args.RemoteServerAddress))
 		}()
 	}
 

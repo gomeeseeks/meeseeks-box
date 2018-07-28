@@ -18,7 +18,6 @@ type Configuration struct {
 	Options     grpc.DialOption // grpc.WithInsecure()
 	GRPCTimeout time.Duration
 	Token       string
-	Pool        int
 	Labels      map[string]string
 	Commands    map[string]config.Command
 }
@@ -29,6 +28,14 @@ func (c *Configuration) GetGRPCTimeout() time.Duration {
 		return 10 * time.Second
 	}
 	return c.GRPCTimeout
+}
+
+// GetOptions returns the grpc connection options
+func (c *Configuration) GetOptions() grpc.DialOption {
+	if c.Options == nil {
+		return grpc.WithInsecure()
+	}
+	return c.Options
 }
 
 func (c *Configuration) createAgentConfiguration() *api.AgentConfiguration {

@@ -42,7 +42,7 @@ func New(c Configuration) *RemoteClient {
 
 // Connect creates a connection to the remote server
 func (r *RemoteClient) Connect() error {
-	c, err := grpc.Dial(r.config.ServerURL, r.config.Options)
+	c, err := grpc.Dial(r.config.ServerURL, r.config.GetOptions())
 	if err != nil {
 		return fmt.Errorf("could not connect to remote server %s: %s", r.config.ServerURL, err)
 	}
