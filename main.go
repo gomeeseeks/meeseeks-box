@@ -14,6 +14,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/remote/agent"
+	"github.com/gomeeseeks/meeseeks-box/remote/server"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
 
@@ -38,16 +39,18 @@ func main() {
 }
 
 type args struct {
-	ConfigFile    string
-	DebugMode     bool
-	StealthMode   bool
-	DebugSlack    bool
-	Address       string
-	APIPath       string
-	MetricsPath   string
-	SlackToken    string
-	ExecutionMode string
-	RemoteServer  string
+	ConfigFile          string
+	DebugMode           bool
+	StealthMode         bool
+	DebugSlack          bool
+	Address             string
+	APIPath             string
+	MetricsPath         string
+	SlackToken          string
+	ExecutionMode       string
+	AgentOf             string
+	RemoteServerAddress string
+	RemoteServerEnabled bool
 }
 
 func parseArgs() args {
@@ -55,12 +58,14 @@ func parseArgs() args {
 	debugMode := flag.Bool("debug", false, "enabled debug mode")
 	debugSlack := flag.Bool("debug-slack", false, "enabled debug mode for slack")
 	showVersion := flag.Bool("version", false, "print the version and exit")
-	address := flag.String("endpoint", ":9696", "http endpoint in which to listen")
+	address := flag.String("http-address", ":9696", "http endpoint in which to listen")
 	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
 	metricsPath := flag.String("metrics-path", "/metrics", "path to in which to expose prometheus metrics")
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
 	slackToken := flag.String("slack-token", os.Getenv("SLACK_TOKEN"), "slack token, by default loaded from the SLACK_TOKEN environment variable")
-	remoteServer := flag.String("server", "", "remote server to connect to, needed when executing in agent mode")
+	agentOf := flag.String("agent-of", "", "remote server to connect to, enables agent mode")
+	remoteServerAddress := flag.String("server-address", ":9697", "grpc server address, used to connect remote agents")
+	remoteServerEnabled := flag.Bool("with-remote-server", false, "enable grpc remote server to connect to")
 
 	flag.Parse()
 
@@ -69,30 +74,24 @@ func parseArgs() args {
 		os.Exit(0)
 	}
 
-	var executionMode string
-	if flag.NArg() == 0 {
-		executionMode = "server"
-	} else {
-		executionMode = flag.Arg(1)
-	}
-
-	if !(executionMode == "server" || executionMode == "agent") {
-		logrus.Println("Invalid execution mode. Valid modes are server (default), and agent")
-		flag.Usage()
-		os.Exit(1)
+	executionMode := "server"
+	if *agentOf != "" {
+		executionMode = "agent"
 	}
 
 	return args{
-		ConfigFile:    *configFile,
-		DebugMode:     *debugMode,
-		StealthMode:   *slackStealth,
-		DebugSlack:    *debugSlack,
-		SlackToken:    *slackToken,
-		Address:       *address,
-		APIPath:       *apiPath,
-		MetricsPath:   *metricsPath,
-		ExecutionMode: executionMode,
-		RemoteServer:  *remoteServer,
+		ConfigFile:          *configFile,
+		DebugMode:           *debugMode,
+		StealthMode:         *slackStealth,
+		DebugSlack:          *debugSlack,
+		SlackToken:          *slackToken,
+		Address:             *address,
+		APIPath:             *apiPath,
+		MetricsPath:         *metricsPath,
+		AgentOf:             *agentOf,
+		RemoteServerAddress: *remoteServerAddress,
+		RemoteServerEnabled: *remoteServerEnabled,
+		ExecutionMode:       executionMode,
 	}
 }
 
@@ -104,6 +103,7 @@ func launch(args args) (func(), error) {
 
 		slackClient := connectToSlack(args)
 		apiService := startAPI(slackClient, args)
+		remoteServer := startRemoteServer(args)
 
 		exc := executor.New(executor.Args{
 			ConcurrentTaskCount: 20,
@@ -118,6 +118,7 @@ func launch(args args) (func(), error) {
 
 		return func() {
 			exc.Shutdown()
+			remoteServer.Shutdown()
 		}, nil
 
 	case "agent":
@@ -183,6 +184,17 @@ func listenHTTP(args args) *http.Server {
 
 func startAPI(client *slack.Client, args args) *api.Service {
 	return api.New(client, args.APIPath)
+}
+
+func startRemoteServer(args args) *server.RemoteServer {
+	s := server.New(args.RemoteServerAddress)
+	if args.RemoteServerEnabled {
+		go func() {
+			must("Failed to launch grpc server", s.Listen())
+		}()
+	}
+
+	return s
 }
 
 func waitForSignals(shutdownGracefully func()) {

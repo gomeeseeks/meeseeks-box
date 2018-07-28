@@ -14,13 +14,20 @@ type RemoteServer struct {
 	server  *grpc.Server
 }
 
-func New(addr string) RemoteServer {
-	return RemoteServer{
+// New creates a new RemoteServer with an address
+func New(addr string) *RemoteServer {
+
+	s := grpc.NewServer()
+	api.RegisterLogWriterServer(s, logWriterServer{})
+	api.RegisterCommandPipelineServer(s, newCommandPipelineServer())
+
+	return &RemoteServer{
 		Address: addr,
-		server:  grpc.NewServer(),
+		server:  s,
 	}
 }
 
+// Listen starts the listening of a remote server
 func (s RemoteServer) Listen() error {
 	address, err := net.Listen("tcp", s.Address)
 	if err != nil {
@@ -33,8 +40,7 @@ func (s RemoteServer) Listen() error {
 	return nil
 }
 
-// Register registers the different servers in the grpc server
-func (s *RemoteServer) Register() {
-	api.RegisterLogWriterServer(s.server, logWriterServer{})
-	api.RegisterCommandPipelineServer(s.server, newCommandPipelineServer())
+// Shutdown stops listening for requests
+func (s RemoteServer) Shutdown() {
+	s.server.Stop()
 }
