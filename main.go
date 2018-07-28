@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/api"
 	"github.com/gomeeseeks/meeseeks-box/config"
@@ -25,13 +26,11 @@ func main() {
 	args := parseArgs()
 
 	setLogLevel(args)
-	httpServer := listenHTTP(args)
 
 	shutdownFunc, err := launch(args)
 	must("could not launch meeseeks-box: %s", err)
 
 	waitForSignals(func() { // this locks for good, but receives a shutdown function
-		httpServer.Shutdown()
 		shutdownFunc()
 	})
 
@@ -96,14 +95,20 @@ func parseArgs() args {
 }
 
 func launch(args args) (func(), error) {
+	cnf, err := config.LoadFile(args.ConfigFile)
+	must("failed to load configuration file: %s", err)
+
 	switch args.ExecutionMode {
 	case "server":
-		loadConfiguration(args)
+		must("could not load configuration: %s", config.LoadConfig(cnf))
+
 		cleanupPendingJobs()
+
+		httpServer := listenHTTP(args)
+		remoteServer := startRemoteServer(args)
 
 		slackClient := connectToSlack(args)
 		apiService := startAPI(slackClient, args)
-		remoteServer := startRemoteServer(args)
 
 		exc := executor.New(executor.Args{
 			ConcurrentTaskCount: 20,
@@ -119,10 +124,19 @@ func launch(args args) (func(), error) {
 		return func() {
 			exc.Shutdown()
 			remoteServer.Shutdown()
+			httpServer.Shutdown()
 		}, nil
 
 	case "agent":
-		remoteClient := agent.New(agent.Configuration{}) // This is deeply wrong and must be completed
+		remoteClient := agent.New(agent.Configuration{
+			ServerURL:   args.RemoteServerAddress,
+			Token:       "null-token",
+			GRPCTimeout: 5 * time.Second,
+			Commands:    cnf.Commands,
+			Labels:      map[string]string{},
+			// Options: add some options so we have at least some security, or at least make insecure optional
+		})
+
 		must("could not connect to remote server: %s", remoteClient.Connect())
 		must("could not register and run this agent: %s", remoteClient.RegisterAndRun())
 
@@ -140,14 +154,6 @@ func setLogLevel(args args) {
 	if args.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-}
-
-func loadConfiguration(args args) {
-	cnf, err := config.LoadFile(args.ConfigFile)
-	must("could not load configuration file: %s", err)
-	must("could not load configuration: %s", config.LoadConfig(cnf))
-
-	logrus.Info("Configuration loaded")
 }
 
 func cleanupPendingJobs() {

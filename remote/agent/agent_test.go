@@ -36,7 +36,7 @@ func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
 	mocks.Must(t, "failed to register and run agent", client.RegisterAndRun())
 	defer client.Shutdown()
 
-	cmd, ok := commands.Find(&meeseeks.Request{
+	_, ok := commands.Find(&meeseeks.Request{
 		Command:     "remote-echo",
 		Args:        []string{"hola"},
 		IsIM:        false,
@@ -48,5 +48,4 @@ func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
 		UserLink:    "user-link",
 	})
 	mocks.AssertEquals(t, true, ok)
-	fmt.Printf("Remote command is: %#v", cmd)
 }
