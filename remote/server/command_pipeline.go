@@ -42,8 +42,29 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 	// TODO: check the in.GetToken()
 	// TODO: register the commands using the in.GetLabels()
 
+	p.registerCommands(in.Commands)
+
+	for req := range p.pipe {
+		err := agent.Send(&req)
+		logrus.Debugf("request %#v sent to remote agent", req)
+
+		if err == io.EOF {
+			logrus.Warnf("remote agent is erring with EOF")
+			continue
+			// return nil //, fmt.Errorf("failed to send job %#v the remote stream is closed: %s", job, err)
+		}
+		if err != nil {
+			logrus.Warnf("remote agent is erring with %s", err)
+			return fmt.Errorf("failed to send job request %#v to remote executor: %s", req, err)
+		}
+	}
+
+	return nil
+}
+
+func (p *commandPipelineServer) registerCommands(agentCommands map[string]*api.RemoteCommand) error {
 	cmds := make([]commands.CommandRegistration, 0)
-	for name, cmd := range in.Commands {
+	for name, cmd := range agentCommands {
 		cmds = append(cmds, commands.CommandRegistration{
 			Name: name,
 			Cmd: remoteCommand{
@@ -64,27 +85,19 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 		})
 	}
 
-	logrus.Debugf("remote agent is registering %#v", cmds)
+	logrus.Debugf("remote agent is registering commands %#v", cmds)
 	if err := commands.Add(cmds...); err != nil {
 		return fmt.Errorf("failed to register remote commands: %s", err)
 	}
-
-	for req := range p.pipe {
-		err := agent.Send(&req)
-		logrus.Debugf("request %#v sent to remote agent", req)
-
-		if err == io.EOF {
-			logrus.Warnf("remote agent is erring with EOF")
-			continue
-			// return nil //, fmt.Errorf("failed to send job %#v the remote stream is closed: %s", job, err)
-		}
-		if err != nil {
-			logrus.Warnf("remote agent is erring with %s", err)
-			return fmt.Errorf("failed to send job request %#v to remote executor: %s", req, err)
-		}
-	}
-
 	return nil
+}
+
+func (p *commandPipelineServer) unregisterCommands(agentCommands map[string]*api.RemoteCommand) {
+	cmds := make([]string, 0)
+	for name := range agentCommands {
+		cmds = append(cmds, name)
+	}
+	commands.Remove(cmds...)
 }
 
 // Finish implements the finish server method

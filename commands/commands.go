@@ -71,11 +71,28 @@ func Replace(cmd CommandRegistration) {
 	commands[cmd.Name] = cmd.Cmd
 }
 
+// Remove unregisters commands from the registration list
+func Remove(cmds ...string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	for _, name := range cmds {
+		if _, ok := commands[name]; !ok {
+			delete(commands, name)
+		} else {
+			logrus.Warnf("could not delete command %s because it's not to be found", name)
+		}
+	}
+}
+
 // Find looks up the given command by name and returns.
 //
 // This method implements the map interface as in returning true of false in the
 // case the command exists in the map
 func Find(req *meeseeks.Request) (meeseeks.Command, bool) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	aliasedCommand, args, err := persistence.Aliases().Get(req.UserID, req.Command)
 	if err != nil {
 		logrus.Debugf("Failed to get alias %s", req.Command)
