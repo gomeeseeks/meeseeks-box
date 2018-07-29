@@ -77,7 +77,7 @@ func Remove(cmds ...string) {
 	defer mutex.Unlock()
 
 	for _, name := range cmds {
-		if _, ok := commands[name]; !ok {
+		if _, ok := commands[name]; ok {
 			delete(commands, name)
 		} else {
 			logrus.Warnf("could not delete command %s because it's not to be found", name)

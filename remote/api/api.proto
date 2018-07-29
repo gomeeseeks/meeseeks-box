@@ -13,8 +13,10 @@ message AgentPrivateToken {
 
 message AgentConfiguration {
     string Token = 1;
-    map<string, string> Labels = 3;
     map<string, RemoteCommand> commands = 2;
+    map<string, string> Labels = 3;
+
+    string AgentID = 4;
 }
 
 message CommandFinish {

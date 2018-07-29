@@ -17,6 +17,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc"
@@ -35,14 +36,17 @@ type RemoteClient struct {
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
+
+	agentID string
 }
 
 // New creates a new remote requester
 func New(c Configuration) *RemoteClient {
 	logrus.Debugf("creating new remote agent with configuration %#v", c)
 	return &RemoteClient{
-		config: c,
-		wg:     sync.WaitGroup{},
+		agentID: uuid.NewV1().String(),
+		config:  c,
+		wg:      sync.WaitGroup{},
 	}
 }
 
@@ -80,7 +84,7 @@ func (r *RemoteClient) Connect() error {
 func (r *RemoteClient) Run() error {
 	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
 
-	commandStream, err := r.cmdClient.RegisterAgent(r.ctx, r.config.createAgentConfiguration())
+	commandStream, err := r.cmdClient.RegisterAgent(r.ctx, r.config.createAgentConfiguration(r.agentID))
 	if err != nil {
 		return fmt.Errorf("failed to register commands on remote server: %s", err)
 	}

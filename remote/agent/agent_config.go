@@ -39,11 +39,12 @@ func (c *Configuration) GetOptions() grpc.DialOption {
 	return c.Options
 }
 
-func (c *Configuration) createAgentConfiguration() *api.AgentConfiguration {
+func (c *Configuration) createAgentConfiguration(agentID string) *api.AgentConfiguration {
 	return &api.AgentConfiguration{
 		Commands: c.createRemoteCommands(),
 		Labels:   c.Labels,
 		Token:    c.Token,
+		AgentID:  agentID,
 	}
 }
 

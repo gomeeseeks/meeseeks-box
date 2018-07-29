@@ -12,7 +12,10 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
+
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type finishPayload struct {
@@ -42,32 +45,54 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 	// TODO: check the in.GetToken()
 	// TODO: register the commands using the in.GetLabels()
 
-	p.registerCommands(in.Commands)
+	p.registerCommands(in)
 
+Loop:
 	for req := range p.pipe {
 		err := agent.Send(&req)
 		logrus.Debugf("request %#v sent to remote agent", req)
 
 		if err == io.EOF {
-			logrus.Warnf("remote agent is erring with EOF")
+			logrus.Infof("remote agent %s is erring with EOF, quitting", in.GetAgentID())
+			p.finishJob(req.GetJobID(), finishedJob{
+				content: "",
+				err:     fmt.Sprintf("remote agent %s erred out with EOF, it seems to be gone", in.GetAgentID()),
+			})
+			break Loop
+		}
+
+		errCode := status.Code(err)
+		switch errCode {
+		case codes.OK:
+			logrus.Debugf("agent %s seems to be ok")
 			continue
-			// return nil //, fmt.Errorf("failed to send job %#v the remote stream is closed: %s", job, err)
+
+		case codes.Canceled, codes.DeadlineExceeded:
+			logrus.Infof("agent %s seems to be gone: %v - %s", in.GetAgentID(), errCode, err)
+
+		default:
+			logrus.Errorf("remote agent %s erred out with: %v - %s", in.GetAgentID(), errCode, err)
 		}
-		if err != nil {
-			logrus.Warnf("remote agent is erring with %s", err)
-			return fmt.Errorf("failed to send job request %#v to remote executor: %s", req, err)
-		}
+		p.finishJob(req.GetJobID(), finishedJob{
+			content: "",
+			err:     fmt.Sprintf("remote agent %s erred out with %v - %s, it seems to be gone", in.GetAgentID(), errCode, err),
+		})
+		break Loop
 	}
+
+	logrus.Infof("unregistering remote agent %s", in.GetAgentID())
+	p.unregisterCommands(in.Commands)
 
 	return nil
 }
 
-func (p *commandPipelineServer) registerCommands(agentCommands map[string]*api.RemoteCommand) error {
+func (p *commandPipelineServer) registerCommands(in *api.AgentConfiguration) error {
 	cmds := make([]commands.CommandRegistration, 0)
-	for name, cmd := range agentCommands {
+	for name, cmd := range in.Commands {
 		cmds = append(cmds, commands.CommandRegistration{
 			Name: name,
 			Cmd: remoteCommand{
+				agentID: in.GetAgentID(),
 				CommandOpts: meeseeks.CommandOpts{
 					Cmd:             name,
 					AllowedChannels: cmd.GetAllowedChannels(),
@@ -166,7 +191,9 @@ func (p *commandPipelineServer) finishJob(jobID uint64, f finishedJob) error {
 
 type remoteCommand struct {
 	meeseeks.CommandOpts
-	server *commandPipelineServer
+
+	server  *commandPipelineServer
+	agentID string
 }
 
 func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
