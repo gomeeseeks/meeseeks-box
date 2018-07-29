@@ -218,14 +218,33 @@ func startRemoteServer(args args) *server.RemoteServer {
 
 func waitForSignals(shutdownGracefully func()) {
 	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 
-	// Listen for a signal forever
-	sig := <-signalCh
+Loop:
+	for { // Listen for a signal forever
+		select {
+		case sig := <-signalCh:
+			switch sig {
+			case syscall.SIGINT, syscall.SIGTERM:
+				logrus.Infof("Got signal %s, shutting down gracefully", sig)
+				break Loop
 
-	logrus.Infof("Got signal %s, shutting down gracefully", sig)
+			case syscall.SIGHUP:
+				toggleDebugLogging()
+			}
+		}
+	}
 
 	shutdownGracefully()
+}
+
+func toggleDebugLogging() {
+	switch logrus.GetLevel() {
+	case logrus.DebugLevel:
+		logrus.SetLevel(logrus.InfoLevel)
+	default:
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 }
 
 func must(message string, err error) {
