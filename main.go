@@ -155,7 +155,9 @@ func launch(args args) (func(), error) {
 
 func setLogLevel(args args) {
 	logrus.AddHook(filename.NewHook())
-	logrus.SetFormatter(&logrus.TextFormatter{})
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
 
 	if args.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
