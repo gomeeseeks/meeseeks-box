@@ -139,7 +139,7 @@ func launch(args args) (func(), error) {
 		})
 
 		must("could not connect to remote server: %s", remoteClient.Connect())
-		must("could not register and run this agent: %s", remoteClient.RegisterAndRun())
+		must("could not register and run this agent: %s", remoteClient.Run())
 
 		logrus.Debugf("agent running connected to remote server: %s", args.AgentOf)
 

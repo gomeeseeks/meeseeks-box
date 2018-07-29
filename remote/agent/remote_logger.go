@@ -27,7 +27,7 @@ func (g grpcLogWriter) Append(jobID uint64, content string) error {
 	}
 
 	metrics.LogLinesCount.Inc()
-	logrus.Debugf("sending log line %d '%s'", jobID, content)
+	logrus.Debugf("sending log job %d - '%s'", jobID, content)
 	return w.Send(&api.LogEntry{
 		JobID: jobID,
 		Line:  content,

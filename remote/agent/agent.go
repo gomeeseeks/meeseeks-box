@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/commands"
@@ -17,6 +18,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
 	"github.com/sirupsen/logrus"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )
@@ -47,7 +49,11 @@ func New(c Configuration) *RemoteClient {
 // Connect creates a connection to the remote server
 func (r *RemoteClient) Connect() error {
 	logrus.Debugf("connecting to remote server: %s", r.config.ServerURL)
-	c, err := grpc.Dial(r.config.ServerURL, r.config.GetOptions())
+
+	ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
+	defer cancel()
+
+	c, err := grpc.DialContext(ctx, r.config.ServerURL, r.config.GetOptions())
 	if err != nil {
 		return fmt.Errorf("could not connect to remote server %s: %s", r.config.ServerURL, err)
 	}
@@ -70,13 +76,11 @@ func (r *RemoteClient) Connect() error {
 	return r.config.registerLocalCommands()
 }
 
-// RegisterAndRun creates a new requester, registering the agent and starting it so it is ready to take remote requests
-func (r *RemoteClient) RegisterAndRun() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	r.cancelFunc = cancel
-	r.ctx = ctx
+// Run registers this agent in the remote server and launches a command stream to listen for commands to run
+func (r *RemoteClient) Run() error {
+	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
 
-	commandStream, err := r.cmdClient.RegisterAgent(ctx, r.config.createAgentConfiguration())
+	commandStream, err := r.cmdClient.RegisterAgent(r.ctx, r.config.createAgentConfiguration())
 	if err != nil {
 		return fmt.Errorf("failed to register commands on remote server: %s", err)
 	}
@@ -91,6 +95,7 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 		cmd, err := pipeline.Recv()
 		if err == io.EOF {
 			logrus.Fatalf("received EOF from command pipeline, quitting")
+			r.triggerShutdown()
 			return
 		}
 		if err != nil {
@@ -99,7 +104,8 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 				logrus.Errorf("unknown error: %#v", err)
 				continue
 			}
-			logrus.Errorf("grpc error: %#v", s)
+			logrus.Errorf("grpc error, shutting down: %#v", *s)
+			r.triggerShutdown()
 			return
 		}
 
@@ -162,6 +168,10 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 			logrus.Debugf("command %#v finished execution", cmd)
 		}(*cmd)
 	}
+}
+
+func (r *RemoteClient) triggerShutdown() {
+	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 }
 
 // Shutdown will close the stream and wait for all the commands to finish execution
