@@ -16,7 +16,7 @@ import (
 // Configuration holds the client configuration used to connect to the server
 type Configuration struct {
 	ServerURL   string
-	Options     grpc.DialOption // grpc.WithInsecure()
+	Options     []grpc.DialOption
 	GRPCTimeout time.Duration
 	Token       string
 	Labels      map[string]string
@@ -32,9 +32,9 @@ func (c *Configuration) GetGRPCTimeout() time.Duration {
 }
 
 // GetOptions returns the grpc connection options
-func (c *Configuration) GetOptions() grpc.DialOption {
+func (c *Configuration) GetOptions() []grpc.DialOption {
 	if c.Options == nil {
-		return grpc.WithInsecure()
+		return []grpc.DialOption{grpc.WithInsecure()}
 	}
 	return c.Options
 }

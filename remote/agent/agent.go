@@ -53,7 +53,7 @@ func (r *RemoteClient) Connect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
 	defer cancel()
 
-	c, err := grpc.DialContext(ctx, r.config.ServerURL, r.config.GetOptions())
+	c, err := grpc.DialContext(ctx, r.config.ServerURL, r.config.GetOptions()...)
 	if err != nil {
 		return fmt.Errorf("could not connect to remote server %s: %s", r.config.ServerURL, err)
 	}

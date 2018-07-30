@@ -2,10 +2,11 @@ package server
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"net"
 
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
+
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
