@@ -32,7 +32,7 @@ func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
 		},
 	})
 	mocks.Must(t, "failed to connect agent", client.Connect())
-	mocks.Must(t, "failed to register and run agent", client.RegisterAndRun())
+	mocks.Must(t, "failed to register and run agent", client.Run())
 	defer client.Shutdown()
 
 	_, ok := commands.Find(&meeseeks.Request{

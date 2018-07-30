@@ -23,20 +23,16 @@ type finishPayload struct {
 }
 
 type commandPipelineServer struct {
-	runningCommands map[uint64]chan finishedJob
+	remoteAgents map[string]remoteAgent
 
-	pipe chan api.CommandRequest
-
-	wg   sync.WaitGroup
 	lock sync.Mutex
 }
 
 func newCommandPipelineServer() *commandPipelineServer {
 	return &commandPipelineServer{
-		wg:              sync.WaitGroup{},
-		lock:            sync.Mutex{},
-		runningCommands: make(map[uint64]chan finishedJob),
-		pipe:            make(chan api.CommandRequest),
+		remoteAgents: make(map[string]remoteAgent),
+
+		lock: sync.Mutex{},
 	}
 }
 
@@ -45,26 +41,32 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 	// TODO: check the in.GetToken()
 	// TODO: register the commands using the in.GetLabels()
 
-	p.registerCommands(in)
+	pipe, err := p.registerAgent(in)
+	if err != nil {
+		return fmt.Errorf("failed to register remote agent %s: %s", in.GetAgentID(), err)
+	}
 
 Loop:
-	for req := range p.pipe {
+	for req := range pipe {
 		err := agent.Send(&req)
 		logrus.Debugf("request %#v sent to remote agent", req)
 
 		if err == io.EOF {
 			logrus.Infof("remote agent %s is erring with EOF, quitting", in.GetAgentID())
-			p.finishJob(req.GetJobID(), finishedJob{
+			p.finishJob(finishedJob{
+				jobID:   req.GetJobID(),
+				agentID: in.GetAgentID(),
 				content: "",
 				err:     fmt.Sprintf("remote agent %s erred out with EOF, it seems to be gone", in.GetAgentID()),
 			})
+			close(pipe)
 			break Loop
 		}
 
 		errCode := status.Code(err)
 		switch errCode {
 		case codes.OK:
-			logrus.Debugf("agent %s seems to be ok")
+			logrus.Debugf("agent %s seems to be ok", in.GetAgentID())
 			continue
 
 		case codes.Canceled, codes.DeadlineExceeded:
@@ -72,27 +74,51 @@ Loop:
 
 		default:
 			logrus.Errorf("remote agent %s erred out with: %v - %s", in.GetAgentID(), errCode, err)
+
 		}
-		p.finishJob(req.GetJobID(), finishedJob{
+		p.finishJob(finishedJob{
+			jobID:   req.GetJobID(),
+			agentID: in.GetAgentID(),
 			content: "",
 			err:     fmt.Sprintf("remote agent %s erred out with %v - %s, it seems to be gone", in.GetAgentID(), errCode, err),
 		})
+		close(pipe)
 		break Loop
 	}
 
 	logrus.Infof("unregistering remote agent %s", in.GetAgentID())
-	p.unregisterCommands(in.Commands)
+	p.unregisterAgent(in)
 
 	return nil
 }
 
-func (p *commandPipelineServer) registerCommands(in *api.AgentConfiguration) error {
+// Finish implements the finish server method
+func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFinish) (*api.Empty, error) {
+	logrus.Debugf("got %#v from remote agent", fin)
+	return &api.Empty{}, p.finishJob(finishedJob{
+		agentID: fin.GetAgentID(),
+		jobID:   fin.GetJobID(),
+		content: fin.GetContent(),
+		err:     fin.GetError(),
+	})
+}
+
+func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan api.CommandRequest, error) {
+
+	agentPipe := make(chan api.CommandRequest)
+
+	agent := remoteAgent{
+		agentID:     in.GetAgentID(),
+		runningJobs: make(map[uint64]chan finishedJob),
+		agentPipe:   agentPipe,
+	}
+
 	cmds := make([]commands.CommandRegistration, 0)
 	for name, cmd := range in.Commands {
 		cmds = append(cmds, commands.CommandRegistration{
 			Name: name,
 			Cmd: remoteCommand{
-				agentID: in.GetAgentID(),
+				agent: agent,
 				CommandOpts: meeseeks.CommandOpts{
 					Cmd:             name,
 					AllowedChannels: cmd.GetAllowedChannels(),
@@ -105,46 +131,104 @@ func (p *commandPipelineServer) registerCommands(in *api.AgentConfiguration) err
 						cmd.GetHelp().GetSummary(),
 						cmd.GetHelp().GetArgs()...),
 				},
-				server: p,
 			},
 		})
 	}
 
-	logrus.Debugf("remote agent is registering commands %#v", cmds)
-	if err := commands.Add(cmds...); err != nil {
-		return fmt.Errorf("failed to register remote commands: %s", err)
-	}
-	return nil
-}
-
-func (p *commandPipelineServer) unregisterCommands(agentCommands map[string]*api.RemoteCommand) {
-	cmds := make([]string, 0)
-	for name := range agentCommands {
-		cmds = append(cmds, name)
-	}
-	commands.Remove(cmds...)
-}
-
-// Finish implements the finish server method
-func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFinish) (*api.Empty, error) {
-	logrus.Debugf("got %#v from remote agent", fin)
-	return &api.Empty{}, p.finishJob(fin.GetJobID(), finishedJob{
-		content: fin.GetContent(),
-		err:     fin.GetError(),
-	})
-}
-
-func (p *commandPipelineServer) appendJob(job meeseeks.Job) (chan finishedJob, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	_, ok := p.runningCommands[job.ID]
-	if ok {
-		return nil, fmt.Errorf("Job %d is already in the list", job.ID)
+	logrus.Debugf("remote agent is registering commands %#v", cmds)
+	if err := commands.Add(cmds...); err != nil {
+		return nil, fmt.Errorf("failed to register remote commands: %s", err)
 	}
 
+	p.remoteAgents[agent.agentID] = agent
+	return agentPipe, nil
+}
+
+func (p *commandPipelineServer) unregisterAgent(in *api.AgentConfiguration) {
+
+	cmds := make([]string, 0)
+	for name := range in.Commands {
+		cmds = append(cmds, name)
+	}
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	commands.Remove(cmds...)
+
+	delete(p.remoteAgents, in.GetAgentID())
+}
+
+func (p *commandPipelineServer) finishJob(f finishedJob) error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	agent, ok := p.remoteAgents[f.agentID]
+	if !ok {
+		return fmt.Errorf("agent %s is not registered as an active one", f.agentID)
+
+	}
+	c, err := agent.get(f.jobID)
+	if err != nil {
+		return fmt.Errorf("could not fetch command finish channel: %s", err)
+	}
+
+	if f.getError() != nil {
+		if err := persistence.LogWriter().SetError(f.jobID, f.getError()); err != nil {
+			logrus.Errorf("Failed to set error for job %d: %s", f.jobID, err)
+		}
+	}
+
+	logrus.Debugf("sending finished job %#v to channel", f)
+	c <- f
+
+	agent.delete(f.jobID)
+
+	return nil
+}
+
+type remoteAgent struct {
+	agentID     string
+	runningJobs map[uint64]chan finishedJob
+
+	agentPipe chan api.CommandRequest
+}
+
+func (r *remoteAgent) start(req api.CommandRequest) chan finishedJob {
+	c := make(chan finishedJob)
+	r.runningJobs[req.GetJobID()] = c
+
+	r.agentPipe <- req
+
+	return c
+}
+
+func (r *remoteAgent) get(jobID uint64) (chan finishedJob, error) {
+	c, ok := r.runningJobs[jobID]
+	if !ok {
+		return nil, fmt.Errorf("job %d is not registered as a running job", jobID)
+	}
+	return c, nil
+}
+
+func (r *remoteAgent) delete(jobID uint64) {
+	delete(r.runningJobs, jobID)
+}
+
+type remoteCommand struct {
+	meeseeks.CommandOpts
+
+	agent remoteAgent
+}
+
+func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
+	logrus.Debug("start execution of job %#v", job)
+
 	req := job.Request
-	p.pipe <- api.CommandRequest{
+	c := r.agent.start(api.CommandRequest{
 		Command: req.Command,
 		Args:    req.Args,
 
@@ -157,51 +241,9 @@ func (p *commandPipelineServer) appendJob(job meeseeks.Job) (chan finishedJob, e
 		Username:    req.Username,
 
 		JobID: job.ID,
-	}
+	})
 
-	p.wg.Add(1)
-	c := make(chan finishedJob)
-	p.runningCommands[job.ID] = c
-
-	return c, nil
-}
-
-func (p *commandPipelineServer) finishJob(jobID uint64, f finishedJob) error {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
-	c, ok := p.runningCommands[jobID]
-	if !ok {
-		return fmt.Errorf("Job %d is not registered as a running job", jobID)
-	}
-
-	defer p.wg.Done()
-
-	if f.getError() != nil {
-		if err := persistence.LogWriter().SetError(jobID, f.getError()); err != nil {
-			logrus.Errorf("Failed to set error for job %d: %s", jobID, err)
-		}
-	}
-
-	logrus.Debugf("sending finished job %#v to channel", f)
-	c <- f
-
-	return nil
-}
-
-type remoteCommand struct {
-	meeseeks.CommandOpts
-
-	server  *commandPipelineServer
-	agentID string
-}
-
-func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
-	logrus.Debug("start execution of job %#v", job)
-	c, err := r.server.appendJob(job)
-	if err != nil {
-		return "", fmt.Errorf("failed to append remote job: %s", err)
-	}
+	logrus.Debug("waiting for remote request to finish %#v", req)
 
 	select {
 	case <-ctx.Done():
@@ -216,6 +258,8 @@ func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, e
 }
 
 type finishedJob struct {
+	agentID string
+	jobID   uint64
 	content string
 	err     string
 }

@@ -16,13 +16,15 @@ message AgentConfiguration {
     map<string, RemoteCommand> commands = 2;
     map<string, string> Labels = 3;
 
-    string AgentID = 4;
+    string agentID = 4;
 }
 
 message CommandFinish {
     uint64 jobID = 1;
     string content = 2;
     string error = 3;
+
+    string agentID = 4;
 }
 
 message Help {

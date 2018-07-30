@@ -1,9 +1,5 @@
 package agent
 
-// To start the process in agent mode we need to register
-//  Persistence.LogWriter (so we can write logs)
-//  Persistence.Jobs (so we can finish processes)
-
 import (
 	"context"
 	"fmt"
@@ -138,8 +134,9 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 				defer cancel()
 
 				r.cmdClient.Finish(ctx, &api.CommandFinish{
-					JobID: cmd.GetJobID(),
-					Error: fmt.Sprintf("could not find command %s in remote agent", cmd.GetCommand()),
+					AgentID: r.agentID,
+					JobID:   cmd.GetJobID(),
+					Error:   fmt.Sprintf("could not find command %s in remote agent", cmd.GetCommand()),
 				})
 				return
 			}
@@ -165,6 +162,7 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 
 			logrus.Debugf("sending command finish event %#v", cmd)
 			r.cmdClient.Finish(ctx, &api.CommandFinish{
+				AgentID: r.agentID,
 				JobID:   cmd.GetJobID(),
 				Content: content,
 				Error:   errString,
