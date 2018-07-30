@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/codes"
 	"io"
 	"sync"
 	"syscall"
@@ -94,19 +95,21 @@ func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
 	for {
 		cmd, err := pipeline.Recv()
 		if err == io.EOF {
-			logrus.Fatalf("received EOF from command pipeline, quitting")
+			logrus.Infof("received EOF, shutting down")
 			r.triggerShutdown()
 			return
 		}
-		if err != nil {
-			s, ok := status.FromError(err)
-			if !ok {
-				logrus.Errorf("unknown error: %#v", err)
-				continue
-			}
-			logrus.Errorf("grpc error, shutting down: %#v", *s)
+
+		s := status.Code(err)
+		switch s {
+		case codes.OK:
+			logrus.Debugf("all is good, continue")
+
+		default:
+			logrus.Errorf("grpc error %#v, shutting down", s)
 			r.triggerShutdown()
 			return
+
 		}
 
 		logrus.Debugf("received command from pipeline: %#v", cmd)
