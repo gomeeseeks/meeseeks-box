@@ -40,6 +40,7 @@ message RemoteCommand {
     repeated string AllowedChannels = 5;
     map<string, string> Templates = 6;
     Help help = 7;
+    bool hasHandshake = 8;
 }
 
 message Empty {

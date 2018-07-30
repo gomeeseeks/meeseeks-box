@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/codes"
 	"io"
 	"sync"
 	"syscall"
@@ -14,10 +13,12 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
+	"github.com/jpillora/backoff"
 	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -28,6 +29,8 @@ type RemoteClient struct {
 
 	cmdClient api.CommandPipelineClient
 	logClient api.LogWriterClient
+
+	pipeline api.CommandPipeline_RegisterAgentClient
 
 	wg sync.WaitGroup
 
@@ -41,7 +44,7 @@ type RemoteClient struct {
 func New(c Configuration) *RemoteClient {
 	logrus.Debugf("creating new remote agent with configuration %#v", c)
 	return &RemoteClient{
-		agentID: uuid.NewV1().String(),
+		agentID: uuid.New().String(),
 		config:  c,
 		wg:      sync.WaitGroup{},
 	}
@@ -51,10 +54,7 @@ func New(c Configuration) *RemoteClient {
 func (r *RemoteClient) Connect() error {
 	logrus.Debugf("connecting to remote server: %s", r.config.ServerURL)
 
-	ctx, cancel := context.WithTimeout(context.Background(), r.config.GetGRPCTimeout())
-	defer cancel()
-
-	c, err := grpc.DialContext(ctx, r.config.ServerURL, r.config.GetOptions()...)
+	c, err := grpc.Dial(r.config.ServerURL, r.config.GetOptions()...)
 	if err != nil {
 		return fmt.Errorf("could not connect to remote server %s: %s", r.config.ServerURL, err)
 	}
@@ -78,104 +78,135 @@ func (r *RemoteClient) Connect() error {
 }
 
 // Run registers this agent in the remote server and launches a command stream to listen for commands to run
-func (r *RemoteClient) Run() error {
+func (r *RemoteClient) Run() {
+
+	b := &backoff.Backoff{
+		Min:    100 * time.Millisecond,
+		Max:    1 * time.Second,
+		Factor: 2,
+		Jitter: true,
+	}
 	r.ctx, r.cancelFunc = context.WithCancel(context.Background())
 
-	commandStream, err := r.cmdClient.RegisterAgent(r.ctx, r.config.createAgentConfiguration(r.agentID))
-	if err != nil {
-		return fmt.Errorf("failed to register commands on remote server: %s", err)
-	}
-
-	go r.run(commandStream) // TODO: when this method returns we should be quitting
-
-	return nil
-}
-
-func (r *RemoteClient) run(pipeline api.CommandPipeline_RegisterAgentClient) {
+Service:
 	for {
-		cmd, err := pipeline.Recv()
-		if err == io.EOF {
-			logrus.Infof("received EOF, shutting down")
-			r.triggerShutdown()
-			return
-		}
 
-		s := status.Code(err)
-		switch s {
-		case codes.OK:
-			logrus.Debugf("all is good, continue")
-
-		default:
-			logrus.Errorf("grpc error %#v, shutting down", s)
-			r.triggerShutdown()
-			return
-
-		}
-
-		logrus.Debugf("received command from pipeline: %#v", cmd)
-		r.wg.Add(1)
-		go func(cmd api.CommandRequest) {
-			defer r.wg.Done()
-
-			// add a metric to account for remotely received commands
-			rq := meeseeks.Request{
-				Command:     cmd.Command,
-				Args:        cmd.Args,
-				Channel:     cmd.Channel,
-				ChannelID:   cmd.ChannelID,
-				ChannelLink: cmd.ChannelLink,
-				IsIM:        cmd.IsIM,
-				UserID:      cmd.UserID,
-				Username:    cmd.Username,
-				UserLink:    cmd.UserLink,
+		commandStream, err := r.cmdClient.RegisterAgent(r.ctx, r.config.createAgentConfiguration(r.agentID))
+		if err != nil {
+			if b.Attempt() > 10 {
+				logrus.Errorf("failed to register agent in remote server: %s", err)
+				r.triggerShutdown()
+				return
 			}
+			logrus.Warnf("failed to register agent in remote server: %s... retrying", err)
+			time.Sleep(b.Duration())
+			continue Service
+		}
+		b.Reset()
 
-			logrus.Debugf("executing request: %#v", rq)
-			localCmd, ok := commands.Find(&rq)
-			if !ok {
-				ctx, cancel := context.WithTimeout(r.ctx, r.config.GetGRPCTimeout())
-				defer cancel()
-
-				r.cmdClient.Finish(ctx, &api.CommandFinish{
-					AgentID: r.agentID,
-					JobID:   cmd.GetJobID(),
-					Error:   fmt.Sprintf("could not find command %s in remote agent", cmd.GetCommand()),
-				})
+		for {
+			cmd, err := commandStream.Recv()
+			if err == io.EOF {
+				logrus.Infof("received EOF, shutting down")
+				r.triggerShutdown()
 				return
 			}
 
-			logrus.Debugf("found command %#v", localCmd)
-			ctx, cancelShellCmd := context.WithTimeout(r.ctx, localCmd.GetTimeout())
-			defer cancelShellCmd()
+			s := status.Code(err)
+			switch s {
+			case codes.OK:
+				logrus.Debugf("all is good, continue")
 
-			content, err := localCmd.Execute(ctx, meeseeks.Job{
-				ID:        cmd.GetJobID(),
-				Request:   rq,
-				Status:    meeseeks.JobRunningStatus,
-				StartTime: time.Now(),
-			})
+			case codes.Unavailable:
+				logrus.Infof("server is unavailable, reconnecting...")
+				time.Sleep(time.Millisecond)
+				continue Service
 
-			var errString string
-			if err != nil {
-				errString = err.Error()
+			case codes.Canceled:
+				logrus.Infof("cancelled, quitting")
+				r.triggerShutdown()
+				return
+
+			default:
+				logrus.Errorf("grpc error %d, shutting down", s)
+				r.triggerShutdown()
+				return
+
 			}
 
-			ctx, cancel := context.WithTimeout(r.ctx, r.config.GetGRPCTimeout())
-			defer cancel()
+			logrus.Debugf("received command from pipeline: %#v", cmd)
 
-			logrus.Debugf("sending command finish event %#v", cmd)
-			r.cmdClient.Finish(ctx, &api.CommandFinish{
-				AgentID: r.agentID,
-				JobID:   cmd.GetJobID(),
-				Content: content,
-				Error:   errString,
-			})
-			logrus.Debugf("command %#v finished execution", cmd)
-		}(*cmd)
+			r.wg.Add(1)
+			go r.runCommand(*cmd)
+		}
 	}
 }
 
+func (r *RemoteClient) runCommand(cmd api.CommandRequest) {
+	defer r.wg.Done()
+
+	// add a metric to account for remotely received commands
+	rq := meeseeks.Request{
+		Command:     cmd.Command,
+		Args:        cmd.Args,
+		Channel:     cmd.Channel,
+		ChannelID:   cmd.ChannelID,
+		ChannelLink: cmd.ChannelLink,
+		IsIM:        cmd.IsIM,
+		UserID:      cmd.UserID,
+		Username:    cmd.Username,
+		UserLink:    cmd.UserLink,
+	}
+
+	logrus.Debugf("executing request: %#v", rq)
+	localCmd, ok := commands.Find(&rq)
+	if !ok {
+		ctx, cancel := context.WithTimeout(r.ctx, r.config.GetGRPCTimeout())
+		defer cancel()
+
+		r.cmdClient.Finish(ctx, &api.CommandFinish{
+			AgentID: r.agentID,
+			JobID:   cmd.GetJobID(),
+			Error:   fmt.Sprintf("could not find command %s in remote agent", cmd.GetCommand()),
+		})
+		return
+	}
+
+	logrus.Debugf("found command %#v", localCmd)
+	ctx, cancelShellCmd := context.WithTimeout(r.ctx, localCmd.GetTimeout())
+	defer cancelShellCmd()
+
+	content, err := localCmd.Execute(ctx, meeseeks.Job{
+		ID:        cmd.GetJobID(),
+		Request:   rq,
+		Status:    meeseeks.JobRunningStatus,
+		StartTime: time.Now(),
+	})
+
+	var errString string
+	if err != nil {
+		errString = err.Error()
+	}
+
+	ctx, cancel := context.WithTimeout(r.ctx, r.config.GetGRPCTimeout())
+	defer cancel()
+
+	logrus.Debugf("sending command finish event %#v", cmd)
+	r.cmdClient.Finish(ctx, &api.CommandFinish{
+		AgentID: r.agentID,
+		JobID:   cmd.GetJobID(),
+		Content: content,
+		Error:   errString,
+	})
+	logrus.Debugf("command %#v finished execution", cmd)
+}
+
 func (r *RemoteClient) triggerShutdown() {
+	if r.pipeline != nil {
+		if err := r.pipeline.CloseSend(); err != nil {
+			logrus.Errorf("failed to send closing signal to server: %s", err)
+		}
+	}
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 }
 

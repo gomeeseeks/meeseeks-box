@@ -11,6 +11,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 // Configuration holds the client configuration used to connect to the server
@@ -34,7 +35,18 @@ func (c *Configuration) GetGRPCTimeout() time.Duration {
 // GetOptions returns the grpc connection options
 func (c *Configuration) GetOptions() []grpc.DialOption {
 	if c.Options == nil {
-		return []grpc.DialOption{grpc.WithInsecure()}
+		return []grpc.DialOption{
+			grpc.WithInsecure(),
+			grpc.WithKeepaliveParams(
+				keepalive.ClientParameters{
+					Time:                5 * time.Second,
+					PermitWithoutStream: true,
+					Timeout:             c.GetGRPCTimeout(),
+				},
+			),
+			grpc.WithBackoffMaxDelay(5 * time.Second),
+			grpc.WithTimeout(c.GetGRPCTimeout()),
+		}
 	}
 	return c.Options
 }

@@ -23,17 +23,21 @@ type finishPayload struct {
 }
 
 type commandPipelineServer struct {
-	remoteAgents map[string]remoteAgent
+	runningJobs map[uint64]chan finishedJob
 
-	lock sync.Mutex
+	lock *sync.Mutex
 }
 
 func newCommandPipelineServer() *commandPipelineServer {
 	return &commandPipelineServer{
-		remoteAgents: make(map[string]remoteAgent),
+		runningJobs: make(map[uint64]chan finishedJob),
 
-		lock: sync.Mutex{},
+		lock: &sync.Mutex{},
 	}
+}
+
+type jobStarter interface {
+	StartJob(req api.CommandRequest) chan finishedJob
 }
 
 // RegisterAgent registers a new agent service
@@ -46,10 +50,18 @@ func (p *commandPipelineServer) RegisterAgent(in *api.AgentConfiguration, agent 
 		return fmt.Errorf("failed to register remote agent %s: %s", in.GetAgentID(), err)
 	}
 
+	go func() {
+		select {
+		case <-agent.Context().Done():
+			logrus.Infof("agent %s context is done in server with error %s, closing pipe", in.GetAgentID(), agent.Context().Err())
+			close(pipe)
+		}
+	}()
+
 Loop:
 	for req := range pipe {
 		err := agent.Send(&req)
-		logrus.Debugf("request %#v sent to remote agent", req)
+		logrus.Debugf("request %#v sent to remote agent %s", req, in.GetAgentID())
 
 		if err == io.EOF {
 			logrus.Infof("remote agent %s is erring with EOF, quitting", in.GetAgentID())
@@ -66,28 +78,22 @@ Loop:
 		errCode := status.Code(err)
 		switch errCode {
 		case codes.OK:
-			logrus.Debugf("agent %s seems to be ok", in.GetAgentID())
+			logrus.Debugf("agent %s received the job OK, continuing", in.GetAgentID())
 			continue
 
 		case codes.Canceled, codes.DeadlineExceeded:
-			logrus.Infof("agent %s seems to be gone: %v - %s", in.GetAgentID(), errCode, err)
+			logrus.Infof("agent %s cancelled or had a timeout, it seems to be gone: %v - %s", in.GetAgentID(), errCode, err)
 
 		default:
-			logrus.Errorf("remote agent %s erred out with: %v - %s", in.GetAgentID(), errCode, err)
+			logrus.Errorf("agent %s erred out with: %v - %s", in.GetAgentID(), errCode, err)
 
 		}
-		p.finishJob(finishedJob{
-			jobID:   req.GetJobID(),
-			agentID: in.GetAgentID(),
-			content: "",
-			err:     fmt.Sprintf("remote agent %s erred out with %v - %s, it seems to be gone", in.GetAgentID(), errCode, err),
-		})
 		close(pipe)
 		break Loop
 	}
 
 	logrus.Infof("unregistering remote agent %s", in.GetAgentID())
-	p.unregisterAgent(in)
+	p.deRegisterAgentCommands(in)
 
 	return nil
 }
@@ -108,9 +114,10 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 	agentPipe := make(chan api.CommandRequest)
 
 	agent := remoteAgent{
-		agentID:     in.GetAgentID(),
-		runningJobs: make(map[uint64]chan finishedJob),
-		agentPipe:   agentPipe,
+		agentID:   in.GetAgentID(),
+		agentPipe: agentPipe,
+
+		jobStarter: p,
 	}
 
 	cmds := make([]commands.CommandRegistration, 0)
@@ -126,6 +133,7 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 					AuthStrategy:    cmd.GetAuthStrategy(),
 					ChannelStrategy: cmd.GetChannelStrategy(),
 					Templates:       cmd.GetTemplates(),
+					Handshake:       cmd.GetHasHandshake(),
 					Timeout:         time.Duration(cmd.GetTimeout()) * time.Second,
 					Help: meeseeks.NewHelp(
 						cmd.GetHelp().GetSummary(),
@@ -143,11 +151,10 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 		return nil, fmt.Errorf("failed to register remote commands: %s", err)
 	}
 
-	p.remoteAgents[agent.agentID] = agent
 	return agentPipe, nil
 }
 
-func (p *commandPipelineServer) unregisterAgent(in *api.AgentConfiguration) {
+func (p *commandPipelineServer) deRegisterAgentCommands(in *api.AgentConfiguration) {
 
 	cmds := make([]string, 0)
 	for name := range in.Commands {
@@ -158,20 +165,10 @@ func (p *commandPipelineServer) unregisterAgent(in *api.AgentConfiguration) {
 	defer p.lock.Unlock()
 
 	commands.Remove(cmds...)
-
-	delete(p.remoteAgents, in.GetAgentID())
 }
 
 func (p *commandPipelineServer) finishJob(f finishedJob) error {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
-	agent, ok := p.remoteAgents[f.agentID]
-	if !ok {
-		return fmt.Errorf("agent %s is not registered as an active one", f.agentID)
-
-	}
-	c, err := agent.get(f.jobID)
+	c, err := p.PopJob(f.jobID)
 	if err != nil {
 		return fmt.Errorf("could not fetch command finish channel: %s", err)
 	}
@@ -182,40 +179,49 @@ func (p *commandPipelineServer) finishJob(f finishedJob) error {
 		}
 	}
 
-	logrus.Debugf("sending finished job %#v to channel", f)
-	c <- f
+	logrus.Debugf("sending finished job signal %#v to channel", f)
 
-	agent.delete(f.jobID)
+	c <- f
 
 	return nil
 }
 
-type remoteAgent struct {
-	agentID     string
-	runningJobs map[uint64]chan finishedJob
+func (p *commandPipelineServer) StartJob(req api.CommandRequest) chan finishedJob {
+	p.lock.Lock()
+	defer p.lock.Unlock()
 
-	agentPipe chan api.CommandRequest
-}
-
-func (r *remoteAgent) start(req api.CommandRequest) chan finishedJob {
 	c := make(chan finishedJob)
-	r.runningJobs[req.GetJobID()] = c
-
-	r.agentPipe <- req
-
+	p.runningJobs[req.GetJobID()] = c
 	return c
 }
 
-func (r *remoteAgent) get(jobID uint64) (chan finishedJob, error) {
-	c, ok := r.runningJobs[jobID]
+func (p *commandPipelineServer) PopJob(jobID uint64) (chan finishedJob, error) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	c, ok := p.runningJobs[jobID]
 	if !ok {
-		return nil, fmt.Errorf("job %d is not registered as a running job", jobID)
+		return nil, fmt.Errorf("could not find job with ID %d in the running jobs list", jobID)
 	}
+
+	delete(p.runningJobs, jobID)
+
 	return c, nil
 }
 
-func (r *remoteAgent) delete(jobID uint64) {
-	delete(r.runningJobs, jobID)
+type remoteAgent struct {
+	agentID string
+
+	agentPipe chan api.CommandRequest
+
+	jobStarter
+}
+
+func (r *remoteAgent) start(req api.CommandRequest) chan finishedJob {
+	c := r.StartJob(req)
+	r.agentPipe <- req
+
+	return c
 }
 
 type remoteCommand struct {
@@ -252,6 +258,7 @@ func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, e
 
 	case f := <-c:
 		logrus.Debug("successful execution of job %#v with result %#v", job, f)
+		// TODO: check that the agent that finished the command is the same that started it
 		return f.getContent(), f.getError()
 
 	}

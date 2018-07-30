@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
 	"github.com/sirupsen/logrus"
@@ -26,7 +25,6 @@ func (g grpcLogWriter) Append(jobID uint64, content string) error {
 		return e
 	}
 
-	metrics.LogLinesCount.Inc()
 	logrus.Debugf("sending log job %d - '%s'", jobID, content)
 	return w.Send(&api.LogEntry{
 		JobID: jobID,
@@ -39,6 +37,7 @@ func (g grpcLogWriter) SetError(jobID uint64, jobErr error) error {
 	ctx, cancel := context.WithTimeout(context.Background(), g.timeoutSeconds)
 	defer cancel()
 
+	logrus.Debugf("setting error for job %d - '%s'", jobID, jobErr)
 	_, err := g.client.SetError(ctx, &api.ErrorLogEntry{
 		JobID: jobID,
 		Error: jobErr.Error(),
