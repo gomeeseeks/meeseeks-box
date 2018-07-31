@@ -2,20 +2,24 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/api"
 	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/http"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
-	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
-	"github.com/gomeeseeks/meeseeks-box/persistence/logs/provider"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
+	"github.com/gomeeseeks/meeseeks-box/remote/agent"
+	"github.com/gomeeseeks/meeseeks-box/remote/server"
 	"github.com/gomeeseeks/meeseeks-box/slack"
 	"github.com/gomeeseeks/meeseeks-box/version"
 
+	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,41 +27,30 @@ func main() {
 	args := parseArgs()
 
 	setLogLevel(args)
-	loadConfiguration(args)
 
-	setupPersistentLogger()
-	cleanupPendingJobs()
-
-	slackClient := connectToSlack(args)
-	httpServer := listenHTTP(slackClient, args)
-
-	logrus.Info("Listening to slack messages")
-
-	exc := executor.New(slackClient)
-
-	exc.ListenTo(slackClient)
-	exc.ListenTo(httpServer)
-
-	go exc.Run()
-	logrus.Info("Started commands pipeline")
+	shutdownFunc, err := launch(args)
+	must("could not launch meeseeks-box: %s", err)
 
 	waitForSignals(func() { // this locks for good, but receives a shutdown function
-		httpServer.Shutdown()
-		exc.Shutdown()
+		shutdownFunc()
 	})
 
 	logrus.Info("Everything has been shut down, bye bye!")
 }
 
 type args struct {
-	ConfigFile  string
-	DebugMode   bool
-	StealthMode bool
-	DebugSlack  bool
-	APIAddress  string
-	APIPath     string
-	MetricsPath string
-	SlackToken  string
+	ConfigFile        string
+	DebugMode         bool
+	StealthMode       bool
+	DebugSlack        bool
+	Address           string
+	APIPath           string
+	MetricsPath       string
+	SlackToken        string
+	ExecutionMode     string
+	AgentOf           string
+	GRPCServerAddress string
+	GRPCServerEnabled bool
 }
 
 func parseArgs() args {
@@ -65,11 +58,14 @@ func parseArgs() args {
 	debugMode := flag.Bool("debug", false, "enabled debug mode")
 	debugSlack := flag.Bool("debug-slack", false, "enabled debug mode for slack")
 	showVersion := flag.Bool("version", false, "print the version and exit")
-	apiAddress := flag.String("api-endpoint", ":9696", "api endpoint in which to listen for api calls")
+	address := flag.String("http-address", ":9696", "http endpoint in which to listen")
 	apiPath := flag.String("api-path", "/message", "api path in to listen for api calls")
 	metricsPath := flag.String("metrics-path", "/metrics", "path to in which to expose prometheus metrics")
 	slackStealth := flag.Bool("stealth", false, "Enable slack stealth mode")
 	slackToken := flag.String("slack-token", os.Getenv("SLACK_TOKEN"), "slack token, by default loaded from the SLACK_TOKEN environment variable")
+	agentOf := flag.String("agent-of", "", "remote server to connect to, enables agent mode")
+	grpcServerAddress := flag.String("grpc-address", ":9697", "grpc server endpoint, used to connect remote agents")
+	grpcServerEnabled := flag.Bool("with-grpc-server", false, "enable grpc remote server to connect to")
 
 	flag.Parse()
 
@@ -78,83 +74,183 @@ func parseArgs() args {
 		os.Exit(0)
 	}
 
+	executionMode := "server"
+	if *agentOf != "" {
+		executionMode = "agent"
+	}
+
 	return args{
-		ConfigFile:  *configFile,
-		DebugMode:   *debugMode,
-		StealthMode: *slackStealth,
-		DebugSlack:  *debugSlack,
-		SlackToken:  *slackToken,
-		APIAddress:  *apiAddress,
-		APIPath:     *apiPath,
-		MetricsPath: *metricsPath,
+		ConfigFile:        *configFile,
+		DebugMode:         *debugMode,
+		StealthMode:       *slackStealth,
+		DebugSlack:        *debugSlack,
+		SlackToken:        *slackToken,
+		Address:           *address,
+		APIPath:           *apiPath,
+		MetricsPath:       *metricsPath,
+		AgentOf:           *agentOf,
+		GRPCServerAddress: *grpcServerAddress,
+		GRPCServerEnabled: *grpcServerEnabled,
+		ExecutionMode:     executionMode,
+	}
+}
+
+func launch(args args) (func(), error) {
+	cnf, err := config.LoadFile(args.ConfigFile)
+	must("failed to load configuration file: %s", err)
+
+	switch args.ExecutionMode {
+	case "server":
+		must("could not load configuration: %s", config.LoadConfig(cnf))
+
+		cleanupPendingJobs()
+
+		httpServer := listenHTTP(args)
+		remoteServer := startRemoteServer(args)
+
+		slackClient := connectToSlack(args)
+		apiService := startAPI(slackClient, args)
+
+		exc := executor.New(executor.Args{
+			ConcurrentTaskCount: 20,
+			WithBuiltinCommands: true,
+			ChatClient:          slackClient,
+		})
+
+		exc.ListenTo(slackClient)
+		exc.ListenTo(apiService)
+
+		go exc.Run()
+
+		return func() {
+			exc.Shutdown()
+			httpServer.Shutdown()
+			remoteServer.Shutdown()
+		}, nil
+
+	case "agent":
+		remoteClient := agent.New(agent.Configuration{
+			ServerURL:   args.AgentOf,
+			Token:       "null-token",
+			GRPCTimeout: 10 * time.Second,
+			Commands:    cnf.Commands,
+			Labels:      map[string]string{},
+			// Options: add some options so we have at least some security, or at least make insecure optional
+		})
+
+		must("could not connect to remote server: %s", remoteClient.Connect())
+
+		go remoteClient.Run()
+
+		logrus.Debugf("agent running connected to remote server: %s", args.AgentOf)
+
+		return func() {
+			remoteClient.Shutdown()
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("Invalid execution mode %s, Valid execution modes are server (default), and agent",
+			args.ExecutionMode)
 	}
 }
 
 func setLogLevel(args args) {
+	logrus.AddHook(filename.NewHook())
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
 	if args.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 }
 
-func setupPersistentLogger() {
-	logs.Configure(provider.New(provider.LocalLogger)) // This will change when we start building the remote agent
-}
-
-func loadConfiguration(args args) {
-	cnf, err := config.LoadFile(args.ConfigFile)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	if err := config.LoadConfig(cnf); err != nil {
-		logrus.Fatalf("Could not load configuration: %s", err)
-	}
-	logrus.Info("Configuration loaded")
-}
-
 func cleanupPendingJobs() {
-	if err := jobs.FailRunningJobs(); err != nil {
-		logrus.Fatalf("Could not flush running jobs after: %s", err)
-	}
+	must("Could not flush running jobs after: %s", persistence.Jobs().FailRunningJobs())
 }
 
 func connectToSlack(args args) *slack.Client {
+	logrus.Debug("Connecting to slack")
 	slackClient, err := slack.Connect(
 		slack.ConnectionOpts{
 			Debug:   args.DebugSlack,
 			Token:   args.SlackToken,
 			Stealth: args.StealthMode,
 		})
-	if err != nil {
-		logrus.Fatalf("Could not connect to slack: %s", err)
-	}
+
+	must("Could not connect to slack: %s", err)
 	logrus.Info("Connected to slack")
 
 	return slackClient
 }
 
-func listenHTTP(client *slack.Client, args args) *api.Server {
+func listenHTTP(args args) *http.Server {
+	logrus.Debug("Creating a new http server")
+	httpServer := http.New(args.Address)
 	metrics.RegisterPath(args.MetricsPath)
 
-	httpServer := api.NewServer(client, args.APIPath, args.APIAddress)
 	go func() {
-		err := httpServer.ListenAndServe()
-		if err != nil {
-			logrus.Fatalf("Could not start HTTP server: %s", err)
-		}
+		logrus.Debug("Listening on http")
+		// err :=
+		httpServer.ListenAndServe()
+		// must("Could not start HTTP server: %s", err)
 	}()
-	logrus.Infof("Started HTTP server on %s", args.APIAddress)
+	logrus.Infof("Started HTTP server on %s", args.Address)
 
 	return httpServer
 }
 
+func startAPI(client *slack.Client, args args) *api.Service {
+	logrus.Debug("Starting api server")
+	return api.New(client, args.APIPath)
+}
+
+func startRemoteServer(args args) *server.RemoteServer {
+	s := server.New()
+	if args.GRPCServerEnabled {
+		logrus.Debugf("starting grpc remote server on %s", args.GRPCServerAddress)
+		go func() {
+			must("could not start grpc server", s.Listen(args.GRPCServerAddress))
+		}()
+	}
+
+	return s
+}
+
 func waitForSignals(shutdownGracefully func()) {
 	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 
-	// Listen for a signal forever
-	sig := <-signalCh
+Loop:
+	for { // Listen for a signal forever
+		select {
+		case sig := <-signalCh:
+			switch sig {
+			case syscall.SIGINT, syscall.SIGTERM:
+				logrus.Infof("Got signal %s, shutting down gracefully", sig)
+				break Loop
 
-	logrus.Infof("Got signal %s, shutting down gracefully", sig)
+			case syscall.SIGHUP:
+				toggleDebugLogging()
+			}
+		}
+	}
 
 	shutdownGracefully()
+}
+
+func toggleDebugLogging() {
+	switch logrus.GetLevel() {
+	case logrus.DebugLevel:
+		logrus.SetLevel(logrus.InfoLevel)
+	default:
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+}
+
+func must(message string, err error) {
+	if err != nil {
+		logrus.Fatalf(message, err)
+		os.Exit(1)
+	}
 }

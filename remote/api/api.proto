@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package api;
+
+message AgentRegistration {
+    string Token = 1;
+    string Hostname = 2;
+}
+
+message AgentPrivateToken {
+    string Token = 1;
+}
+
+message AgentConfiguration {
+    string Token = 1;
+    map<string, RemoteCommand> commands = 2;
+    map<string, string> Labels = 3;
+
+    string agentID = 4;
+}
+
+message CommandFinish {
+    uint64 jobID = 1;
+    string content = 2;
+    string error = 3;
+
+    string agentID = 4;
+}
+
+message Help {
+    string Summary = 1;
+    repeated string Args = 2;
+}
+
+message RemoteCommand {
+    int64 Timeout = 1;
+    string AuthStrategy = 2;
+    repeated string AllowedGroups = 3;
+    string ChannelStrategy = 4;
+    repeated string AllowedChannels = 5;
+    map<string, string> Templates = 6;
+    Help help = 7;
+    bool hasHandshake = 8;
+}
+
+message Empty {
+}
+
+message CommandRequest {
+    string command = 1;
+    repeated string args = 2;
+    string username = 3;
+    string userID = 4;
+    string userLink = 5;
+    string channel = 6;
+    string channelID = 7;
+    string channelLink = 8;
+    bool isIM = 9;
+    uint64 jobID = 10;
+}
+
+message LogEntry {
+    uint64 jobID = 1;
+    string line = 2;
+}
+
+message ErrorLogEntry {
+    uint64 jobID = 1;
+    string error = 2;
+}
+
+service Registration {
+    rpc Register(AgentRegistration) returns (AgentPrivateToken) {}
+}
+
+service CommandPipeline {
+    rpc RegisterAgent(AgentConfiguration) returns (stream CommandRequest) {}
+    rpc Finish(CommandFinish) returns (Empty) {}
+}
+
+service LogWriter {
+    rpc Append(stream LogEntry) returns (Empty) {}
+    rpc SetError(ErrorLogEntry) returns (Empty) {}
+}
+

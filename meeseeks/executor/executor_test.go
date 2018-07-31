@@ -44,7 +44,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 					IsIM:        false,
 				},
 				{
-					TextMatcher: "^<@myuser> .*\n```\nhello!```$",
+					TextMatcher: "^<@myuser> .*\n```\nhello!\n```$",
 					Channel:     "generalID",
 					IsIM:        false,
 				},
@@ -63,7 +63,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 					IsIM:        false,
 				},
 				{
-					TextMatcher: "^<@myuser> .*\n```\npre-message hello!```$",
+					TextMatcher: "^<@myuser> .*\n```\npre-message hello!\n```$",
 					Channel:     "generalID",
 					IsIM:        false,
 				},
@@ -140,7 +140,11 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			    args: ["pre-message"]
 			`)).WithDBPath(dbpath).Load()
 
-		e := executor.New(client)
+		e := executor.New(executor.Args{
+			ChatClient:          client,
+			WithBuiltinCommands: false,
+			ConcurrentTaskCount: 1,
+		})
 		e.ListenTo(client)
 
 		go e.Run()

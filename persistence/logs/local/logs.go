@@ -11,45 +11,32 @@ import (
 	bolt "github.com/coreos/bbolt"
 )
 
-// New returns a new local LoggerProvider
-func New() meeseeks.LoggerProvider {
-	return localLoggerProvider{}
+// NewReader Creates a new log reader
+func NewReader() meeseeks.LogReader {
+	return localReader{}
 }
 
-type localLoggerProvider struct{}
-
-// Reader Implements LoggerProvider.Reader
-func (localLoggerProvider) Reader(jobID uint64) meeseeks.LogReader {
-	return localReader{
-		jobID: jobID,
-	}
+// NewWriter Createts a new log writer
+func NewWriter() meeseeks.LogWriter {
+	return localWriter{}
 }
 
-// Writer Implements LoggerProvider.Writer
-func (localLoggerProvider) Writer(jobID uint64) meeseeks.LogWriter {
-	return localWriter{
-		jobID: jobID,
-	}
-}
-
-type localWriter struct {
-	jobID uint64
-}
+type localWriter struct{}
 
 // Implements LogWriter.Append
-func (l localWriter) Append(content string) error {
+func (l localWriter) Append(jobID uint64, content string) error {
 	if content == "" {
 		return nil
 	}
 	return db.Update(func(tx *bolt.Tx) error {
-		jobBucket, err := getJobBucket(l.jobID, tx)
+		jobBucket, err := getJobBucket(jobID, tx)
 		if err != nil {
-			return fmt.Errorf("could not get job %d bucket: %s", l.jobID, err)
+			return fmt.Errorf("could not get job %d bucket: %s", jobID, err)
 		}
 
 		sequence, err := jobBucket.NextSequence()
 		if err != nil {
-			return fmt.Errorf("could not get next sequence for job %d: %s", l.jobID, err)
+			return fmt.Errorf("could not get next sequence for job %d: %s", jobID, err)
 		}
 
 		metrics.LogLinesCount.Inc()
@@ -59,32 +46,30 @@ func (l localWriter) Append(content string) error {
 }
 
 // Implements LogWriter.SetError
-func (l localWriter) SetError(jobErr error) error {
+func (l localWriter) SetError(jobID uint64, jobErr error) error {
 	if jobErr == nil {
 		return nil
 	}
 	return db.Update(func(tx *bolt.Tx) error {
-		jobBucket, err := getJobBucket(l.jobID, tx)
+		jobBucket, err := getJobBucket(jobID, tx)
 		if err != nil {
-			return fmt.Errorf("could not get job %d bucket: %s", l.jobID, err)
+			return fmt.Errorf("could not get job %d bucket: %s", jobID, err)
 		}
 		errorBucket, err := jobBucket.CreateBucketIfNotExists(errorKey)
 		if err != nil {
-			return fmt.Errorf("could not get error bucket for job %d: %s", l.jobID, err)
+			return fmt.Errorf("could not get error bucket for job %d: %s", jobID, err)
 		}
 
 		return errorBucket.Put(errorKey, []byte(jobErr.Error()))
 	})
 }
 
-type localReader struct {
-	jobID uint64
-}
+type localReader struct{}
 
 // Get implements LogReader.Get
-func (l localReader) Get() (meeseeks.JobLog, error) {
+func (l localReader) Get(jobID uint64) (meeseeks.JobLog, error) {
 	job := &meeseeks.JobLog{}
-	err := readLogBucket(l.jobID, func(j *bolt.Bucket) error {
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 		_, line := c.First()
 		lines := make([]string, 0)
@@ -107,9 +92,9 @@ func (l localReader) Get() (meeseeks.JobLog, error) {
 }
 
 // Head implements LogReader.Head
-func (l localReader) Head(limit int) (meeseeks.JobLog, error) {
+func (l localReader) Head(jobID uint64, limit int) (meeseeks.JobLog, error) {
 	job := &meeseeks.JobLog{}
-	err := readLogBucket(l.jobID, func(j *bolt.Bucket) error {
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 
 		lines := make([]string, 0)
@@ -130,9 +115,9 @@ func (l localReader) Head(limit int) (meeseeks.JobLog, error) {
 }
 
 // Tail implements LogReader.Tail
-func (l localReader) Tail(limit int) (meeseeks.JobLog, error) {
+func (l localReader) Tail(jobID uint64, limit int) (meeseeks.JobLog, error) {
 	job := &meeseeks.JobLog{}
-	err := readLogBucket(l.jobID, func(j *bolt.Bucket) error {
+	err := readLogBucket(jobID, func(j *bolt.Bucket) error {
 		c := j.Cursor()
 		lines := make([]string, 0)
 

@@ -12,7 +12,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/text/formatter"
 )
 
@@ -20,6 +20,12 @@ import (
 type ChatClient interface {
 	Reply(formatter.Reply)
 }
+
+// NullChatClient is a client that implements the interface but does nothing
+type NullChatClient struct{}
+
+// Reply implements ChatClient.Reply
+func (NullChatClient) Reply(_ formatter.Reply) {}
 
 // Listener provides the necessary interface to start listening requests from a channel.
 type Listener interface {
@@ -43,15 +49,25 @@ type task struct {
 	cmd meeseeks.Command
 }
 
+// Args is handy to set multiple arguments
+type Args struct {
+	ConcurrentTaskCount int
+	WithBuiltinCommands bool
+	ChatClient          ChatClient
+}
+
 // New creates a new Meeseeks service
-func New(client ChatClient) *Executor {
+func New(args Args) *Executor {
 	ac := newActiveCommands()
-	commands.Add(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel))
-	commands.Add(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel))
+	if args.WithBuiltinCommands {
+		commands.LoadBuiltins()
+		commands.Replace(commands.CommandRegistration{Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(ac.Cancel)})
+		commands.Replace(commands.CommandRegistration{Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(ac.Cancel)})
+	}
 
 	e := Executor{
-		client:     client,
-		tasksCh:    make(chan task, 20),
+		client:     args.ChatClient,
+		tasksCh:    make(chan task, args.ConcurrentTaskCount),
 		requestsCh: make(chan meeseeks.Request),
 
 		wg:             sync.WaitGroup{},
@@ -65,6 +81,7 @@ func New(client ChatClient) *Executor {
 
 // ListenTo appends a listener to the list and starts listening to it
 func (m *Executor) ListenTo(l Listener) {
+	logrus.Debugf("Executor: adding listener %#v", l)
 	m.listeners = append(m.listeners, l)
 	go l.Listen(m.requestsCh)
 }
@@ -81,6 +98,10 @@ func (m *Executor) Run() {
 			continue
 		}
 
+		if cmd == nil {
+			logrus.Warnf("somehow cmd is nil with req %#v", req)
+			continue
+		}
 		if err := auth.Check(req, cmd); err != nil {
 			m.client.Reply(formatter.UnauthorizedCommandReply(req))
 			metrics.RejectedCommandsCount.WithLabelValues(req.Command).Inc()
@@ -103,11 +124,11 @@ func (m *Executor) Run() {
 }
 
 func (m *Executor) createTask(req meeseeks.Request, cmd meeseeks.Command) (task, error) {
-	if !cmd.Record() {
-		return task{job: jobs.NullJob(req), cmd: cmd}, nil
+	if !cmd.MustRecord() {
+		return task{job: persistence.Jobs().Null(req), cmd: cmd}, nil
 	}
 
-	j, err := jobs.Create(req)
+	j, err := persistence.Jobs().Create(req)
 	return task{job: j, cmd: cmd}, err
 }
 
@@ -147,8 +168,7 @@ func (m *Executor) processTasks() {
 
 				m.client.Reply(formatter.FailureReply(req, err).WithOutput(out))
 
-				metrics.FailedTasksCount.WithLabelValues(job.Request.Command).Inc()
-				jobs.Finish(job.ID, jobs.FailedStatus)
+				persistence.Jobs().Fail(job.ID)
 
 			} else {
 				logrus.Infof("Command '%s' from user '%s' succeeded execution", req.Command,
@@ -156,9 +176,7 @@ func (m *Executor) processTasks() {
 
 				m.client.Reply(formatter.SuccessReply(req).WithOutput(out))
 
-				metrics.SuccessfulTasksCount.WithLabelValues(job.Request.Command).Inc()
-				jobs.Finish(job.ID, jobs.SuccessStatus)
-
+				persistence.Jobs().Succeed(job.ID)
 			}
 			m.wg.Done()
 		}(t)

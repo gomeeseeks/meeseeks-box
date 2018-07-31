@@ -15,8 +15,30 @@ var aliasesBucketKey = []byte("aliases")
 // ErrAliasNotFound is returned when an alias can't be found
 var ErrAliasNotFound = fmt.Errorf("alias not found")
 
+// Aliases provides the interface to a locally persisted alias
+type Aliases struct{}
+
+// Get returns the command for an alias
+func (Aliases) Get(userID, alias string) (string, []string, error) {
+	return get(userID, alias)
+}
+
+// List returns all configured aliases for a user ID
+func (Aliases) List(userID string) ([]meeseeks.Alias, error) {
+	return list(userID)
+}
+
 // Create adds a new alias for a user ID
-func Create(userID, alias, command string, args ...string) error {
+func (Aliases) Create(userID, alias, command string, args ...string) error {
+	return create(userID, alias, command, args...)
+}
+
+// Remove deletes an alias for a user ID
+func (Aliases) Remove(userID, alias string) error {
+	return remove(userID, alias)
+}
+
+func create(userID, alias, command string, args ...string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)
 		if err != nil {
@@ -35,8 +57,7 @@ func Create(userID, alias, command string, args ...string) error {
 	})
 }
 
-// Delete deletes an alias for a user ID
-func Delete(userID, alias string) error {
+func remove(userID, alias string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)
 		if err != nil {
@@ -59,8 +80,7 @@ func Delete(userID, alias string) error {
 	})
 }
 
-// List returns all configured aliases for a user ID
-func List(userID string) ([]meeseeks.Alias, error) {
+func list(userID string) ([]meeseeks.Alias, error) {
 	aliases := make([]meeseeks.Alias, 0)
 	err := db.Update(func(tx *bolt.Tx) error {
 		bucket, err := getAliasesBucket(userID, tx)
@@ -81,8 +101,7 @@ func List(userID string) ([]meeseeks.Alias, error) {
 	return aliases, nil
 }
 
-// Get returns the command for an alias
-func Get(userID, alias string) (string, []string, error) {
+func get(userID, alias string) (string, []string, error) {
 	logrus.Debugf("looking up command %s", alias)
 	var a meeseeks.Alias
 	err := db.Update(func(tx *bolt.Tx) error {

@@ -1,12 +1,13 @@
 package commands
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,19 +24,65 @@ func Reset() {
 	defer mutex.Unlock()
 
 	commands = make(map[string]meeseeks.Command)
-	for name, cmd := range builtins.Commands {
-		commands[name] = cmd
-	}
-
-	builtins.AddHelpCommand(commands)
 }
 
-// Add adds a new command to the map
-func Add(name string, cmd meeseeks.Command) {
+// LoadBuiltins loads the builtin commands
+func LoadBuiltins() {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	commands[name] = cmd
+	for name, cmd := range builtins.Commands {
+		commands[name] = cmd
+	}
+	builtins.AddHelpCommand(commands)
+}
+
+// CommandRegistration is used to register a new command in the commands map
+type CommandRegistration struct {
+	Name string
+	Cmd  meeseeks.Command
+}
+
+// Add adds a new command to the map
+func Add(cmds ...CommandRegistration) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	for _, cmd := range cmds {
+		if _, ok := commands[cmd.Name]; ok {
+			return fmt.Errorf("command %s is already registered", cmd.Name)
+		}
+	}
+
+	logrus.Debugf("appending commands %#v", cmds)
+
+	for _, cmd := range cmds {
+		commands[cmd.Name] = cmd.Cmd
+	}
+	return nil
+}
+
+// Replace replaces an already registered command
+func Replace(cmd CommandRegistration) {
+	if _, ok := commands[cmd.Name]; !ok {
+		logrus.Infof("command %s not found for replacing", cmd.Name)
+	}
+	logrus.Debugf("replacing command %#v", cmd)
+	commands[cmd.Name] = cmd.Cmd
+}
+
+// Remove unregisters commands from the registration list
+func Remove(cmds ...string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	for _, name := range cmds {
+		if _, ok := commands[name]; ok {
+			delete(commands, name)
+		} else {
+			logrus.Warnf("could not delete command %s because it's not to be found", name)
+		}
+	}
 }
 
 // Find looks up the given command by name and returns.
@@ -43,7 +90,10 @@ func Add(name string, cmd meeseeks.Command) {
 // This method implements the map interface as in returning true of false in the
 // case the command exists in the map
 func Find(req *meeseeks.Request) (meeseeks.Command, bool) {
-	aliasedCommand, args, err := aliases.Get(req.UserID, req.Command)
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	aliasedCommand, args, err := persistence.Aliases().Get(req.UserID, req.Command)
 	if err != nil {
 		logrus.Debugf("Failed to get alias %s", req.Command)
 	}

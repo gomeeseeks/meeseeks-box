@@ -5,7 +5,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
+	"github.com/gomeeseeks/meeseeks-box/persistence"
 )
 
 var req = meeseeks.Request{
@@ -16,14 +16,14 @@ var req = meeseeks.Request{
 
 func Test_GettingAJobWorksWhenEmpty(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
-		_, err := jobs.Get(1)
+		_, err := persistence.Jobs().Get(1)
 		mocks.AssertEquals(t, "no job could be found", err.Error())
 	}))
 }
 
 func Test_GettingJobsWorksWhenEmpty(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
-		js, err := jobs.Find(jobs.JobFilter{
+		js, err := persistence.Jobs().Find(meeseeks.JobFilter{
 			Limit: 10,
 			Match: func(_ meeseeks.Job) bool {
 				return true
@@ -36,10 +36,10 @@ func Test_GettingJobsWorksWhenEmpty(t *testing.T) {
 
 func Test_CreatingAndThenGettingAJob(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
-		expected, err := jobs.Create(req)
+		expected, err := persistence.Jobs().Create(req)
 		mocks.Must(t, "Could not store a job: ", err)
 
-		actual, err := jobs.Get(expected.ID)
+		actual, err := persistence.Jobs().Get(expected.ID)
 		mocks.Must(t, "Could not retrieve a job: ", err)
 
 		mocks.AssertEquals(t, expected, actual)
@@ -48,41 +48,28 @@ func Test_CreatingAndThenGettingAJob(t *testing.T) {
 
 func Test_MarkSuccessFul(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
-		job, err := jobs.Create(req)
+		job, err := persistence.Jobs().Create(req)
 		mocks.Must(t, "Could not store a job: ", err)
 
-		err = jobs.Finish(job.ID, jobs.SuccessStatus)
+		err = persistence.Jobs().Succeed(job.ID)
 		mocks.Must(t, "could not set as successful", err)
 
-		actual, err := jobs.Get(job.ID)
+		actual, err := persistence.Jobs().Get(job.ID)
 		mocks.Must(t, "Could not retrieve a job: ", err)
 
-		mocks.AssertEquals(t, actual.Status, jobs.SuccessStatus)
+		mocks.AssertEquals(t, actual.Status, meeseeks.JobSuccessStatus)
 		if !actual.EndTime.After(job.StartTime) {
 			t.Fatal("End time should be after start time")
 		}
 	}))
 }
-
-func Test_MarkSuccessfulWithRunningEndStateFails(t *testing.T) {
-	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
-		job, err := jobs.Create(req)
-		mocks.Must(t, "Could not store a job: ", err)
-
-		err = jobs.Finish(job.ID, jobs.RunningStatus)
-		if err.Error() != "invalid status Running" {
-			t.Fatalf("Wrong error %s", err)
-		}
-	}))
-}
-
 func Test_FilterReturnsInOrder(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
-		jobs.Create(req)
-		jobs.Create(req)
-		jobs.Create(req)
+		persistence.Jobs().Create(req)
+		persistence.Jobs().Create(req)
+		persistence.Jobs().Create(req)
 
-		latest, err := jobs.Find(jobs.JobFilter{Limit: 2})
+		latest, err := persistence.Jobs().Find(meeseeks.JobFilter{Limit: 2})
 		if err != nil {
 			t.Fatalf("Failed to get the latest jobs: %s", err)
 		}
@@ -94,10 +81,10 @@ func Test_FilterReturnsInOrder(t *testing.T) {
 
 func Test_FilterReturnsEnough(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
-		jobs.Create(req)
-		jobs.Create(req)
+		persistence.Jobs().Create(req)
+		persistence.Jobs().Create(req)
 
-		latest, err := jobs.Find(jobs.JobFilter{Limit: 5})
+		latest, err := persistence.Jobs().Find(meeseeks.JobFilter{Limit: 5})
 		if err != nil {
 			t.Fatalf("Failed to get the latest jobs: %s", err)
 		}
@@ -109,25 +96,25 @@ func Test_FilterReturnsEnough(t *testing.T) {
 
 func TestFailRunningJobsLeavesNoJobRunning(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
-		jobs.Create(req)
-		jobs.Create(req)
-		jobs.Create(req)
+		persistence.Jobs().Create(req)
+		persistence.Jobs().Create(req)
+		persistence.Jobs().Create(req)
 
-		mocks.Must(t, "Fail running jobs", jobs.FailRunningJobs())
+		mocks.Must(t, "Fail running jobs", persistence.Jobs().FailRunningJobs())
 
-		running, err := jobs.Find(jobs.JobFilter{
+		running, err := persistence.Jobs().Find(meeseeks.JobFilter{
 			Limit: 5,
 			Match: func(j meeseeks.Job) bool {
-				return j.Status == jobs.RunningStatus
+				return j.Status == meeseeks.JobRunningStatus
 			},
 		})
 		mocks.Must(t, "get running jobs", err)
 		mocks.AssertEquals(t, 0, len(running))
 
-		killed, err := jobs.Find(jobs.JobFilter{
+		killed, err := persistence.Jobs().Find(meeseeks.JobFilter{
 			Limit: 5,
 			Match: func(j meeseeks.Job) bool {
-				return j.Status == jobs.KilledStatus
+				return j.Status == meeseeks.JobKilledStatus
 			},
 		})
 		mocks.Must(t, "get killed jobs", err)

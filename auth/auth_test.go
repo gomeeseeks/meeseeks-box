@@ -14,30 +14,40 @@ func Test_Auth(t *testing.T) {
 	auth.Configure(map[string][]string{
 		auth.AdminGroup: {"admin_user"},
 	})
-	commands.Add("any", shell.New(shell.CommandOpts{
-		Cmd:          "any",
-		AuthStrategy: auth.AuthStrategyAny,
-	}))
-	commands.Add("none", shell.New(shell.CommandOpts{
-		Cmd:          "none",
-		AuthStrategy: auth.AuthStrategyNone,
-	}))
-	commands.Add("admins", shell.New(shell.CommandOpts{
-		Cmd:           "none",
-		AuthStrategy:  auth.AuthStrategyAllowedGroup,
-		AllowedGroups: []string{auth.AdminGroup},
-	}))
-	commands.Add("general-channel-only", shell.New(shell.CommandOpts{
-		Cmd:             "none",
-		AuthStrategy:    auth.AuthStrategyAny,
-		AllowedChannels: []string{"general"},
-		ChannelStrategy: "channel",
-	}))
-	commands.Add("im-only", shell.New(shell.CommandOpts{
-		Cmd:             "none",
-		AuthStrategy:    auth.AuthStrategyAny,
-		ChannelStrategy: "im_only",
-	}))
+	commands.Add(
+		commands.CommandRegistration{
+			Name: "any",
+			Cmd: shell.New(meeseeks.CommandOpts{
+				Cmd:          "any",
+				AuthStrategy: auth.AuthStrategyAny,
+			})},
+		commands.CommandRegistration{
+			Name: "none",
+			Cmd: shell.New(meeseeks.CommandOpts{
+				Cmd:          "none",
+				AuthStrategy: auth.AuthStrategyNone,
+			})},
+		commands.CommandRegistration{
+			Name: "admins",
+			Cmd: shell.New(meeseeks.CommandOpts{
+				Cmd:           "none",
+				AuthStrategy:  auth.AuthStrategyAllowedGroup,
+				AllowedGroups: []string{auth.AdminGroup},
+			})},
+		commands.CommandRegistration{
+			Name: "general-channel-only",
+			Cmd: shell.New(meeseeks.CommandOpts{
+				Cmd:             "none",
+				AuthStrategy:    auth.AuthStrategyAny,
+				AllowedChannels: []string{"general"},
+				ChannelStrategy: "channel",
+			})},
+		commands.CommandRegistration{
+			Name: "im-only", Cmd: shell.New(meeseeks.CommandOpts{
+				Cmd:             "none",
+				AuthStrategy:    auth.AuthStrategyAny,
+				ChannelStrategy: "im_only",
+			})})
 
 	tt := []struct {
 		name     string

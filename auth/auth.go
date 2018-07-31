@@ -14,10 +14,10 @@ const AdminGroup = "admin"
 
 // CommandAuthorization represents the authorization model for a command
 type CommandAuthorization interface {
-	AuthStrategy() string
-	AllowedGroups() []string
-	ChannelStrategy() string
-	AllowedChannels() []string
+	GetAuthStrategy() string
+	GetAllowedGroups() []string
+	GetChannelStrategy() string
+	GetAllowedChannels() []string
 }
 
 // Authorizer is the interface used to check if a user is allowed to run a command
@@ -68,7 +68,7 @@ var channelStrategies = map[string]Authorizer{
 
 // Check checks if a user is allowed to run a command given the command authorization strategy
 func Check(req meeseeks.Request, cmd CommandAuthorization) error {
-	authStrategy, ok := authStrategies[cmd.AuthStrategy()]
+	authStrategy, ok := authStrategies[cmd.GetAuthStrategy()]
 	if !ok {
 		log.Errorf("Command does not have a valid auth strategy, falling back to none: %+v", cmd)
 		authStrategy = authStrategies[AuthStrategyNone]
@@ -78,7 +78,7 @@ func Check(req meeseeks.Request, cmd CommandAuthorization) error {
 		return err
 	}
 
-	channelStrategy, ok := channelStrategies[cmd.ChannelStrategy()]
+	channelStrategy, ok := channelStrategies[cmd.GetChannelStrategy()]
 	if !ok {
 		log.Errorf("Command does not have a valid auth strategy, falling back to any: %+v", cmd)
 		channelStrategy = channelStrategies[ChannelStrategyAny]
@@ -109,7 +109,7 @@ type userInGroupAllowed struct {
 func (a userInGroupAllowed) Check(req meeseeks.Request, cmd CommandAuthorization) error {
 	username := req.Username
 
-	for _, group := range cmd.AllowedGroups() {
+	for _, group := range cmd.GetAllowedGroups() {
 		err := groups.CheckUserInGroup(username, group)
 		switch err {
 		case nil:
@@ -208,7 +208,7 @@ type channelExplicitlyAllowed struct{}
 
 // Check implements Authorizer.Check
 func (a channelExplicitlyAllowed) Check(req meeseeks.Request, cmd CommandAuthorization) error {
-	for _, ch := range cmd.AllowedChannels() {
+	for _, ch := range cmd.GetAllowedChannels() {
 		if req.Channel == ch {
 			return nil
 		}

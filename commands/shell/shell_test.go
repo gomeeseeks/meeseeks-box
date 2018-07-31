@@ -10,33 +10,33 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/mocks"
 )
 
-var echoCommand = shell.New(shell.CommandOpts{
+var echoCommand = shell.New(meeseeks.CommandOpts{
 	Cmd:  "echo",
-	Help: shell.NewHelp("command that prints back the arguments passed"),
+	Help: meeseeks.NewHelp("command that prints back the arguments passed"),
 })
 
-var failCommand = shell.New(shell.CommandOpts{
+var failCommand = shell.New(meeseeks.CommandOpts{
 	Cmd:  "false",
-	Help: shell.NewHelp("command that fails"),
+	Help: meeseeks.NewHelp("command that fails"),
 })
 
-var sleepCommand = shell.New(shell.CommandOpts{
+var sleepCommand = shell.New(meeseeks.CommandOpts{
 	Cmd:  "sleep",
 	Args: []string{"10"},
-	Help: shell.NewHelp("command that sleeps"),
+	Help: meeseeks.NewHelp("command that sleeps"),
 })
 
 func TestShellCommand(t *testing.T) {
-	mocks.AssertEquals(t, "echo", echoCommand.Cmd())
-	mocks.AssertEquals(t, []string{}, echoCommand.Args())
-	mocks.AssertEquals(t, []string{}, echoCommand.AllowedGroups())
-	mocks.AssertEquals(t, []string{}, echoCommand.AllowedChannels())
+	mocks.AssertEquals(t, "echo", echoCommand.GetCmd())
+	mocks.AssertEquals(t, []string{}, echoCommand.GetArgs())
+	mocks.AssertEquals(t, []string{}, echoCommand.GetAllowedGroups())
+	mocks.AssertEquals(t, []string{}, echoCommand.GetAllowedChannels())
 	mocks.AssertEquals(t, false, echoCommand.HasHandshake())
-	mocks.AssertEquals(t, true, echoCommand.Record())
-	mocks.AssertEquals(t, map[string]string{}, echoCommand.Templates())
-	mocks.AssertEquals(t, meeseeks.DefaultCommandTimeout, echoCommand.Timeout())
-	mocks.AssertEquals(t, "command that prints back the arguments passed", echoCommand.Help().GetSummary())
-	mocks.AssertEquals(t, []string{}, echoCommand.Help().GetArgs())
+	mocks.AssertEquals(t, true, echoCommand.MustRecord())
+	mocks.AssertEquals(t, map[string]string{}, echoCommand.GetTemplates())
+	mocks.AssertEquals(t, meeseeks.DefaultCommandTimeout, echoCommand.GetTimeout())
+	mocks.AssertEquals(t, "command that prints back the arguments passed", echoCommand.GetHelp().GetSummary())
+	mocks.AssertEquals(t, []string{}, echoCommand.GetHelp().GetArgs())
 }
 
 func TestExecuteEcho(t *testing.T) {
@@ -46,7 +46,7 @@ func TestExecuteEcho(t *testing.T) {
 			Request: meeseeks.Request{Args: []string{"hello", "meeseeks\nsecond line"}},
 		})
 		mocks.Must(t, "failed to execute echo command", err)
-		mocks.AssertEquals(t, "hello meeseeks\nsecond line", out)
+		mocks.AssertEquals(t, "hello meeseeks\nsecond line\n", out)
 	})
 }
 

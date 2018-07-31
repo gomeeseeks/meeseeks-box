@@ -14,8 +14,6 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/persistence/db"
-	"github.com/gomeeseeks/meeseeks-box/persistence/logs"
-	"github.com/gomeeseeks/meeseeks-box/persistence/logs/provider"
 	"github.com/gomeeseeks/meeseeks-box/text/formatter"
 
 	"github.com/sirupsen/logrus"
@@ -167,8 +165,6 @@ func WithTmpDB(f func(dbpath string)) error {
 		Mode:    0600,
 		Timeout: 1 * time.Second,
 	})
-
-	logs.Configure(provider.New(provider.LocalLogger))
 
 	f(dbpath)
 
