@@ -9,6 +9,7 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -34,21 +35,23 @@ func (c *Configuration) GetGRPCTimeout() time.Duration {
 
 // GetOptions returns the grpc connection options
 func (c *Configuration) GetOptions() []grpc.DialOption {
-	if c.Options == nil {
-		return []grpc.DialOption{
-			grpc.WithInsecure(),
-			grpc.WithKeepaliveParams(
-				keepalive.ClientParameters{
-					Time:                5 * time.Second,
-					PermitWithoutStream: true,
-					Timeout:             c.GetGRPCTimeout(),
-				},
-			),
-			grpc.WithBackoffMaxDelay(5 * time.Second),
-			grpc.WithTimeout(c.GetGRPCTimeout()),
-		}
+	opts := []grpc.DialOption{
+		grpc.WithKeepaliveParams(
+			keepalive.ClientParameters{
+				Time:                5 * time.Second,
+				PermitWithoutStream: true,
+				Timeout:             c.GetGRPCTimeout(),
+			},
+		),
+		grpc.WithBackoffMaxDelay(5 * time.Second),
+		grpc.WithTimeout(c.GetGRPCTimeout()),
+		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
+		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
-	return c.Options
+	if c.Options == nil {
+		opts = append(opts, grpc.WithInsecure())
+	}
+	return opts
 }
 
 func (c *Configuration) createAgentConfiguration(agentID string) *api.AgentConfiguration {

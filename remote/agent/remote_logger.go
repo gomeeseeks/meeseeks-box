@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
@@ -20,16 +21,20 @@ func (g grpcLogWriter) Append(jobID uint64, content string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), g.timeoutSeconds)
 	defer cancel()
 
-	w, e := g.client.Append(ctx)
-	if e != nil {
-		return e
+	w, err := g.client.Append(ctx)
+	if err != nil {
+		return fmt.Errorf("Failed to get a remote appender for job %d: %s", jobID, err)
 	}
 
 	logrus.Debugf("sending log job %d - '%s'", jobID, content)
-	return w.Send(&api.LogEntry{
+	err = w.Send(&api.LogEntry{
 		JobID: jobID,
 		Line:  content,
 	})
+	if err != nil {
+		logrus.Errorf("failed to send log to remote appender %d - '%s'", jobID, err)
+	}
+	return err
 }
 
 // SetError implements LogWritter.SetError

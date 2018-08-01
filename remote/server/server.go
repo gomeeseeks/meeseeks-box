@@ -6,6 +6,7 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -17,9 +18,14 @@ type RemoteServer struct {
 
 // New creates a new RemoteServer with an address
 func New() *RemoteServer {
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+	)
 	api.RegisterLogWriterServer(s, logWriterServer{})
 	api.RegisterCommandPipelineServer(s, newCommandPipelineServer())
+
+	grpc_prometheus.Register(s)
 
 	return &RemoteServer{
 		server: s,

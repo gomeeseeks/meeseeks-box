@@ -56,6 +56,26 @@
   version = "v1.2.0"
 
 [[projects]]
+  digest = "1:9a0b2dd1f882668a3d7fbcd424eed269c383a16f1faa3a03d14e0dd5fba571b1"
+  name = "github.com/grpc-ecosystem/go-grpc-middleware"
+  packages = [
+    "retry",
+    "util/backoffutils",
+    "util/metautils",
+  ]
+  pruneopts = ""
+  revision = "c250d6563d4d4c20252cd865923440e829844f4e"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:e24dc5ef44694848785de507f439a24e9e6d96d7b43b8cf3d6cfa857aa1e2186"
+  name = "github.com/grpc-ecosystem/go-grpc-prometheus"
+  packages = ["."]
+  pruneopts = ""
+  revision = "c225b8c3b01faf2899099b768856a9e916e5087b"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:ef0f9731bc6c3c59396adc50f36da36ca98c704812c449794f9326f7bc64b5f1"
   name = "github.com/jpillora/backoff"
   packages = ["."]
@@ -262,6 +282,8 @@
     "github.com/dustin/go-humanize",
     "github.com/golang/protobuf/proto",
     "github.com/google/uuid",
+    "github.com/grpc-ecosystem/go-grpc-middleware/retry",
+    "github.com/grpc-ecosystem/go-grpc-prometheus",
     "github.com/jpillora/backoff",
     "github.com/nlopes/slack",
     "github.com/onrik/logrus/filename",
