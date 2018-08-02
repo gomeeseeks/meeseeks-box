@@ -46,16 +46,17 @@ func Test_ConfigurationReading(t *testing.T) {
 		{
 			"With messages",
 			dedent.Dedent(`
-				messages:
-				  handshake: ["hallo"]
+				format:
+				  messages:
+				    handshake: ["hallo"]
 				`),
 			config.Config{
-				Messages: map[string][]string{
-					"handshake": {"hallo"},
-				},
 				Format: formatter.FormatConfig{
 					Colors:     defaultColors,
 					ReplyStyle: map[string]string{},
+					Messages: map[string][]string{
+						"handshake": {"hallo"},
+					},
 				},
 				Database: defaultDatabase,
 				Pool:     20,

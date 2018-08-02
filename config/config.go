@@ -39,7 +39,7 @@ func LoadConfig(cnf Config) error {
 		return err
 	}
 	auth.Configure(cnf.Groups)
-	formatter.Configure(cnf.Messages, cnf.Format)
+	formatter.Configure(cnf.Format)
 
 	cmds := make([]commands.CommandRegistration, 0)
 
@@ -57,8 +57,7 @@ func LoadConfig(cnf Config) error {
 				Help: meeseeks.NewHelp(
 					cmd.Help.Summary,
 					cmd.Help.Args...),
-				Templates: cmd.Templates,
-				Timeout:   cmd.Timeout * time.Second,
+				Timeout: cmd.Timeout * time.Second,
 			})})
 	}
 	return commands.Add(cmds...)
@@ -99,7 +98,6 @@ func New(r io.Reader) (Config, error) {
 // Config is the struct used to load MrMeeseeks configuration yaml
 type Config struct {
 	Database db.DatabaseConfig      `yaml:"database"`
-	Messages map[string][]string    `yaml:"messages"`
 	Commands map[string]Command     `yaml:"commands"`
 	Groups   map[string][]string    `yaml:"groups"`
 	Pool     int                    `yaml:"pool"`
@@ -108,16 +106,15 @@ type Config struct {
 
 // Command is the struct that handles a command configuration
 type Command struct {
-	Cmd             string            `yaml:"command"`
-	Args            []string          `yaml:"args"`
-	AllowedGroups   []string          `yaml:"allowed_groups"`
-	AuthStrategy    string            `yaml:"auth_strategy"`
-	ChannelStrategy string            `yaml:"channel_strategy"`
-	AllowedChannels []string          `yaml:"allowed_channels"`
-	NoHandshake     bool              `yaml:"no_handshake"`
-	Timeout         time.Duration     `yaml:"timeout"`
-	Templates       map[string]string `yaml:"templates"`
-	Help            CommandHelp       `yaml:"help"`
+	Cmd             string        `yaml:"command"`
+	Args            []string      `yaml:"args"`
+	AllowedGroups   []string      `yaml:"allowed_groups"`
+	AuthStrategy    string        `yaml:"auth_strategy"`
+	ChannelStrategy string        `yaml:"channel_strategy"`
+	AllowedChannels []string      `yaml:"allowed_channels"`
+	NoHandshake     bool          `yaml:"no_handshake"`
+	Timeout         time.Duration `yaml:"timeout"`
+	Help            CommandHelp   `yaml:"help"`
 }
 
 // CommandHelp is the struct that handles the help of a command

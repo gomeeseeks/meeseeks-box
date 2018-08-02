@@ -38,9 +38,8 @@ message RemoteCommand {
     repeated string AllowedGroups = 3;
     string ChannelStrategy = 4;
     repeated string AllowedChannels = 5;
-    map<string, string> Templates = 6;
-    Help help = 7;
-    bool hasHandshake = 8;
+    Help help = 6;
+    bool hasHandshake = 7;
 }
 
 message Empty {

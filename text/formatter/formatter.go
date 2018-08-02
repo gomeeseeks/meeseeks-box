@@ -24,8 +24,10 @@ type MessageColors struct {
 
 // FormatConfig contains the formatting configurations
 type FormatConfig struct {
-	Colors     MessageColors     `yaml:"colors"`
-	ReplyStyle map[string]string `yaml:"reply_styles"`
+	Colors     MessageColors       `yaml:"colors"`
+	ReplyStyle map[string]string   `yaml:"reply_styles"`
+	Templates  map[string]string   `yaml:"templates"`
+	Messages   map[string][]string `yaml:"messages"`
 }
 
 // Formatter keeps the colors and templates used to format a reply message
@@ -38,8 +40,8 @@ type Formatter struct {
 var formatter *Formatter
 
 // Configure sets up the singleton formatter
-func Configure(messages map[string][]string, cnf FormatConfig) {
-	builder := template.NewBuilder().WithMessages(messages)
+func Configure(cnf FormatConfig) {
+	builder := template.NewBuilder().WithMessages(cnf.Messages).WithTemplates(cnf.Templates)
 	formatter = &Formatter{
 		replyStyle: replyStyle{cnf.ReplyStyle},
 		colors:     cnf.Colors,

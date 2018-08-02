@@ -32,7 +32,13 @@ func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
 		},
 	})
 	mocks.Must(t, "failed to connect agent", client.Connect())
-	mocks.Must(t, "failed to register and run agent", client.Run())
+
+	w := make(chan interface{})
+	go func() {
+		w <- true
+		client.Run()
+	}()
+	<-w
 	defer client.Shutdown()
 
 	_, ok := commands.Find(&meeseeks.Request{
