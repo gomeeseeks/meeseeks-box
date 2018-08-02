@@ -99,12 +99,14 @@ func launch(args args) (func(), error) {
 	cnf, err := config.LoadFile(args.ConfigFile)
 	must("failed to load configuration file: %s", err)
 
+	httpServer := listenHTTP(args)
+
 	switch args.ExecutionMode {
 	case "server":
 		must("could not load configuration: %s", config.LoadConfig(cnf))
 		must("Could not flush running jobs after: %s", persistence.Jobs().FailRunningJobs())
 
-		httpServer := listenHTTP(args)
+		metrics.RegisterServerMetrics()
 		remoteServer := startRemoteServer(args)
 
 		slackClient := connectToSlack(args)
@@ -128,6 +130,8 @@ func launch(args args) (func(), error) {
 		}, nil
 
 	case "agent":
+		// metrics.RegisterAgentMetrics()
+
 		remoteClient := agent.New(agent.Configuration{
 			ServerURL:   args.AgentOf,
 			Token:       "null-token",

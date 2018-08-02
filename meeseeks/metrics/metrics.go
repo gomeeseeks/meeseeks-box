@@ -77,6 +77,12 @@ func init() {
 	bootTime.Set(float64(time.Now().Unix()))
 	buildInfo.WithLabelValues(version.Name, version.Version, version.Date, version.Commit).Set(1)
 
+	prometheus.MustRegister(buildInfo)
+	prometheus.MustRegister(bootTime)
+}
+
+// RegisterServerMetrics registers all the metrics thar belong to a meeseeks server
+func RegisterServerMetrics() {
 	prometheus.MustRegister(ReceivedCommandsCount)
 	prometheus.MustRegister(AliasedCommandsCount)
 	prometheus.MustRegister(UnknownCommandsCount)
@@ -84,8 +90,6 @@ func init() {
 	prometheus.MustRegister(AcceptedCommandsCount)
 	prometheus.MustRegister(TaskDurations)
 	prometheus.MustRegister(LogLinesCount)
-	prometheus.MustRegister(buildInfo)
-	prometheus.MustRegister(bootTime)
 }
 
 // RegisterPath registers prometheus metrics path
