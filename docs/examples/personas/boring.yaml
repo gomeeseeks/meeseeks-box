@@ -1,0 +1,13 @@
+format:
+  reply_styles:
+    handshake: text
+    success: text
+    failure: text
+    unknowncommand: text
+    unauthorized: text
+  templates:
+    handshake: "{{ .command }} accepted"
+    success: "{{ .command }} succeeded {{ with $out := .output }}\n```\n{{ $out }}```{{ end }}"
+    failure: "{{ .command }} failed: {{ .error }} {{ with $out := .output }}\n```\n{{ $out }}```{{ end }}"
+    unknowncommand: "{{ .command }} is not a valid command"
+    unauthorized: "{{ .command }} is not allowed to the requester"

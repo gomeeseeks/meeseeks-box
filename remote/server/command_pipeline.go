@@ -132,7 +132,6 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 					AllowedGroups:   cmd.GetAllowedGroups(),
 					AuthStrategy:    cmd.GetAuthStrategy(),
 					ChannelStrategy: cmd.GetChannelStrategy(),
-					Templates:       cmd.GetTemplates(),
 					Handshake:       cmd.GetHasHandshake(),
 					Timeout:         time.Duration(cmd.GetTimeout()) * time.Second,
 					Help: meeseeks.NewHelp(

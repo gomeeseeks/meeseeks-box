@@ -1,31 +1,32 @@
-messages:
-  handshake:
-  - "Pardon me for breathing, which I never do anyway so I don't know why I bother to say it, oh God, I'm so depressed. Here's another one of those self-satisfied doors. Life! Don't talk to me about life."
-  - "I think you ought to know I’m feeling very depressed."
-  - "Oh, fine, if you happen to like being me, which personally I don't."
-  - "I ache, therefore I am."
-  - "The best conversation I had was over forty million years ago, And that was with a coffee machine."
-  - "I won’t enjoy it."
-  - "Life, loathe it or ignore it, you can't like it."
-  - "On being left in a parking lot for 500 million years. The first ten million years were the worst, and the second ten million years, they were the worst too. The third ten million years I didn't enjoy at all. After that it went into a bit of a decline."
-  failure:
-  - "Funny, how just when you think life can't possibly get any worse it suddenly does."
-  - "But I'm quite used to being humiliated, I can even go and stick my head in a bucket of water if you like. Would you like me to go and stick my head in a bucket of water? I've got one ready. Wait a minute."
-  - "Why should I want to make anything up? Life’s bad enough as it is without wanting to invent any more of it."
-  success:
-  - "I would like to say that it is a very great pleasure, honour and privilege for me to open this bridge, but I can't because my lying circuits are all out of commission."
-  - "On the topic of everything, ever: I've seen it. It's rubbish."
-  - "I know. Wretched, isn’t it?"
-  - "Spend a few thousand million years in a job and eventually you get promoted, I have my own bucket now. Finally, I am somebody."
-  unknowncommand:
-  - "I don't know, I've never been to"
-  - "Don’t pretend you want to talk to me, I know you hate me. I can't do"
-  - "That depends on whether or not I can find my frilly apron. With my luck, I probably can."
-  - "I'd give you advice, but you wouldn't listen. No one ever does. No"
-  unauthorized:
-  - "Well, I wish you'd just tell me rather than try to engage my enthusiasm, because I haven't got one."
-  - "I could calculate your chance of survival, but you won't like it."
-  - "It gives me a headache just trying to think down to your level."
-  - "It’s the people you meet in this job that really get you down."
-  - "Here I am, brain the size of a planet and they ask me to take you down to the bridge. Call that job satisfaction? 'Cos I don't."
-  - "Do you want me to sit in a corner and rust or just fall apart where I'm standing?"
+format:
+  messages:
+    handshake:
+    - "Pardon me for breathing, which I never do anyway so I don't know why I bother to say it, oh God, I'm so depressed. Here's another one of those self-satisfied doors. Life! Don't talk to me about life."
+    - "I think you ought to know I’m feeling very depressed."
+    - "Oh, fine, if you happen to like being me, which personally I don't."
+    - "I ache, therefore I am."
+    - "The best conversation I had was over forty million years ago, And that was with a coffee machine."
+    - "I won’t enjoy it."
+    - "Life, loathe it or ignore it, you can't like it."
+    - "On being left in a parking lot for 500 million years. The first ten million years were the worst, and the second ten million years, they were the worst too. The third ten million years I didn't enjoy at all. After that it went into a bit of a decline."
+    failure:
+    - "Funny, how just when you think life can't possibly get any worse it suddenly does."
+    - "But I'm quite used to being humiliated, I can even go and stick my head in a bucket of water if you like. Would you like me to go and stick my head in a bucket of water? I've got one ready. Wait a minute."
+    - "Why should I want to make anything up? Life’s bad enough as it is without wanting to invent any more of it."
+    success:
+    - "I would like to say that it is a very great pleasure, honour and privilege for me to open this bridge, but I can't because my lying circuits are all out of commission."
+    - "On the topic of everything, ever: I've seen it. It's rubbish."
+    - "I know. Wretched, isn’t it?"
+    - "Spend a few thousand million years in a job and eventually you get promoted, I have my own bucket now. Finally, I am somebody."
+    unknowncommand:
+    - "I don't know, I've never been to"
+    - "Don’t pretend you want to talk to me, I know you hate me. I can't do"
+    - "That depends on whether or not I can find my frilly apron. With my luck, I probably can."
+    - "I'd give you advice, but you wouldn't listen. No one ever does. No"
+    unauthorized:
+    - "Well, I wish you'd just tell me rather than try to engage my enthusiasm, because I haven't got one."
+    - "I could calculate your chance of survival, but you won't like it."
+    - "It gives me a headache just trying to think down to your level."
+    - "It’s the people you meet in this job that really get you down."
+    - "Here I am, brain the size of a planet and they ask me to take you down to the bridge. Call that job satisfaction? 'Cos I don't."
+    - "Do you want me to sit in a corner and rust or just fall apart where I'm standing?"
