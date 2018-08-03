@@ -12,18 +12,24 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 )
 
+// SecurityModeServerCert TLS Security Mode with server cert
+const SecurityModeServerCert = "tls"
+
 // Configuration holds the client configuration used to connect to the server
 type Configuration struct {
-	ServerURL string
-	// Options     []grpc.DialOption
-	GRPCTimeout  time.Duration
-	InsecureGRPC bool
-	Token        string
-	Labels       map[string]string
-	Commands     map[string]config.Command
+	ServerURL   string
+	GRPCTimeout time.Duration
+
+	SecurityMode string
+	ServerCert   string
+
+	Token    string
+	Labels   map[string]string
+	Commands map[string]config.Command
 }
 
 // GetGRPCTimeout returns the configured timeout or a default of 10 seconds
@@ -49,7 +55,16 @@ func (c *Configuration) GetOptions() []grpc.DialOption {
 		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
-	if c.InsecureGRPC {
+	switch c.SecurityMode {
+	case SecurityModeServerCert:
+		creds, err := credentials.NewServerTLSFromFile(c.ServerCert, "")
+		if err != nil {
+			logrus.Fatalf("could not load server cert: %s", err)
+		}
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+
+	default:
+		logrus.Warnf("using insecure client mode")
 		opts = append(opts, grpc.WithInsecure())
 	}
 	return opts
