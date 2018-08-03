@@ -21,9 +21,10 @@ func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
 	}()
 
 	client := agent.New(agent.Configuration{
-		GRPCTimeout: 1 * time.Second,
-		ServerURL:   "localhost:9698",
-		Labels:      map[string]string{"tier": "testing"},
+		GRPCTimeout:  1 * time.Second,
+		InsecureGRPC: true,
+		ServerURL:    "localhost:9698",
+		Labels:       map[string]string{"tier": "testing"},
 		Commands: map[string]config.Command{
 			"remote-echo": {
 				Cmd:     "/bin/echo",

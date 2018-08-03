@@ -51,6 +51,7 @@ type args struct {
 	AgentOf           string
 	GRPCServerAddress string
 	GRPCServerEnabled bool
+	GRPCInsecure      bool
 }
 
 func parseArgs() args {
@@ -66,6 +67,7 @@ func parseArgs() args {
 	agentOf := flag.String("agent-of", "", "remote server to connect to, enables agent mode")
 	grpcServerAddress := flag.String("grpc-address", ":9697", "grpc server endpoint, used to connect remote agents")
 	grpcServerEnabled := flag.Bool("with-grpc-server", false, "enable grpc remote server to connect to")
+	grpcInsecure := flag.Bool("with-insecure-grpc", false, "allow insecure grpc connections")
 
 	flag.Parse()
 
@@ -91,6 +93,7 @@ func parseArgs() args {
 		AgentOf:           *agentOf,
 		GRPCServerAddress: *grpcServerAddress,
 		GRPCServerEnabled: *grpcServerEnabled,
+		GRPCInsecure:      *grpcInsecure,
 		ExecutionMode:     executionMode,
 	}
 }

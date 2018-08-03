@@ -17,12 +17,13 @@ import (
 
 // Configuration holds the client configuration used to connect to the server
 type Configuration struct {
-	ServerURL   string
-	Options     []grpc.DialOption
-	GRPCTimeout time.Duration
-	Token       string
-	Labels      map[string]string
-	Commands    map[string]config.Command
+	ServerURL string
+	// Options     []grpc.DialOption
+	GRPCTimeout  time.Duration
+	InsecureGRPC bool
+	Token        string
+	Labels       map[string]string
+	Commands     map[string]config.Command
 }
 
 // GetGRPCTimeout returns the configured timeout or a default of 10 seconds
@@ -48,7 +49,7 @@ func (c *Configuration) GetOptions() []grpc.DialOption {
 		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
-	if c.Options == nil {
+	if c.InsecureGRPC {
 		opts = append(opts, grpc.WithInsecure())
 	}
 	return opts
