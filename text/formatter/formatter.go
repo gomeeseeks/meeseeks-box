@@ -5,6 +5,8 @@ import (
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/text/template"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Default colors
@@ -86,12 +88,15 @@ func SuccessReply(req meeseeks.Request) Reply {
 }
 
 func (f Formatter) newReplier(action string, req meeseeks.Request) Reply {
+	style := f.replyStyle.Get(action)
+	logrus.Debugf("creating replier '%s' for action %s", style, action)
+
 	return Reply{
 		action:  action,
 		request: req,
 
 		templates: f.templates.Clone(),
-		style:     f.replyStyle.Get(action),
+		style:     style,
 		colors:    f.colors,
 	}
 }

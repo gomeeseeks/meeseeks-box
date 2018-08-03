@@ -20,7 +20,10 @@ var errIgnoredMessage = fmt.Errorf("ignore this message")
 var errNoCommandToRun = fmt.Errorf("no command to run")
 
 const (
-	textStyle = "text"
+	textStyle     = "text"
+	nullStyle     = "null"
+	nilStyle      = "nil"
+	disabledStyle = "disabled"
 )
 
 // Client is a chat client
@@ -85,7 +88,11 @@ func (c Client) IsIM(channelID string) bool {
 }
 
 func (c Client) getReplyStyle(style string) replyStyle {
+	logrus.Debugf("fetching reply style %s", style)
+
 	switch style {
+	case nullStyle, disabledStyle, nilStyle:
+		return nullReplyStyle{}
 	case textStyle:
 		return textReplyStyle{client: c.apiClient}
 	default:
@@ -280,7 +287,6 @@ func (c *Client) Listen(ch chan<- meeseeks.Request) {
 
 // Reply replies to the user building a regular message
 func (c *Client) Reply(r formatter.Reply) {
-
 	c.getReplyStyle(r.ReplyStyle()).Reply(r)
 }
 
@@ -339,6 +345,13 @@ func (t textReplyStyle) Reply(r formatter.Reply) {
 	if _, _, err = t.client.PostMessage(r.ChannelID(), content, params); err != nil {
 		logrus.Errorf("failed post message %s on %s: %s", content, r.ChannelID(), err)
 	}
+}
+
+type nullReplyStyle struct{}
+
+func (c nullReplyStyle) Reply(r formatter.Reply) {
+	// Do nothing! that's the beauty of null!
+	logrus.Debugf("Ignoring reply %#v, the null formatter is like this", r)
 }
 
 // message a chat message
