@@ -8,25 +8,45 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 	"github.com/sirupsen/logrus"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type logWriterServer struct{}
 
 func (logWriterServer) Append(writer api.LogWriter_AppendServer) error {
+Loop:
 	for {
 		entry, err := writer.Recv()
 		if err == io.EOF {
 			logrus.Errorf("got EOF receiving log entry")
-			break
+			break Loop
 		}
+
+		errCode := status.Code(err)
+		switch errCode {
+		case codes.OK:
+			logrus.Debugf("logline received is OK, continuing")
+
+		case codes.Canceled, codes.DeadlineExceeded:
+			logrus.Infof("timed out waiting for new log lines, breaking out")
+			break Loop
+
+		default:
+			logrus.Errorf("logger erred out with: %v - %s", errCode, err)
+			break Loop
+
+		}
+
+		err = persistence.LogWriter().Append(entry.GetJobID(), entry.GetLine())
 		if err != nil {
 			logrus.Errorf("got error receiving log entry: %s", err)
-			break
+		} else {
+			logrus.Debugf("appended new log line to job %d", entry.GetJobID())
 		}
-		if err := persistence.LogWriter().Append(entry.GetJobID(), entry.GetLine()); err != nil {
-			logrus.Errorf("got error receiving log entry: %s", err)
-			break
-		}
+
+		break Loop
 	}
 	return writer.SendAndClose(&api.Empty{})
 }

@@ -26,7 +26,7 @@ import (
 func main() {
 	args := parseArgs()
 
-	setLogLevel(args)
+	configureLogger(args)
 
 	shutdownFunc, err := launch(args)
 	must("could not launch meeseeks-box: %s", err)
@@ -99,13 +99,14 @@ func launch(args args) (func(), error) {
 	cnf, err := config.LoadFile(args.ConfigFile)
 	must("failed to load configuration file: %s", err)
 
+	httpServer := listenHTTP(args)
+
 	switch args.ExecutionMode {
 	case "server":
 		must("could not load configuration: %s", config.LoadConfig(cnf))
+		must("Could not flush running jobs after: %s", persistence.Jobs().FailRunningJobs())
 
-		cleanupPendingJobs()
-
-		httpServer := listenHTTP(args)
+		metrics.RegisterServerMetrics()
 		remoteServer := startRemoteServer(args)
 
 		slackClient := connectToSlack(args)
@@ -129,6 +130,8 @@ func launch(args args) (func(), error) {
 		}, nil
 
 	case "agent":
+		// metrics.RegisterAgentMetrics()
+
 		remoteClient := agent.New(agent.Configuration{
 			ServerURL:   args.AgentOf,
 			Token:       "null-token",
@@ -154,7 +157,7 @@ func launch(args args) (func(), error) {
 	}
 }
 
-func setLogLevel(args args) {
+func configureLogger(args args) {
 	logrus.AddHook(filename.NewHook())
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -163,10 +166,6 @@ func setLogLevel(args args) {
 	if args.DebugMode {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-}
-
-func cleanupPendingJobs() {
-	must("Could not flush running jobs after: %s", persistence.Jobs().FailRunningJobs())
 }
 
 func connectToSlack(args args) *slack.Client {
@@ -185,15 +184,12 @@ func connectToSlack(args args) *slack.Client {
 }
 
 func listenHTTP(args args) *http.Server {
-	logrus.Debug("Creating a new http server")
 	httpServer := http.New(args.Address)
 	metrics.RegisterPath(args.MetricsPath)
 
 	go func() {
 		logrus.Debug("Listening on http")
-		// err :=
 		httpServer.ListenAndServe()
-		// must("Could not start HTTP server: %s", err)
 	}()
 	logrus.Infof("Started HTTP server on %s", args.Address)
 
