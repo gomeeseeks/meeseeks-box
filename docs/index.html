@@ -470,7 +470,7 @@ commands:
 <li><code>args</code>: list of arguments to always prepend to the command<br /></li>
 <li><code>timeout</code>: how long we allow the command to run until we cancel it, in<br />
 seconds, 60 by default<br /></li>
-<li><code>auth_strategy</code>: defined the authorization strategy<br />
+<li><code>auth_strategy</code>: defines the authorization strategy<br />
 
 <ul>
 <li><code>any</code>: everyone will be allowed to run this command<br /></li>
@@ -479,6 +479,15 @@ permissions have to be explicit and conscious)<br /></li>
 <li><code>group</code>: use <code>allowed_groups</code> to control who has access to this command<br /></li>
 </ul></li>
 <li><code>allowed_groups</code>: list of groups allowed to run this command<br /></li>
+<li><code>channel_strategy</code>: defines the channel authorization strategy<br />
+
+<ul>
+<li><code>any</code>: the command can be invoked from any channel<br /></li>
+<li><code>im_only</code>: the command can only be invoked in an direct message conversation<br /></li>
+<li><code>channel</code>: use <code>allowed_channels</code> to define which channels are allowed to invoke the command<br /></li>
+</ul></li>
+<li><code>allowed_channels</code>: list of channels allowed to run this command, any if the list is empty.<br /></li>
+<li><code>no_handshake</code>: when true, the bot will not issue a handshake message when the command is accepted.<br /></li>
 <li><code>help</code>: help structure to be printed when using the builtin <code>help</code> command<br /></li>
 <li><code>templates</code>: adds the capacity to change how the replies from this command<br />
 are represented, check the Templating help for more details.<br />
@@ -500,6 +509,10 @@ commands:
       - &quot;container-image:latest&quot;
     auth_strategy: group
     allowed_groups: [&quot;docker&quot;]
+    channel_strategy: &quot;channel&quot;
+    allowed_channels:
+      - &quot;general&quot;
+    no_handshake: true
     help:
       summary: &quot;Run the container-image docker image passing arguments in&quot;
       args:
