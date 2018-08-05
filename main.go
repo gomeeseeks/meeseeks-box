@@ -51,6 +51,9 @@ type args struct {
 	AgentOf           string
 	GRPCServerAddress string
 	GRPCServerEnabled bool
+	GRPCSecurityMode  string
+	GRPCCertPath      string
+	GRPCKeyPath       string
 }
 
 func parseArgs() args {
@@ -66,6 +69,10 @@ func parseArgs() args {
 	agentOf := flag.String("agent-of", "", "remote server to connect to, enables agent mode")
 	grpcServerAddress := flag.String("grpc-address", ":9697", "grpc server endpoint, used to connect remote agents")
 	grpcServerEnabled := flag.Bool("with-grpc-server", false, "enable grpc remote server to connect to")
+
+	grpcSecurityMode := flag.String("grpc-security-mode", "insecure", "grpc security mode, by default insecure, can be set to tls (for now)")
+	grpcCertPath := flag.String("grpc-cert-path", "", "Cert to use with the GRPC server")
+	grpcKeyPath := flag.String("grpc-key-path", "", "Key to use with the GRPC server")
 
 	flag.Parse()
 
@@ -91,7 +98,12 @@ func parseArgs() args {
 		AgentOf:           *agentOf,
 		GRPCServerAddress: *grpcServerAddress,
 		GRPCServerEnabled: *grpcServerEnabled,
-		ExecutionMode:     executionMode,
+
+		GRPCSecurityMode: *grpcSecurityMode,
+		GRPCCertPath:     *grpcCertPath,
+		GRPCKeyPath:      *grpcKeyPath,
+
+		ExecutionMode: executionMode,
 	}
 }
 
@@ -107,7 +119,8 @@ func launch(args args) (func(), error) {
 		must("Could not flush running jobs after: %s", persistence.Jobs().FailRunningJobs())
 
 		metrics.RegisterServerMetrics()
-		remoteServer := startRemoteServer(args)
+		remoteServer, err := startRemoteServer(args)
+		must("could not start GRPC server: %s", err)
 
 		slackClient := connectToSlack(args)
 		apiService := startAPI(slackClient, args)
@@ -133,11 +146,13 @@ func launch(args args) (func(), error) {
 		// metrics.RegisterAgentMetrics()
 
 		remoteClient := agent.New(agent.Configuration{
-			ServerURL:   args.AgentOf,
-			Token:       "null-token",
-			GRPCTimeout: 10 * time.Second,
-			Commands:    cnf.Commands,
-			Labels:      map[string]string{},
+			ServerURL:    args.AgentOf,
+			Token:        "null-token",
+			GRPCTimeout:  10 * time.Second,
+			Commands:     cnf.Commands,
+			Labels:       map[string]string{},
+			SecurityMode: args.GRPCSecurityMode,
+			CertPath:     args.GRPCCertPath,
 			// Options: add some options so we have at least some security, or at least make insecure optional
 		})
 
@@ -201,8 +216,15 @@ func startAPI(client *slack.Client, args args) *api.Service {
 	return api.New(client, args.APIPath)
 }
 
-func startRemoteServer(args args) *server.RemoteServer {
-	s := server.New()
+func startRemoteServer(args args) (*server.RemoteServer, error) {
+	s, err := server.New(server.Config{
+		CertPath:     args.GRPCCertPath,
+		KeyPath:      args.GRPCKeyPath,
+		SecurityMode: args.GRPCSecurityMode,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not create GRPC Server: %s", err)
+	}
 	if args.GRPCServerEnabled {
 		logrus.Debugf("starting grpc remote server on %s", args.GRPCServerAddress)
 		go func() {
@@ -210,7 +232,7 @@ func startRemoteServer(args args) *server.RemoteServer {
 		}()
 	}
 
-	return s
+	return s, nil
 }
 
 func waitForSignals(shutdownGracefully func()) {

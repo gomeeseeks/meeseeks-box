@@ -11,7 +11,8 @@ import (
 )
 
 func TestAgentCanConnect(t *testing.T) {
-	s := server.New()
+	s, err := server.New(server.Config{})
+	mocks.Must(t, "failed to create grpc server", err)
 	defer s.Shutdown()
 
 	go func() {

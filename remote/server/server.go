@@ -8,20 +8,49 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/sirupsen/logrus"
+
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
+
+// SecurityModeTLS means TLS security mode with server cert
+const SecurityModeTLS = "tls"
 
 // RemoteServer is a remote server, duh
 type RemoteServer struct {
 	server *grpc.Server
+	config Config
+}
+
+// Config represents the grpc server configuration
+type Config struct {
+	CertPath     string
+	KeyPath      string
+	SecurityMode string
 }
 
 // New creates a new RemoteServer with an address
-func New() *RemoteServer {
-	s := grpc.NewServer(
+func New(c Config) (*RemoteServer, error) {
+
+	options := []grpc.ServerOption{
 		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
-	)
+	}
+
+	switch c.SecurityMode {
+	case SecurityModeTLS:
+		creds, err := credentials.NewServerTLSFromFile(c.CertPath, c.KeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("could not configure tls credentials: %s", err)
+		}
+		options = append(options, grpc.Creds(creds))
+
+	default:
+		logrus.Warnf("starting server in insecure mode (without encryption)")
+	}
+
+	s := grpc.NewServer(options...)
+
 	api.RegisterLogWriterServer(s, logWriterServer{})
 	api.RegisterCommandPipelineServer(s, newCommandPipelineServer())
 
@@ -29,7 +58,8 @@ func New() *RemoteServer {
 
 	return &RemoteServer{
 		server: s,
-	}
+		config: c,
+	}, nil
 }
 
 // Listen starts the listening of a remote server
