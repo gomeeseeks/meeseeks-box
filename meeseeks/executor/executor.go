@@ -98,10 +98,6 @@ func (m *Executor) Run() {
 			continue
 		}
 
-		if cmd == nil {
-			logrus.Warnf("somehow cmd is nil with req %#v", req)
-			continue
-		}
 		if err := auth.Check(req, cmd); err != nil {
 			m.client.Reply(formatter.UnauthorizedCommandReply(req))
 			metrics.RejectedCommandsCount.WithLabelValues(req.Command).Inc()
