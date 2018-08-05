@@ -57,7 +57,7 @@ func (c *Configuration) GetOptions() []grpc.DialOption {
 	}
 	switch c.SecurityMode {
 	case SecurityModeServerCert:
-		creds, err := credentials.NewServerTLSFromFile(c.ServerCert, "")
+		creds, err := credentials.NewClientTLSFromFile(c.ServerCert, "")
 		if err != nil {
 			logrus.Fatalf("could not load server cert: %s", err)
 		}

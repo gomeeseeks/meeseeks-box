@@ -146,11 +146,13 @@ func launch(args args) (func(), error) {
 		// metrics.RegisterAgentMetrics()
 
 		remoteClient := agent.New(agent.Configuration{
-			ServerURL:   args.AgentOf,
-			Token:       "null-token",
-			GRPCTimeout: 10 * time.Second,
-			Commands:    cnf.Commands,
-			Labels:      map[string]string{},
+			ServerURL:    args.AgentOf,
+			Token:        "null-token",
+			GRPCTimeout:  10 * time.Second,
+			Commands:     cnf.Commands,
+			Labels:       map[string]string{},
+			SecurityMode: args.GRPCSecurityMode,
+			ServerCert:   args.GRPCServerCertPath,
 			// Options: add some options so we have at least some security, or at least make insecure optional
 		})
 
