@@ -73,7 +73,7 @@ func TestAgentTLSCanConnectAndRegisterACommand(t *testing.T) {
 		GRPCTimeout:  1 * time.Second,
 		ServerURL:    "localhost:9698",
 		SecurityMode: "tls",
-		ServerCert:   "../../config/test-fixtures/cert.pem",
+		CertPath:     "../../config/test-fixtures/cert.pem",
 		Labels:       map[string]string{"tier": "testing"},
 		Commands: map[string]config.Command{
 			"remote-echo": {

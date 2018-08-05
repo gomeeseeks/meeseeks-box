@@ -39,21 +39,21 @@ func main() {
 }
 
 type args struct {
-	ConfigFile         string
-	DebugMode          bool
-	StealthMode        bool
-	DebugSlack         bool
-	Address            string
-	APIPath            string
-	MetricsPath        string
-	SlackToken         string
-	ExecutionMode      string
-	AgentOf            string
-	GRPCServerAddress  string
-	GRPCServerEnabled  bool
-	GRPCSecurityMode   string
-	GRPCServerCertPath string
-	GRPCServerKeyPath  string
+	ConfigFile        string
+	DebugMode         bool
+	StealthMode       bool
+	DebugSlack        bool
+	Address           string
+	APIPath           string
+	MetricsPath       string
+	SlackToken        string
+	ExecutionMode     string
+	AgentOf           string
+	GRPCServerAddress string
+	GRPCServerEnabled bool
+	GRPCSecurityMode  string
+	GRPCCertPath      string
+	GRPCKeyPath       string
 }
 
 func parseArgs() args {
@@ -71,8 +71,8 @@ func parseArgs() args {
 	grpcServerEnabled := flag.Bool("with-grpc-server", false, "enable grpc remote server to connect to")
 
 	grpcSecurityMode := flag.String("grpc-security-mode", "insecure", "grpc security mode, by default insecure, can be set to tls (for now)")
-	grpcServerCertPath := flag.String("grpc-server-cert-path", "", "Cert to use with the GRPC server")
-	grpcServerKeyPath := flag.String("grpc-server-key-path", "", "Key to use with the GRPC server")
+	grpcCertPath := flag.String("grpc-cert-path", "", "Cert to use with the GRPC server")
+	grpcKeyPath := flag.String("grpc-key-path", "", "Key to use with the GRPC server")
 
 	flag.Parse()
 
@@ -99,9 +99,9 @@ func parseArgs() args {
 		GRPCServerAddress: *grpcServerAddress,
 		GRPCServerEnabled: *grpcServerEnabled,
 
-		GRPCSecurityMode:   *grpcSecurityMode,
-		GRPCServerCertPath: *grpcServerCertPath,
-		GRPCServerKeyPath:  *grpcServerKeyPath,
+		GRPCSecurityMode: *grpcSecurityMode,
+		GRPCCertPath:     *grpcCertPath,
+		GRPCKeyPath:      *grpcKeyPath,
 
 		ExecutionMode: executionMode,
 	}
@@ -152,7 +152,7 @@ func launch(args args) (func(), error) {
 			Commands:     cnf.Commands,
 			Labels:       map[string]string{},
 			SecurityMode: args.GRPCSecurityMode,
-			ServerCert:   args.GRPCServerCertPath,
+			CertPath:     args.GRPCCertPath,
 			// Options: add some options so we have at least some security, or at least make insecure optional
 		})
 
@@ -218,8 +218,8 @@ func startAPI(client *slack.Client, args args) *api.Service {
 
 func startRemoteServer(args args) (*server.RemoteServer, error) {
 	s, err := server.New(server.Config{
-		CertPath:     args.GRPCServerCertPath,
-		KeyPath:      args.GRPCServerKeyPath,
+		CertPath:     args.GRPCCertPath,
+		KeyPath:      args.GRPCKeyPath,
 		SecurityMode: args.GRPCSecurityMode,
 	})
 	if err != nil {

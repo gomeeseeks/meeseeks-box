@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// TLS Security Model
+// SecurityModeTLS means TLS security mode with server cert
 const SecurityModeTLS = "tls"
 
 // RemoteServer is a remote server, duh

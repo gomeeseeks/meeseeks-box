@@ -16,8 +16,8 @@ import (
 	"google.golang.org/grpc/keepalive"
 )
 
-// SecurityModeServerCert TLS Security Mode with server cert
-const SecurityModeServerCert = "tls"
+// SecurityModeTLS means TLS security mode with server cert
+const SecurityModeTLS = "tls"
 
 // Configuration holds the client configuration used to connect to the server
 type Configuration struct {
@@ -25,7 +25,7 @@ type Configuration struct {
 	GRPCTimeout time.Duration
 
 	SecurityMode string
-	ServerCert   string
+	CertPath     string
 
 	Token    string
 	Labels   map[string]string
@@ -56,8 +56,8 @@ func (c *Configuration) GetOptions() []grpc.DialOption {
 		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
 	}
 	switch c.SecurityMode {
-	case SecurityModeServerCert:
-		creds, err := credentials.NewClientTLSFromFile(c.ServerCert, "")
+	case SecurityModeTLS:
+		creds, err := credentials.NewClientTLSFromFile(c.CertPath, "")
 		if err != nil {
 			logrus.Fatalf("could not load server cert: %s", err)
 		}
