@@ -63,6 +63,28 @@ func Test_MarkSuccessFul(t *testing.T) {
 		}
 	}))
 }
+func Test_MarkFailedWorks(t *testing.T) {
+	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
+		job, err := persistence.Jobs().Create(req)
+		mocks.Must(t, "Could not store a job: ", err)
+
+		running, err := persistence.Jobs().Get(job.ID)
+		mocks.Must(t, "Could not retrieve a job: ", err)
+
+		mocks.AssertEquals(t, running.Status, meeseeks.JobRunningStatus)
+
+		err = persistence.Jobs().Fail(job.ID)
+		mocks.Must(t, "could not set as successful", err)
+
+		actual, err := persistence.Jobs().Get(job.ID)
+		mocks.Must(t, "Could not retrieve a job: ", err)
+
+		mocks.AssertEquals(t, actual.Status, meeseeks.JobFailedStatus)
+		if !actual.EndTime.After(job.StartTime) {
+			t.Fatal("End time should be after start time")
+		}
+	}))
+}
 func Test_FilterReturnsInOrder(t *testing.T) {
 	mocks.Must(t, "failed to run tests", mocks.WithTmpDB(func(_ string) {
 		persistence.Jobs().Create(req)
@@ -120,4 +142,10 @@ func TestFailRunningJobsLeavesNoJobRunning(t *testing.T) {
 		mocks.Must(t, "get killed jobs", err)
 		mocks.AssertEquals(t, 3, len(killed))
 	}))
+}
+
+func TestNullWorks(t *testing.T) {
+	n := persistence.Jobs().Null(req)
+	mocks.AssertEquals(t, uint64(0), n.ID)
+	mocks.AssertEquals(t, meeseeks.JobRunningStatus, n.Status)
 }
