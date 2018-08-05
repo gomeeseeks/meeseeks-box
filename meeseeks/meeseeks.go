@@ -107,7 +107,6 @@ type Command interface {
 
 	GetCmd() string
 	HasHandshake() bool
-	GetTemplates() map[string]string
 	GetAuthStrategy() string
 	GetAllowedGroups() []string
 	GetChannelStrategy() string
@@ -221,21 +220,12 @@ type CommandOpts struct {
 	ChannelStrategy string
 	Handshake       bool
 	Timeout         time.Duration
-	Templates       map[string]string
 	Help            Help
 }
 
 // HasHandshake indicates if this command should show the handshake message or not
 func (o CommandOpts) HasHandshake() bool {
 	return o.Handshake
-}
-
-// GetTemplates returns the templates used to show different kinds of replies
-func (o CommandOpts) GetTemplates() map[string]string {
-	if o.Templates == nil {
-		return map[string]string{}
-	}
-	return o.Templates
 }
 
 // GetAuthStrategy returns the defined auth strategy, or none

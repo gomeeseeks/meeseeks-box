@@ -33,7 +33,6 @@ func TestShellCommand(t *testing.T) {
 	mocks.AssertEquals(t, []string{}, echoCommand.GetAllowedChannels())
 	mocks.AssertEquals(t, false, echoCommand.HasHandshake())
 	mocks.AssertEquals(t, true, echoCommand.MustRecord())
-	mocks.AssertEquals(t, map[string]string{}, echoCommand.GetTemplates())
 	mocks.AssertEquals(t, meeseeks.DefaultCommandTimeout, echoCommand.GetTimeout())
 	mocks.AssertEquals(t, "command that prints back the arguments passed", echoCommand.GetHelp().GetSummary())
 	mocks.AssertEquals(t, []string{}, echoCommand.GetHelp().GetArgs())

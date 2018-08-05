@@ -192,21 +192,6 @@ func AddHelpCommand(c map[string]meeseeks.Command) {
 	}
 }
 
-type plainTemplates struct{}
-
-func (p plainTemplates) GetTemplates() map[string]string {
-	return map[string]string{
-		template.Success: fmt.Sprintf("{{ .user }} {{ AnyValue \"%s\" . }}{{ with $out := .output }}\n{{ $out }}{{ end }}", template.Success),
-	}
-}
-
-type defaultTemplates struct {
-}
-
-func (d defaultTemplates) GetTemplates() map[string]string {
-	return template.GetDefaultTemplates()
-}
-
 type defaultTimeout struct{}
 
 func (d defaultTimeout) GetTimeout() time.Duration {
@@ -287,7 +272,6 @@ type versionCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -318,7 +302,6 @@ type helpCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 	commands map[string]meeseeks.Command
@@ -384,7 +367,6 @@ type cancelJobCommand struct {
 	emptyArgs
 	allowAll
 	anyChannel
-	defaultTemplates
 	defaultTimeout
 	cancelFunc func(jobID uint64)
 }
@@ -424,7 +406,6 @@ type killJobCommand struct {
 	emptyArgs
 	allowAdmins
 	anyChannel
-	defaultTemplates
 	defaultTimeout
 	cancelFunc func(jobID uint64)
 }
@@ -461,7 +442,6 @@ type groupsCommand struct {
 	emptyArgs
 	allowAdmins
 	anyChannel
-	plainTemplates
 	defaultTimeout
 }
 
@@ -489,7 +469,6 @@ type jobsCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -557,7 +536,6 @@ type auditCommand struct {
 	noRecord
 	allowAdmins
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -605,7 +583,6 @@ type lastCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -648,7 +625,6 @@ type findJobCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -689,7 +665,6 @@ type auditJobCommand struct {
 	noRecord
 	allowAdmins
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -727,7 +702,6 @@ type auditLogsCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	defaultTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -765,7 +739,6 @@ type tailCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	defaultTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -799,7 +772,6 @@ type headCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	defaultTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -833,7 +805,6 @@ type logsCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	defaultTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -873,7 +844,6 @@ type newAPITokenCommand struct {
 	noRecord
 	allowAdmins
 	imOnlyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -898,7 +868,6 @@ type revokeAPITokenCommand struct {
 	noRecord
 	allowAdmins
 	imOnlyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -921,7 +890,6 @@ type listAPITokensCommand struct {
 	noRecord
 	allowAdmins
 	imOnlyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -992,7 +960,6 @@ type newAliasCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -1017,7 +984,6 @@ type deleteAliasCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
@@ -1041,7 +1007,6 @@ type getAliasesCommand struct {
 	noRecord
 	allowAll
 	anyChannel
-	plainTemplates
 	emptyArgs
 	defaultTimeout
 }
