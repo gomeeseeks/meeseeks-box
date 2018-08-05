@@ -41,6 +41,7 @@ func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
 	}()
 	<-w
 	defer client.Shutdown()
+	defer commands.Reset()
 
 	_, ok := commands.Find(&meeseeks.Request{
 		Command:     "remote-echo",
@@ -64,6 +65,7 @@ func TestAgentTLSCanConnectAndRegisterACommand(t *testing.T) {
 	})
 	mocks.Must(t, "failed to create grpc server", err)
 	defer s.Shutdown()
+	defer commands.Reset()
 
 	go func() {
 		mocks.Must(t, "Failed to start server", s.Listen(":9698"))
