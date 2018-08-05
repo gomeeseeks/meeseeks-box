@@ -240,17 +240,14 @@ func waitForSignals(shutdownGracefully func()) {
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 
 Loop:
-	for { // Listen for a signal forever
-		select {
-		case sig := <-signalCh:
-			switch sig {
-			case syscall.SIGINT, syscall.SIGTERM:
-				logrus.Infof("Got signal %s, shutting down gracefully", sig)
-				break Loop
+	for sig := range signalCh { // Listen for a signal forever
+		switch sig {
+		case syscall.SIGINT, syscall.SIGTERM:
+			logrus.Infof("Got signal %s, shutting down gracefully", sig)
+			break Loop
 
-			case syscall.SIGHUP:
-				toggleDebugLogging()
-			}
+		case syscall.SIGHUP:
+			toggleDebugLogging()
 		}
 	}
 
