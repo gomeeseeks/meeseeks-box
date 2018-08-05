@@ -51,17 +51,6 @@ func Configure(cnf FormatConfig) {
 	}
 }
 
-// Templates returns a clone of the default templates ready to be consumed
-func Templates() template.Templates {
-	return formatter.templates.Clone().Build()
-}
-
-// WithTemplates returns a clone of the default templates with the templates
-// passed as argument applied on top
-func WithTemplates(templates map[string]string) template.Templates {
-	return formatter.templates.Clone().WithTemplates(templates).Build()
-}
-
 // HandshakeReply creates a reply for a handshake message
 func HandshakeReply(req meeseeks.Request) Reply {
 	return formatter.newReplier(template.Handshake, req)
