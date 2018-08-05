@@ -142,7 +142,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 
 		e := executor.New(executor.Args{
 			ChatClient:          client,
-			WithBuiltinCommands: false,
+			WithBuiltinCommands: true,
 			ConcurrentTaskCount: 1,
 		})
 		e.ListenTo(client)
