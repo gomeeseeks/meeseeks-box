@@ -42,13 +42,17 @@ func Test_BuiltinCommands(t *testing.T) {
 			func(_ uint64) {})})
 
 	tt := []struct {
-		name          string
-		req           meeseeks.Request
-		job           meeseeks.Job
-		setup         func()
-		expected      string
-		expectedMatch string
-		expectedError error
+		name                    string
+		req                     meeseeks.Request
+		job                     meeseeks.Job
+		setup                   func()
+		expected                string
+		expectedMatch           string
+		expectedError           error
+		expectedAuthStrategy    string
+		expectedAllowedGroups   []string
+		expectedChannelStrategy string
+		expectedAllowedChannels []string
 	}{
 		{
 			name: "version command",
@@ -57,8 +61,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job:      meeseeks.Job{},
-			expected: "meeseeks-box version , commit , built on ",
+			job:                     meeseeks.Job{},
+			expected:                "meeseeks-box version , commit , built on ",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "help non builtins command",
@@ -67,8 +73,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				UserID:  "userid",
 			},
 
-			job:      meeseeks.Job{Request: meeseeks.Request{Args: []string{}}},
-			expected: "",
+			job:                     meeseeks.Job{Request: meeseeks.Request{Args: []string{}}},
+			expected:                "",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "help all command",
@@ -98,6 +106,8 @@ func Test_BuiltinCommands(t *testing.T) {
 - unalias: deletes an alias
 - version: prints the running meeseeks version
 `,
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "help one command",
@@ -114,6 +124,8 @@ func Test_BuiltinCommands(t *testing.T) {
 - command the token will be calling
 - arguments to pass to the command
 `,
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "groups command",
@@ -127,6 +139,9 @@ func Test_BuiltinCommands(t *testing.T) {
 - admins: admin_user
 - other: user_one, user_two
 `,
+			expectedAuthStrategy:    auth.AuthStrategyAllowedGroup,
+			expectedAllowedGroups:   []string{auth.AdminGroup},
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test jobs command",
@@ -143,7 +158,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				mocks.Must(t, "could not create job", err)
 				persistence.Jobs().Succeed(j.ID)
 			},
-			expected: "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
+			expected:                "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test audit command",
@@ -160,7 +177,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				mocks.Must(t, "could not create job", err)
 				persistence.Jobs().Succeed(j.ID)
 			},
-			expected: "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
+			expected:                "*1* - now - *command* by *someone* in *<#123>* - *Successful*\n",
+			expectedAuthStrategy:    auth.AuthStrategyAllowedGroup,
+			expectedAllowedGroups:   []string{auth.AdminGroup},
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test jobs command with limit",
@@ -176,7 +196,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				persistence.Jobs().Create(req)
 				persistence.Jobs().Create(req)
 			},
-			expected: "*2* - now - *command* by *someone* in *<#123>* - *Running*\n",
+			expected:                "*2* - now - *command* by *someone* in *<#123>* - *Running*\n",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test jobs command on IM",
@@ -198,7 +220,9 @@ func Test_BuiltinCommands(t *testing.T) {
 					IsIM:      true,
 				})
 			},
-			expected: "*1* - now - *command* by *someone* in *DM* - *Running*\n",
+			expected:                "*1* - now - *command* by *someone* in *DM* - *Running*\n",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test last command",
@@ -215,7 +239,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				persistence.Jobs().Create(req)
 				persistence.Jobs().Create(req)
 			},
-			expected: "* *ID* 3\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
+			expected:                "* *ID* 3\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test find command",
@@ -231,7 +257,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				persistence.Jobs().Create(req)
 				persistence.Jobs().Create(req)
 			},
-			expected: "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
+			expected:                "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test alias command",
@@ -246,7 +274,9 @@ func Test_BuiltinCommands(t *testing.T) {
 					Args:    []string{"command", "for", "-add", "alias"},
 					UserID:  "userid",
 				}},
-			expected: "alias created successfully",
+			expected:                "alias created successfully",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test aliases command",
@@ -268,7 +298,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				err = persistence.Aliases().Create("userid", "second", "another", []string{"-command"}...)
 				mocks.Must(t, "create second alias", err)
 			},
-			expected: "- *first* - `command -with args`\n- *second* - `another -command`\n",
+			expected:                "- *first* - `command -with args`\n- *second* - `another -command`\n",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test unalias command",
@@ -294,7 +326,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				mocks.Must(t, "delete first alias", err)
 
 			},
-			expected: "- *second* - `another -command`\n",
+			expected:                "- *second* - `another -command`\n",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test alias execution",
@@ -328,7 +362,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				mocks.Must(t, "do nothing", err)
 
 			},
-			expected: "*1* - now - *noop* by ** in ** - *Running*\n",
+			expected:                "*1* - now - *noop* by ** in ** - *Running*\n",
+			expectedAuthStrategy:    auth.AuthStrategyAllowedGroup,
+			expectedAllowedGroups:   []string{auth.AdminGroup},
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test auditjob command",
@@ -344,7 +381,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				persistence.Jobs().Create(req)
 				persistence.Jobs().Create(req)
 			},
-			expected: "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
+			expected:                "* *ID* 1\n* *Status* Running\n* *Command* command\n* *Args* \"arg1\" \"arg2\" \n* *Where* <#123>\n* *When* now\n",
+			expectedAuthStrategy:    auth.AuthStrategyAllowedGroup,
+			expectedAllowedGroups:   []string{auth.AdminGroup},
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test tail command with jobID",
@@ -376,7 +416,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				w.Append(j.ID, "line 2.2")
 				w.Append(j.ID, "line 2.3")
 			},
-			expected: "line 1.4",
+			expected:                "line 1.4",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test tail command",
@@ -406,7 +448,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				w.Append(j.ID, "line 2.2")
 				w.Append(j.ID, "line 2.3")
 			},
-			expected: "line 2.2\nline 2.3",
+			expected:                "line 2.2\nline 2.3",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test head command",
@@ -432,7 +476,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				w.Append(j.ID, "line 2.2")
 				w.Append(j.ID, "something to say 2")
 			},
-			expected: "line 2.1\nline 2.2",
+			expected:                "line 2.1\nline 2.2",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test head command with jobID",
@@ -460,7 +506,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				w.Append(j.ID, "line 2.2")
 				w.Append(j.ID, "something to say 2")
 			},
-			expected: "line 1.1",
+			expected:                "line 1.1",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test logs command",
@@ -483,7 +531,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				w = persistence.LogWriter()
 				w.Append(j.ID, "something to say 2")
 			},
-			expected: "something to say 1",
+			expected:                "something to say 1",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test auditlogs command",
@@ -506,7 +556,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				w = persistence.LogWriter()
 				w.Append(j.ID, "something to say 2")
 			},
-			expected: "something to say 1",
+			expected:                "something to say 1",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test token-new command",
@@ -518,7 +570,10 @@ func Test_BuiltinCommands(t *testing.T) {
 			job: meeseeks.Job{
 				Request: meeseeks.Request{Username: "admin_user", IsIM: true, Args: []string{"admin_user", "yolo", "rm", "-rf"}},
 			},
-			expectedMatch: "created token .*",
+			expectedMatch:           "created token .*",
+			expectedAuthStrategy:    auth.AuthStrategyAllowedGroup,
+			expectedAllowedGroups:   []string{auth.AdminGroup},
+			expectedChannelStrategy: auth.ChannelStrategyIMOnly,
 		},
 		{
 			name: "test tokens command",
@@ -539,7 +594,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				mocks.Must(t, "create token", err)
 
 			},
-			expectedMatch: "- \\*.*?\\* userLink at channelLink _something_",
+			expectedMatch:           "- \\*.*?\\* userLink at channelLink _something_",
+			expectedAuthStrategy:    auth.AuthStrategyAllowedGroup,
+			expectedAllowedGroups:   []string{auth.AdminGroup},
+			expectedChannelStrategy: auth.ChannelStrategyIMOnly,
 		},
 		{
 			name: "test kill job command",
@@ -549,7 +607,9 @@ func Test_BuiltinCommands(t *testing.T) {
 			},
 
 			job: meeseeks.Job{
-				Request: meeseeks.Request{Username: "someone", Args: []string{"1"}},
+				Request: meeseeks.Request{
+					Username: "someone",
+					Args:     []string{"1"}},
 			},
 			setup: func() {
 				_, err := persistence.Jobs().Create(req)
@@ -558,7 +618,10 @@ func Test_BuiltinCommands(t *testing.T) {
 				_, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 			},
-			expected: "Issued command cancellation to job 1",
+			expected:                "Issued command cancellation to job 1",
+			expectedAuthStrategy:    auth.AuthStrategyAllowedGroup,
+			expectedAllowedGroups:   []string{auth.AdminGroup},
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test cancel job command",
@@ -577,7 +640,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				_, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 			},
-			expected: "Issued command cancellation to job 2",
+			expected:                "Issued command cancellation to job 2",
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 		{
 			name: "test cancel job command with wrong user",
@@ -597,7 +662,9 @@ func Test_BuiltinCommands(t *testing.T) {
 				_, err = persistence.Jobs().Create(req)
 				mocks.Must(t, "create job", err)
 			},
-			expectedError: fmt.Errorf("no job could be found"),
+			expectedError:           fmt.Errorf("no job could be found"),
+			expectedAuthStrategy:    auth.AuthStrategyAny,
+			expectedChannelStrategy: auth.ChannelStrategyAny,
 		},
 	}
 
@@ -610,6 +677,29 @@ func Test_BuiltinCommands(t *testing.T) {
 				cmd, ok := commands.Find(&tc.req)
 				if !ok {
 					t.Fatalf("could not find command %s", tc.req.Command)
+				}
+
+				// mocks.AssertEquals(t, cmd.GetCmd(), tc.req.Command)
+				mocks.AssertEquals(t, cmd.GetTimeout(), meeseeks.DefaultCommandTimeout)
+				mocks.AssertEquals(t, []string{}, cmd.GetAllowedChannels())
+				mocks.AssertEquals(t, []string{}, cmd.GetArgs())
+				mocks.AssertEquals(t, false, cmd.MustRecord())
+				mocks.AssertEquals(t, false, cmd.HasHandshake())
+				mocks.AssertEquals(t, tc.expectedAuthStrategy, cmd.GetAuthStrategy())
+				switch tc.expectedAuthStrategy {
+				case auth.AuthStrategyAllowedGroup:
+					mocks.AssertEquals(t, tc.expectedAllowedGroups, cmd.GetAllowedGroups())
+				default:
+					mocks.AssertEquals(t, []string{}, cmd.GetAllowedGroups())
+				}
+
+				mocks.AssertEquals(t, tc.expectedChannelStrategy, cmd.GetChannelStrategy())
+				switch tc.expectedChannelStrategy {
+				case auth.ChannelStrategyAllowedChannels:
+					mocks.AssertEquals(t, tc.expectedAllowedChannels, cmd.GetAllowedChannels())
+				default:
+					mocks.AssertEquals(t, []string{}, cmd.GetAllowedChannels())
+
 				}
 
 				out, err := cmd.Execute(context.Background(), tc.job)

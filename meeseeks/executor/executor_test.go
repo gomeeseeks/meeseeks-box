@@ -51,6 +51,20 @@ func Test_MeeseeksInteractions(t *testing.T) {
 			},
 		},
 		{
+			name:      "help command",
+			userLink:  "<@myuser>",
+			channelID: "generalID",
+			cmd:       "help",
+			args:      []string{},
+			expected: []expectedMessage{
+				{
+					TextMatcher: "^<@myuser> .*\n```\n- args-echo: \n- disallowed: \n- echo: \n- fail: \n```$",
+					Channel:     "generalID",
+					IsIM:        false,
+				},
+			},
+		},
+		{
 			name:      "basic with cmds args",
 			userLink:  "<@myuser>",
 			channelID: "generalID",
@@ -142,7 +156,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 
 		e := executor.New(executor.Args{
 			ChatClient:          client,
-			WithBuiltinCommands: false,
+			WithBuiltinCommands: true,
 			ConcurrentTaskCount: 1,
 		})
 		e.ListenTo(client)
@@ -179,6 +193,7 @@ func Test_MeeseeksInteractions(t *testing.T) {
 				}
 			})
 		}
+		e.Shutdown()
 	})
 
 }
