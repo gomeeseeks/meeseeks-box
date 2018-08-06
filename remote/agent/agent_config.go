@@ -100,9 +100,9 @@ func (c *Configuration) createRemoteCommands() map[string]*api.RemoteCommand {
 func (c *Configuration) registerLocalCommands() error {
 	cmds := make([]commands.CommandRegistration, 0)
 	for name, cmd := range c.Commands {
-		cmds = append(cmds, commands.CommandRegistration{
-			Name: name,
-			Cmd: shell.New(meeseeks.CommandOpts{
+		cmds = append(cmds, commands.NewLocalCommand(
+			name,
+			shell.New(meeseeks.CommandOpts{
 				AuthStrategy:    cmd.AuthStrategy,
 				AllowedGroups:   cmd.AllowedGroups,
 				ChannelStrategy: cmd.ChannelStrategy,
@@ -114,7 +114,7 @@ func (c *Configuration) registerLocalCommands() error {
 					cmd.Help.Summary,
 					cmd.Help.Args...),
 				Timeout: cmd.Timeout * time.Second,
-			})})
+			})))
 	}
 	logrus.Debugf("registering commands: %#v", cmds)
 	return commands.Add(cmds...)

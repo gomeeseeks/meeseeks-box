@@ -61,8 +61,8 @@ func New(args Args) *Executor {
 	ac := newActiveCommands()
 	if args.WithBuiltinCommands {
 		commands.LoadBuiltins()
-		commands.Replace(commands.CommandRegistration{Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(ac.Cancel)})
-		commands.Replace(commands.CommandRegistration{Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(ac.Cancel)})
+		commands.Replace(commands.NewLocalCommand(builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(ac.Cancel)))
+		commands.Replace(commands.NewLocalCommand(builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(ac.Cancel)))
 	}
 
 	e := Executor{

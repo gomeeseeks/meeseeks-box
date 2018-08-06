@@ -39,8 +39,27 @@ func LoadBuiltins() {
 
 // CommandRegistration is used to register a new command in the commands map
 type CommandRegistration struct {
-	Name string
-	Cmd  meeseeks.Command
+	name  string
+	cmd   meeseeks.Command
+	local bool
+}
+
+// NewLocalCommand creates a new local command
+func NewLocalCommand(name string, cmd meeseeks.Command) CommandRegistration {
+	return CommandRegistration{
+		name:  name,
+		cmd:   cmd,
+		local: true,
+	}
+}
+
+// NewRemoteCommand creates a new local command
+func NewRemoteCommand(name string, cmd meeseeks.Command) CommandRegistration {
+	return CommandRegistration{
+		name:  name,
+		cmd:   cmd,
+		local: false,
+	}
 }
 
 // Add adds a new command to the map
@@ -49,26 +68,26 @@ func Add(cmds ...CommandRegistration) error {
 	defer mutex.Unlock()
 
 	for _, cmd := range cmds {
-		if _, ok := commands[cmd.Name]; ok {
-			return fmt.Errorf("command %s is already registered", cmd.Name)
+		if _, ok := commands[cmd.name]; ok {
+			return fmt.Errorf("command %s is already registered", cmd.name)
 		}
 	}
 
 	logrus.Debugf("appending commands %#v", cmds)
 
 	for _, cmd := range cmds {
-		commands[cmd.Name] = cmd.Cmd
+		commands[cmd.name] = cmd.cmd
 	}
 	return nil
 }
 
 // Replace replaces an already registered command
 func Replace(cmd CommandRegistration) {
-	if _, ok := commands[cmd.Name]; !ok {
-		logrus.Infof("command %s not found for replacing", cmd.Name)
+	if _, ok := commands[cmd.name]; !ok {
+		logrus.Infof("command %s not found for replacing", cmd.name)
 	}
 	logrus.Debugf("replacing command %#v", cmd)
-	commands[cmd.Name] = cmd.Cmd
+	commands[cmd.name] = cmd.cmd
 }
 
 // Remove unregisters commands from the registration list

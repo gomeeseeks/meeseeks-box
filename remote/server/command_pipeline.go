@@ -122,9 +122,9 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 
 	cmds := make([]commands.CommandRegistration, 0)
 	for name, cmd := range in.Commands {
-		cmds = append(cmds, commands.CommandRegistration{
-			Name: name,
-			Cmd: remoteCommand{
+		cmds = append(cmds, commands.NewRemoteCommand(
+			name,
+			remoteCommand{
 				agent: agent,
 				CommandOpts: meeseeks.CommandOpts{
 					Cmd:             name,
@@ -139,7 +139,7 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 						cmd.GetHelp().GetArgs()...),
 				},
 			},
-		})
+		))
 	}
 
 	p.lock.Lock()

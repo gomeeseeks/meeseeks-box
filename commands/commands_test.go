@@ -14,10 +14,10 @@ func TestAdAndFindCommands(t *testing.T) {
 		Cmd:  "echo",
 		Help: meeseeks.NewHelp("echo"),
 	})
-	mocks.Must(t, "could not add test command", commands.Add(commands.CommandRegistration{
-		Name: "test",
-		Cmd:  cmd,
-	}))
+	mocks.Must(t, "could not add test command", commands.Add(commands.NewLocalCommand(
+		"test",
+		cmd,
+	)))
 
 	c, ok := commands.Find(&meeseeks.Request{
 		Command: "test",
@@ -66,20 +66,20 @@ func TestAddExistingFailsButReplaceWorks(t *testing.T) {
 		Help: meeseeks.NewHelp("echo"),
 	})
 
-	mocks.Must(t, "could not add test command", commands.Add(commands.CommandRegistration{
-		Name: "test",
-		Cmd:  cmd,
-	}))
-	err := commands.Add(commands.CommandRegistration{
-		Name: "test",
-		Cmd:  cmd2,
-	})
+	mocks.Must(t, "could not add test command", commands.Add(commands.NewLocalCommand(
+		"test",
+		cmd,
+	)))
+	err := commands.Add(commands.NewRemoteCommand(
+		"test",
+		cmd2,
+	))
 	mocks.AssertEquals(t, "command test is already registered", err.Error())
 
-	commands.Replace(commands.CommandRegistration{
-		Name: "test",
-		Cmd:  cmd2,
-	})
+	commands.Replace(commands.NewRemoteCommand(
+		"test",
+		cmd2,
+	))
 	c, ok := commands.Find(&meeseeks.Request{
 		Command: "test",
 	})
@@ -89,8 +89,8 @@ func TestAddExistingFailsButReplaceWorks(t *testing.T) {
 
 	commands.Reset()
 
-	commands.Replace(commands.CommandRegistration{
-		Name: "test",
-		Cmd:  cmd2,
-	})
+	commands.Replace(commands.NewLocalCommand(
+		"test",
+		cmd2,
+	))
 }
