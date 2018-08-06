@@ -85,7 +85,7 @@ func (h Harness) Load() ClientStub {
 			Timeout: 2 * time.Second,
 		}
 	}
-	if err := config.LoadConfig(c); err != nil {
+	if err := config.LoadConfiguration(c); err != nil {
 		fmt.Printf("Failed to load configuration: %s", err)
 		return ClientStub{}
 	}

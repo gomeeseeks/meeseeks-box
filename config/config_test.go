@@ -156,20 +156,20 @@ func (badReader) Read(b []byte) (n int, err error) {
 }
 
 func Test_ConfigurationLoading(t *testing.T) {
-	_, err := config.LoadFile("./test-fixtures/empty-config.yml")
+	_, err := config.ReadFile("./test-fixtures/empty-config.yml")
 	mocks.AssertEquals(t, nil, err)
 }
 
 func Test_ConfigurationLoadNonExistingFile(t *testing.T) {
-	_, err := config.LoadFile("./test-fixtures/non-existing-config.yml")
+	_, err := config.ReadFile("./test-fixtures/non-existing-config.yml")
 	mocks.AssertEquals(t, "could not open configuration file ./test-fixtures/non-existing-config.yml: open ./test-fixtures/non-existing-config.yml: no such file or directory", err.Error())
 }
 
 func Test_ConfigurationBasicLoading(t *testing.T) {
-	c, err := config.LoadFile("./test-fixtures/basic-config.yml")
+	c, err := config.ReadFile("./test-fixtures/basic-config.yml")
 	mocks.AssertEquals(t, nil, err)
 	mocks.AssertEquals(t, "./meeseeks-workspace.db", c.Database.Path)
 	mocks.AssertEquals(t, 1, len(c.Commands))
 
-	mocks.Must(t, "failed to load configuration", config.LoadConfig(c))
+	mocks.Must(t, "failed to load configuration", config.LoadConfiguration(c))
 }

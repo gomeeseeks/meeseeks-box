@@ -1,16 +1,18 @@
 package db
 
 import (
-	"encoding/binary"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
+	"encoding/binary"
 	bolt "github.com/coreos/bbolt"
 )
 
 var databaseConfig DatabaseConfig
 var database *bolt.DB
+var mutex = sync.Mutex{}
 
 // DatabaseConfig holds the configuration for the BoltDB database
 type DatabaseConfig struct {
@@ -21,6 +23,9 @@ type DatabaseConfig struct {
 
 // Configure loads the required configuration to be able of connecting to a database
 func Configure(cnf DatabaseConfig) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	if database != nil { // Close the database if it is currently open. This is probably candidate for a mutex
 		database.Close()
 	}

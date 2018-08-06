@@ -108,14 +108,14 @@ func parseArgs() args {
 }
 
 func launch(args args) (func(), error) {
-	cnf, err := config.LoadFile(args.ConfigFile)
+	cnf, err := config.ReadFile(args.ConfigFile)
 	must("failed to load configuration file: %s", err)
 
 	httpServer := listenHTTP(args)
 
 	switch args.ExecutionMode {
 	case "server":
-		must("could not load configuration: %s", config.LoadConfig(cnf))
+		must("could not load configuration: %s", config.LoadConfiguration(cnf))
 		must("Could not flush running jobs after: %s", persistence.Jobs().FailRunningJobs())
 
 		metrics.RegisterServerMetrics()

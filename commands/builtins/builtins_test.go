@@ -32,14 +32,11 @@ var req = meeseeks.Request{
 
 func Test_BuiltinCommands(t *testing.T) {
 	auth.Configure(basicGroups)
-	commands.LoadBuiltins()
 
-	commands.Replace(commands.NewLocalCommand(
-		builtins.BuiltinCancelJobCommand, builtins.NewCancelJobCommand(
-			func(_ uint64) {})))
-	commands.Replace(commands.NewLocalCommand(
-		builtins.BuiltinKillJobCommand, builtins.NewKillJobCommand(
-			func(_ uint64) {})))
+	cancelCmd := builtins.NewCancelJobCommand(func(_ uint64) {})
+	killCmd := builtins.NewKillJobCommand(func(_ uint64) {})
+
+	builtins.LoadBuiltins(cancelCmd, killCmd)
 
 	tt := []struct {
 		name                    string

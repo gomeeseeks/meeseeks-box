@@ -4,61 +4,78 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/sirupsen/logrus"
 )
 
-var commands map[string]meeseeks.Command
-var mutex sync.Mutex
-
 func init() {
 	Reset()
 }
 
-// Reset flushes all the commands and loads only the builtins
+var commands map[string]commandHub
+var mutex sync.Mutex
+
+// Reset flushes all the commands
 func Reset() {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	commands = make(map[string]meeseeks.Command)
+	commands = make(map[string]commandHub)
 }
 
-// LoadBuiltins loads the builtin commands
-func LoadBuiltins() {
-	mutex.Lock()
-	defer mutex.Unlock()
+const (
+	kindLocalCommand   = "local"
+	kindRemoteCommand  = "remote"
+	kindBuiltinCommand = "builtin"
+)
 
-	for name, cmd := range builtins.Commands {
-		commands[name] = cmd
+type commandHub struct {
+	kind string
+	cmd  meeseeks.Command
+}
+
+// All returns all the currently registered commands
+func All() map[string]meeseeks.Command {
+	c := make(map[string]meeseeks.Command)
+	for name, hub := range commands {
+		c[name] = hub.cmd
 	}
-	builtins.AddHelpCommand(commands)
+	return c
 }
 
 // CommandRegistration is used to register a new command in the commands map
 type CommandRegistration struct {
-	name  string
-	cmd   meeseeks.Command
-	local bool
+	name string
+	cmd  meeseeks.Command
+	kind string
+}
+
+// NewBuiltinCommand creates a new local command
+func NewBuiltinCommand(name string, cmd meeseeks.Command) CommandRegistration {
+	return CommandRegistration{
+		name: name,
+		cmd:  cmd,
+		kind: kindLocalCommand,
+	}
 }
 
 // NewLocalCommand creates a new local command
 func NewLocalCommand(name string, cmd meeseeks.Command) CommandRegistration {
 	return CommandRegistration{
-		name:  name,
-		cmd:   cmd,
-		local: true,
+		name: name,
+		cmd:  cmd,
+		kind: kindLocalCommand,
 	}
 }
 
 // NewRemoteCommand creates a new local command
 func NewRemoteCommand(name string, cmd meeseeks.Command) CommandRegistration {
 	return CommandRegistration{
-		name:  name,
-		cmd:   cmd,
-		local: false,
+		name: name,
+		cmd:  cmd,
+		kind: kindRemoteCommand,
 	}
 }
 
@@ -76,18 +93,12 @@ func Add(cmds ...CommandRegistration) error {
 	logrus.Debugf("appending commands %#v", cmds)
 
 	for _, cmd := range cmds {
-		commands[cmd.name] = cmd.cmd
+		commands[cmd.name] = commandHub{
+			cmd:  cmd.cmd,
+			kind: cmd.kind,
+		}
 	}
 	return nil
-}
-
-// Replace replaces an already registered command
-func Replace(cmd CommandRegistration) {
-	if _, ok := commands[cmd.name]; !ok {
-		logrus.Infof("command %s not found for replacing", cmd.name)
-	}
-	logrus.Debugf("replacing command %#v", cmd)
-	commands[cmd.name] = cmd.cmd
 }
 
 // Remove unregisters commands from the registration list
@@ -123,9 +134,9 @@ func Find(req *meeseeks.Request) (meeseeks.Command, bool) {
 		req.Command = aliasedCommand
 		req.Args = append(args, req.Args...)
 
-		return cmd, ok
+		return cmd.cmd, ok
 	}
 
 	cmd, ok := commands[req.Command]
-	return cmd, ok
+	return cmd.cmd, ok
 }
