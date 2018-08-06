@@ -153,7 +153,6 @@ func launch(args args) (func(), error) {
 			Labels:       map[string]string{},
 			SecurityMode: args.GRPCSecurityMode,
 			CertPath:     args.GRPCCertPath,
-			// Options: add some options so we have at least some security, or at least make insecure optional
 		})
 
 		must("could not connect to remote server: %s", remoteClient.Connect())
@@ -237,7 +236,7 @@ func startRemoteServer(args args) (*server.RemoteServer, error) {
 
 func waitForSignals(shutdownGracefully func()) {
 	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
+	signal.Notify(signalCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 
 Loop:
 	for sig := range signalCh { // Listen for a signal forever
@@ -247,6 +246,9 @@ Loop:
 			break Loop
 
 		case syscall.SIGHUP:
+			// reload configuration
+
+		case syscall.SIGUSR1:
 			toggleDebugLogging()
 		}
 	}
