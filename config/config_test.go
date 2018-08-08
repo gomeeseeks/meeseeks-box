@@ -8,6 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+
+	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/config"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/persistence/db"
@@ -167,9 +171,44 @@ func Test_ConfigurationLoadNonExistingFile(t *testing.T) {
 
 func Test_ConfigurationBasicLoading(t *testing.T) {
 	c, err := config.ReadFile("./test-fixtures/basic-config.yml")
-	mocks.AssertEquals(t, nil, err)
+	mocks.Must(t, "could not read configuration file", err)
 	mocks.AssertEquals(t, "./meeseeks-workspace.db", c.Database.Path)
 	mocks.AssertEquals(t, 1, len(c.Commands))
 
 	mocks.Must(t, "failed to load configuration", config.LoadConfiguration(c))
+}
+
+func TestReloadingConfigurationReplacesThings(t *testing.T) {
+	c, err := config.ReadFile("./test-fixtures/basic-config.yml")
+	mocks.Must(t, "could not read configuration file", err)
+	mocks.Must(t, "failed to load configuration", config.LoadConfiguration(c))
+
+	mocks.AssertEquals(t, []string{"pablo"}, auth.GetGroups()["admin"])
+
+	first, ok := commands.Find(&meeseeks.Request{
+		Command: "echo",
+	})
+	mocks.AssertEquals(t, true, ok)
+
+	c, err = config.ReadFile("./test-fixtures/basic-config.1.yml")
+	mocks.Must(t, "could not read the second configuration file", err)
+	mocks.Must(t, "failed to load the second configuration", config.LoadConfiguration(c))
+
+	mocks.AssertEquals(t, []string{"daniele", "pablo"}, auth.GetGroups()["admin"])
+
+	second, ok := commands.Find(&meeseeks.Request{
+		Command: "echo",
+	})
+	mocks.AssertEquals(t, true, ok)
+
+	mocks.AssertEquals(t, first.GetCmd(), second.GetCmd())
+	mocks.AssertEquals(t, first.GetAllowedChannels(), second.GetAllowedChannels())
+	mocks.AssertEquals(t, first.HasHandshake(), second.HasHandshake())
+	mocks.AssertEquals(t, first.MustRecord(), second.MustRecord())
+
+	mocks.AssertEquals(t, first.GetTimeout(), 5*time.Second)
+	mocks.AssertEquals(t, second.GetTimeout(), 10*time.Second)
+
+	mocks.AssertEquals(t, first.GetAuthStrategy(), "any")
+	mocks.AssertEquals(t, second.GetAuthStrategy(), "group")
 }
