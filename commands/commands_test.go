@@ -36,6 +36,12 @@ func TestAddAndFindCommands(t *testing.T) {
 	mocks.AssertEquals(t, cmd, c)
 	mocks.AssertEquals(t, 1, len(cmds))
 
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Add(
+		commands.CommandRegistration{
+			Name: "test",
+			Cmd:  cmd,
+			Kind: commands.KindLocalCommand,
+		})), "command test is already registered")
 	commands.Remove("test")
 
 	_, ok = commands.Find(&meeseeks.Request{
