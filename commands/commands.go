@@ -69,9 +69,12 @@ func Register(cmds ...CommandRegistration) error {
 		if strings.TrimSpace(cmd.Kind) == "" {
 			return fmt.Errorf("Invalid command %s, it has no kind", cmd.Name)
 		}
-		// At some point it should simply be ok to re-register things
-		if _, ok := commands[cmd.Name]; ok {
-			return fmt.Errorf("command %s is already registered", cmd.Name)
+
+		if knownCommand, ok := commands[cmd.Name]; ok {
+			if knownCommand.kind != cmd.Kind {
+				return fmt.Errorf("Command %s would change the kind from %s to %s, this is not allowed",
+					cmd.Name, knownCommand.kind, cmd.Kind)
+			}
 		}
 	}
 

@@ -10,38 +10,33 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/mocks"
 )
 
+var echoCmd = shell.New(meeseeks.CommandOpts{
+	Cmd:  "echo",
+	Help: meeseeks.NewHelp("echo"),
+})
+
 func TestAddAndFindCommands(t *testing.T) {
-	cmd := shell.New(meeseeks.CommandOpts{
-		Cmd:  "echo",
-		Help: meeseeks.NewHelp("echo"),
-	})
 	mocks.Must(t, "could not add test command", commands.Register(
 		commands.CommandRegistration{
 			Name: "test",
-			Cmd:  cmd,
+			Cmd:  echoCmd,
 			Kind: commands.KindLocalCommand,
 		}))
+	defer commands.Unregister("test")
 
 	c, ok := commands.Find(&meeseeks.Request{
 		Command: "test",
 	})
 
 	mocks.AssertEquals(t, true, ok)
-	mocks.AssertEquals(t, cmd, c)
+	mocks.AssertEquals(t, echoCmd, c)
 
-	// Try through using All, we should get a map with only this cmd
 	cmds := commands.All()
 	c, ok = cmds["test"]
 	mocks.AssertEquals(t, true, ok)
-	mocks.AssertEquals(t, cmd, c)
+	mocks.AssertEquals(t, echoCmd, c)
 	mocks.AssertEquals(t, 1, len(cmds))
 
-	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
-		commands.CommandRegistration{
-			Name: "test",
-			Cmd:  cmd,
-			Kind: commands.KindLocalCommand,
-		})), "command test is already registered")
 	commands.Unregister("test")
 
 	_, ok = commands.Find(&meeseeks.Request{
@@ -53,18 +48,14 @@ func TestAddAndFindCommands(t *testing.T) {
 }
 
 func TestAddingAnInvalidCommandFails(t *testing.T) {
-	cmd := shell.New(meeseeks.CommandOpts{
-		Cmd:  "echo",
-		Help: meeseeks.NewHelp("echo"),
-	})
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
 			Name: "test",
-			Cmd:  cmd,
+			Cmd:  echoCmd,
 		})), "Invalid command test, it has no kind")
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
-			Cmd:  cmd,
+			Cmd:  echoCmd,
 			Kind: commands.KindLocalCommand,
 		})), "Invalid command, it has no name")
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
@@ -72,5 +63,21 @@ func TestAddingAnInvalidCommandFails(t *testing.T) {
 			Name: "test",
 			Kind: commands.KindLocalCommand,
 		})), "Invalid command test, it has no cmd")
+}
 
+func TestReRegisteringChangingKindFails(t *testing.T) {
+	mocks.Must(t, "could not register echo command", commands.Register(
+		commands.CommandRegistration{
+			Name: "echo",
+			Cmd:  echoCmd,
+			Kind: commands.KindLocalCommand,
+		}))
+	defer commands.Unregister("echo")
+
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
+		commands.CommandRegistration{
+			Name: "echo",
+			Cmd:  echoCmd,
+			Kind: commands.KindRemoteCommand,
+		})), "Command echo would change the kind from local to remote, this is not allowed")
 }
