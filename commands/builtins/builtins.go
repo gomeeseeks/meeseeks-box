@@ -202,7 +202,7 @@ func LoadBuiltins(cancelCommand, killCommand meeseeks.Command) error {
 		})
 	}
 
-	return commands.Add(reg...)
+	return commands.Register(reg...)
 }
 
 type defaultTimeout struct{}

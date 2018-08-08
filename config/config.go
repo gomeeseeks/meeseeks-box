@@ -58,7 +58,7 @@ func LoadConfiguration(cnf Config) error {
 			Kind: commands.KindLocalCommand,
 		})
 	}
-	if err := commands.Add(cmds...); err != nil {
+	if err := commands.Register(cmds...); err != nil {
 		return fmt.Errorf("could not load commands: %s", err)
 	}
 

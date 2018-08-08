@@ -15,7 +15,7 @@ func TestAddAndFindCommands(t *testing.T) {
 		Cmd:  "echo",
 		Help: meeseeks.NewHelp("echo"),
 	})
-	mocks.Must(t, "could not add test command", commands.Add(
+	mocks.Must(t, "could not add test command", commands.Register(
 		commands.CommandRegistration{
 			Name: "test",
 			Cmd:  cmd,
@@ -36,20 +36,20 @@ func TestAddAndFindCommands(t *testing.T) {
 	mocks.AssertEquals(t, cmd, c)
 	mocks.AssertEquals(t, 1, len(cmds))
 
-	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Add(
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
 			Name: "test",
 			Cmd:  cmd,
 			Kind: commands.KindLocalCommand,
 		})), "command test is already registered")
-	commands.Remove("test")
+	commands.Unregister("test")
 
 	_, ok = commands.Find(&meeseeks.Request{
 		Command: "test",
 	})
 	mocks.AssertEquals(t, false, ok)
 
-	commands.Remove("test")
+	commands.Unregister("test")
 }
 
 func TestAddingAnInvalidCommandFails(t *testing.T) {
@@ -57,17 +57,17 @@ func TestAddingAnInvalidCommandFails(t *testing.T) {
 		Cmd:  "echo",
 		Help: meeseeks.NewHelp("echo"),
 	})
-	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Add(
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
 			Name: "test",
 			Cmd:  cmd,
 		})), "Invalid command test, it has no kind")
-	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Add(
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
 			Cmd:  cmd,
 			Kind: commands.KindLocalCommand,
 		})), "Invalid command, it has no name")
-	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Add(
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
 			Name: "test",
 			Kind: commands.KindLocalCommand,

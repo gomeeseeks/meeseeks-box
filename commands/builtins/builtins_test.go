@@ -344,7 +344,7 @@ func Test_BuiltinCommands(t *testing.T) {
 				err := persistence.Aliases().Create("userid", "testalias", "audit", []string{"-limit", "1"}...)
 				mocks.Must(t, "create an alias", err)
 
-				commands.Add(
+				commands.Register(
 					commands.CommandRegistration{
 						Name: "noop",
 						Cmd: shell.New(meeseeks.CommandOpts{

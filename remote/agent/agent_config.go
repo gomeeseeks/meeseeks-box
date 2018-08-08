@@ -119,5 +119,5 @@ func (c *Configuration) registerLocalCommands() error {
 		})
 	}
 	logrus.Debugf("registering commands: %#v", cmds)
-	return commands.Add(cmds...)
+	return commands.Register(cmds...)
 }

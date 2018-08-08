@@ -54,8 +54,8 @@ type CommandRegistration struct {
 	Kind string
 }
 
-// Add adds a new command to the map
-func Add(cmds ...CommandRegistration) error {
+// Register registers all the commands passed if they are valid
+func Register(cmds ...CommandRegistration) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -85,8 +85,8 @@ func Add(cmds ...CommandRegistration) error {
 	return nil
 }
 
-// Remove unregisters commands from the registration list
-func Remove(cmds ...string) {
+// Unregister unregisters commands from the registration list
+func Unregister(cmds ...string) {
 	mutex.Lock()
 	defer mutex.Unlock()
 

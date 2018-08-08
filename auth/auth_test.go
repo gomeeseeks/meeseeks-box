@@ -14,7 +14,7 @@ func Test_Auth(t *testing.T) {
 	auth.Configure(map[string][]string{
 		auth.AdminGroup: {"admin_user"},
 	})
-	commands.Add(
+	commands.Register(
 		commands.CommandRegistration{
 			Name: "any",
 			Cmd: shell.New(meeseeks.CommandOpts{
