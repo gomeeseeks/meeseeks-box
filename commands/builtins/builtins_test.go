@@ -345,11 +345,14 @@ func Test_BuiltinCommands(t *testing.T) {
 				mocks.Must(t, "create an alias", err)
 
 				commands.Add(
-					commands.NewLocalCommand(
-						"noop", shell.New(meeseeks.CommandOpts{
+					commands.CommandRegistration{
+						Name: "noop",
+						Cmd: shell.New(meeseeks.CommandOpts{
 							AuthStrategy: "any",
 							Cmd:          "true",
-						})))
+						}),
+						Kind: commands.KindLocalCommand,
+					})
 
 				_, err = persistence.Jobs().Create(
 					meeseeks.Request{

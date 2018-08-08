@@ -54,15 +54,6 @@ type CommandRegistration struct {
 	Kind string
 }
 
-// NewLocalCommand creates a new local command
-func NewLocalCommand(name string, cmd meeseeks.Command) CommandRegistration {
-	return CommandRegistration{
-		Name: name,
-		Cmd:  cmd,
-		Kind: KindLocalCommand,
-	}
-}
-
 // NewRemoteCommand creates a new local command
 func NewRemoteCommand(name string, cmd meeseeks.Command) CommandRegistration {
 	return CommandRegistration{
@@ -78,10 +69,17 @@ func Add(cmds ...CommandRegistration) error {
 	defer mutex.Unlock()
 
 	for _, cmd := range cmds {
+		if strings.TrimSpace(cmd.Name) == "" {
+			return fmt.Errorf("Invalid command, it has no name")
+		}
+		if cmd.Cmd == nil {
+			return fmt.Errorf("Invalid command %s, it has no cmd", cmd.Name)
+		}
+		if strings.TrimSpace(cmd.Kind) == "" {
+			return fmt.Errorf("Invalid command %s, it has no kind", cmd.Name)
+		}
+		// At some point it should simply be ok to re-register things
 		if _, ok := commands[cmd.Name]; ok {
-			if strings.TrimSpace(cmd.Kind) == "" {
-				return fmt.Errorf("Invalid command %s, it has no kind", cmd.Name)
-			}
 			return fmt.Errorf("command %s is already registered", cmd.Name)
 		}
 	}

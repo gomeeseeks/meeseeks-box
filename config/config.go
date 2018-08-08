@@ -40,9 +40,9 @@ func LoadConfiguration(cnf Config) error {
 
 	cmds := make([]commands.CommandRegistration, 0)
 	for name, cmd := range cnf.Commands {
-		cmds = append(cmds, commands.NewLocalCommand(
-			name,
-			shell.New(meeseeks.CommandOpts{
+		cmds = append(cmds, commands.CommandRegistration{
+			Name: name,
+			Cmd: shell.New(meeseeks.CommandOpts{
 				AuthStrategy:    cmd.AuthStrategy,
 				AllowedGroups:   cmd.AllowedGroups,
 				ChannelStrategy: cmd.ChannelStrategy,
@@ -54,7 +54,9 @@ func LoadConfiguration(cnf Config) error {
 					cmd.Help.Summary,
 					cmd.Help.Args...),
 				Timeout: cmd.Timeout * time.Second,
-			})))
+			}),
+			Kind: commands.KindLocalCommand,
+		})
 	}
 	if err := commands.Add(cmds...); err != nil {
 		return fmt.Errorf("could not load commands: %s", err)

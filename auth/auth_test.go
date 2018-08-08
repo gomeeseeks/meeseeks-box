@@ -15,40 +15,50 @@ func Test_Auth(t *testing.T) {
 		auth.AdminGroup: {"admin_user"},
 	})
 	commands.Add(
-		commands.NewLocalCommand(
-			"any",
-			shell.New(meeseeks.CommandOpts{
+		commands.CommandRegistration{
+			Name: "any",
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:          "any",
 				AuthStrategy: auth.AuthStrategyAny,
-			})),
-		commands.NewLocalCommand(
-			"none",
-			shell.New(meeseeks.CommandOpts{
+			}),
+			Kind: commands.KindLocalCommand,
+		},
+		commands.CommandRegistration{
+			Name: "none",
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:          "none",
 				AuthStrategy: auth.AuthStrategyNone,
-			})),
-		commands.NewLocalCommand(
-			"admins",
-			shell.New(meeseeks.CommandOpts{
+			}),
+			Kind: commands.KindLocalCommand,
+		},
+		commands.CommandRegistration{
+			Name: "admins",
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:           "none",
 				AuthStrategy:  auth.AuthStrategyAllowedGroup,
 				AllowedGroups: []string{auth.AdminGroup},
-			})),
-		commands.NewLocalCommand(
-			"general-channel-only",
-			shell.New(meeseeks.CommandOpts{
+			}),
+			Kind: commands.KindLocalCommand,
+		},
+		commands.CommandRegistration{
+			Name: "general-channel-only",
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:             "none",
 				AuthStrategy:    auth.AuthStrategyAny,
 				AllowedChannels: []string{"general"},
 				ChannelStrategy: "channel",
-			})),
-		commands.NewLocalCommand(
-			"im-only",
-			shell.New(meeseeks.CommandOpts{
+			}),
+			Kind: commands.KindLocalCommand,
+		},
+		commands.CommandRegistration{
+			Name: "im-only",
+			Cmd: shell.New(meeseeks.CommandOpts{
 				Cmd:             "none",
 				AuthStrategy:    auth.AuthStrategyAny,
 				ChannelStrategy: "im_only",
-			})))
+			}),
+			Kind: commands.KindLocalCommand,
+		})
 
 	tt := []struct {
 		name     string
