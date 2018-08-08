@@ -54,15 +54,6 @@ type CommandRegistration struct {
 	Kind string
 }
 
-// NewRemoteCommand creates a new local command
-func NewRemoteCommand(name string, cmd meeseeks.Command) CommandRegistration {
-	return CommandRegistration{
-		Name: name,
-		Cmd:  cmd,
-		Kind: KindRemoteCommand,
-	}
-}
-
 // Add adds a new command to the map
 func Add(cmds ...CommandRegistration) error {
 	mutex.Lock()
