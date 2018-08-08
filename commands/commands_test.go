@@ -79,5 +79,22 @@ func TestReRegisteringChangingKindFails(t *testing.T) {
 			Name: "echo",
 			Cmd:  echoCmd,
 			Kind: commands.KindRemoteCommand,
-		})), "Command echo would change the kind from local to remote, this is not allowed")
+		})), "command echo would change the kind from local to remote, this is not allowed")
+}
+
+func TestReRegisteringRemoteCommandsFails(t *testing.T) {
+	mocks.Must(t, "could not register echo command", commands.Register(
+		commands.CommandRegistration{
+			Name: "echo",
+			Cmd:  echoCmd,
+			Kind: commands.KindRemoteCommand,
+		}))
+	defer commands.Unregister("echo")
+
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
+		commands.CommandRegistration{
+			Name: "echo",
+			Cmd:  echoCmd,
+			Kind: commands.KindRemoteCommand,
+		})), "command echo is invalid, replacing remote commands is not allowed yet")
 }

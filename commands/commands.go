@@ -72,8 +72,13 @@ func Register(cmds ...CommandRegistration) error {
 
 		if knownCommand, ok := commands[cmd.Name]; ok {
 			if knownCommand.kind != cmd.Kind {
-				return fmt.Errorf("Command %s would change the kind from %s to %s, this is not allowed",
+				return fmt.Errorf("command %s would change the kind from %s to %s, this is not allowed",
 					cmd.Name, knownCommand.kind, cmd.Kind)
+			}
+			switch cmd.Kind {
+			case KindRemoteCommand:
+				return fmt.Errorf("command %s is invalid, replacing remote commands is not allowed yet",
+					cmd.Name)
 			}
 		}
 	}
