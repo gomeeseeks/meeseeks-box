@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
@@ -25,10 +26,11 @@ func Reset() {
 	commands = make(map[string]commandHub)
 }
 
+// Kind of commands we can register
 const (
-	kindLocalCommand   = "local"
-	kindRemoteCommand  = "remote"
-	kindBuiltinCommand = "builtin"
+	KindLocalCommand   = "local"
+	KindRemoteCommand  = "remote"
+	KindBuiltinCommand = "builtin"
 )
 
 type commandHub struct {
@@ -47,35 +49,26 @@ func All() map[string]meeseeks.Command {
 
 // CommandRegistration is used to register a new command in the commands map
 type CommandRegistration struct {
-	name string
-	cmd  meeseeks.Command
-	kind string
-}
-
-// NewBuiltinCommand creates a new local command
-func NewBuiltinCommand(name string, cmd meeseeks.Command) CommandRegistration {
-	return CommandRegistration{
-		name: name,
-		cmd:  cmd,
-		kind: kindLocalCommand,
-	}
+	Name string
+	Cmd  meeseeks.Command
+	Kind string
 }
 
 // NewLocalCommand creates a new local command
 func NewLocalCommand(name string, cmd meeseeks.Command) CommandRegistration {
 	return CommandRegistration{
-		name: name,
-		cmd:  cmd,
-		kind: kindLocalCommand,
+		Name: name,
+		Cmd:  cmd,
+		Kind: KindLocalCommand,
 	}
 }
 
 // NewRemoteCommand creates a new local command
 func NewRemoteCommand(name string, cmd meeseeks.Command) CommandRegistration {
 	return CommandRegistration{
-		name: name,
-		cmd:  cmd,
-		kind: kindRemoteCommand,
+		Name: name,
+		Cmd:  cmd,
+		Kind: KindRemoteCommand,
 	}
 }
 
@@ -85,17 +78,19 @@ func Add(cmds ...CommandRegistration) error {
 	defer mutex.Unlock()
 
 	for _, cmd := range cmds {
-		if _, ok := commands[cmd.name]; ok {
-			return fmt.Errorf("command %s is already registered", cmd.name)
+		if _, ok := commands[cmd.Name]; ok {
+			if strings.TrimSpace(cmd.Kind) == "" {
+				return fmt.Errorf("Invalid command %s, it has no kind", cmd.Name)
+			}
+			return fmt.Errorf("command %s is already registered", cmd.Name)
 		}
 	}
 
 	logrus.Debugf("appending commands %#v", cmds)
-
 	for _, cmd := range cmds {
-		commands[cmd.name] = commandHub{
-			cmd:  cmd.cmd,
-			kind: cmd.kind,
+		commands[cmd.Name] = commandHub{
+			cmd:  cmd.Cmd,
+			kind: cmd.Kind,
 		}
 	}
 	return nil

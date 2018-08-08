@@ -195,7 +195,11 @@ func LoadBuiltins(cancelCommand, killCommand meeseeks.Command) error {
 	reg := make([]commands.CommandRegistration, 0)
 
 	for name, cmd := range Commands {
-		reg = append(reg, commands.NewBuiltinCommand(name, cmd))
+		reg = append(reg, commands.CommandRegistration{
+			Name: name,
+			Cmd:  cmd,
+			Kind: commands.KindBuiltinCommand,
+		})
 	}
 
 	return commands.Add(reg...)
