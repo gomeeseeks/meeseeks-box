@@ -139,8 +139,6 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 						cmd.GetHelp().GetArgs()...),
 				},
 			},
-			Kind:   commands.KindRemoteCommand,
-			Action: commands.ActionRegister,
 		})
 	}
 
@@ -148,7 +146,12 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 	defer p.lock.Unlock()
 
 	logrus.Debugf("remote agent is registering commands %#v", cmds)
-	if err := commands.Register(cmds...); err != nil {
+	if err := commands.Register(
+		commands.RegistrationArgs{
+			Kind:     commands.KindRemoteCommand,
+			Action:   commands.ActionRegister,
+			Commands: cmds,
+		}); err != nil {
 		return nil, fmt.Errorf("failed to register remote commands: %s", err)
 	}
 

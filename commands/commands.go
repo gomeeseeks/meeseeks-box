@@ -53,12 +53,38 @@ func All() map[string]meeseeks.Command {
 	return c
 }
 
+// RegistrationArgs allows to register new commands
+type RegistrationArgs struct {
+	Kind     string
+	Action   string
+	Commands []CommandRegistration
+}
+
+func (r RegistrationArgs) validate() error {
+	if strings.TrimSpace(r.Kind) == "" {
+		return fmt.Errorf("Invalid registration, it has no kind")
+	}
+	switch r.Kind {
+	case KindBuiltinCommand, KindLocalCommand, KindRemoteCommand:
+		break
+	default:
+		return fmt.Errorf("Invalid kind of registration: %s", r.Kind)
+	}
+
+	switch r.Action {
+	case ActionRegister, ActionUnregister:
+		break
+	default:
+		return fmt.Errorf("Invalid action %s", r.Action)
+	}
+
+	return nil
+}
+
 // CommandRegistration is used to register a new command in the commands map
 type CommandRegistration struct {
-	Name   string
-	Cmd    meeseeks.Command
-	Kind   string
-	Action string
+	Name string
+	Cmd  meeseeks.Command
 }
 
 func (c CommandRegistration) validate() error {
@@ -68,54 +94,44 @@ func (c CommandRegistration) validate() error {
 	if c.Cmd == nil {
 		return fmt.Errorf("Invalid command %s, it has no cmd", c.Name)
 	}
-	if strings.TrimSpace(c.Kind) == "" {
-		return fmt.Errorf("Invalid command %s, it has no kind", c.Name)
-	}
-
-	switch c.Kind {
-	case KindBuiltinCommand, KindLocalCommand, KindRemoteCommand:
-		break
-	default:
-		return fmt.Errorf("Invalid kind of command: %s", c.Kind)
-	}
-
-	switch c.Action {
-	case ActionRegister, ActionUnregister:
-		break
-	default:
-		return fmt.Errorf("Invalid action %s", c.Action)
-	}
 
 	return nil
 }
 
 // Register registers all the commands passed if they are valid
-func Register(cmds ...CommandRegistration) error {
+func Register(args RegistrationArgs) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	for _, cmd := range cmds {
+	if err := args.validate(); err != nil {
+		return err
+	}
+
+	for _, cmd := range args.Commands {
 		if err := cmd.validate(); err != nil {
 			return err
 		}
 
 		if knownCommand, ok := commands[cmd.Name]; ok {
-			if knownCommand.kind != cmd.Kind {
-				return fmt.Errorf("command %s would change the kind from %s to %s, this is not allowed",
-					cmd.Name, knownCommand.kind, cmd.Kind)
+			if knownCommand.kind != args.Kind {
+				return fmt.Errorf("incompatible command kind for an already known command")
 			}
-			if cmd.Kind == KindRemoteCommand {
-				return fmt.Errorf("command %s is invalid, replacing remote commands is not allowed yet",
+			if knownCommand.kind == KindRemoteCommand {
+				return fmt.Errorf("command %s is invalid, re-registering remote commands is not allowed yet",
 					cmd.Name)
+			}
+		} else {
+			if args.Action == ActionUnregister {
+				return fmt.Errorf("can't unregister a non registered command")
 			}
 		}
 	}
 
-	logrus.Debugf("appending commands %#v", cmds)
-	for _, cmd := range cmds {
+	logrus.Debugf("appending commands %#v", args.Commands)
+	for _, cmd := range args.Commands {
 		commands[cmd.Name] = commandHub{
 			cmd:  cmd.Cmd,
-			kind: cmd.Kind,
+			kind: args.Kind,
 		}
 	}
 	return nil

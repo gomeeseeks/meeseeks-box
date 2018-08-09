@@ -55,11 +55,13 @@ func LoadConfiguration(cnf Config) error {
 					cmd.Help.Args...),
 				Timeout: cmd.Timeout * time.Second,
 			}),
-			Kind:   commands.KindLocalCommand,
-			Action: commands.ActionRegister,
 		})
 	}
-	if err := commands.Register(cmds...); err != nil {
+	if err := commands.Register(commands.RegistrationArgs{
+		Kind:     commands.KindLocalCommand,
+		Action:   commands.ActionRegister,
+		Commands: cmds,
+	}); err != nil {
 		return fmt.Errorf("could not load commands: %s", err)
 	}
 

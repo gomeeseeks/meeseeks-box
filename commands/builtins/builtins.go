@@ -196,14 +196,17 @@ func LoadBuiltins(cancelCommand, killCommand meeseeks.Command) error {
 
 	for name, cmd := range Commands {
 		reg = append(reg, commands.CommandRegistration{
-			Name:   name,
-			Cmd:    cmd,
-			Kind:   commands.KindBuiltinCommand,
-			Action: commands.ActionRegister,
+			Name: name,
+			Cmd:  cmd,
 		})
 	}
 
-	return commands.Register(reg...)
+	return commands.Register(
+		commands.RegistrationArgs{
+			Commands: reg,
+			Kind:     commands.KindBuiltinCommand,
+			Action:   commands.ActionRegister,
+		})
 }
 
 type defaultTimeout struct{}

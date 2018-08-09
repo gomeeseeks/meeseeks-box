@@ -15,55 +15,50 @@ func Test_Auth(t *testing.T) {
 		auth.AdminGroup: {"admin_user"},
 	})
 	commands.Register(
-		commands.CommandRegistration{
-			Name: "any",
-			Cmd: shell.New(meeseeks.CommandOpts{
-				Cmd:          "any",
-				AuthStrategy: auth.AuthStrategyAny,
-			}),
+		commands.RegistrationArgs{
 			Kind:   commands.KindLocalCommand,
 			Action: commands.ActionRegister,
-		},
-		commands.CommandRegistration{
-			Name: "none",
-			Cmd: shell.New(meeseeks.CommandOpts{
-				Cmd:          "none",
-				AuthStrategy: auth.AuthStrategyNone,
-			}),
-			Kind:   commands.KindLocalCommand,
-			Action: commands.ActionRegister,
-		},
-		commands.CommandRegistration{
-			Name: "admins",
-			Cmd: shell.New(meeseeks.CommandOpts{
-				Cmd:           "none",
-				AuthStrategy:  auth.AuthStrategyAllowedGroup,
-				AllowedGroups: []string{auth.AdminGroup},
-			}),
-			Kind:   commands.KindLocalCommand,
-			Action: commands.ActionRegister,
-		},
-		commands.CommandRegistration{
-			Name: "general-channel-only",
-			Cmd: shell.New(meeseeks.CommandOpts{
-				Cmd:             "none",
-				AuthStrategy:    auth.AuthStrategyAny,
-				AllowedChannels: []string{"general"},
-				ChannelStrategy: "channel",
-			}),
-			Kind:   commands.KindLocalCommand,
-			Action: commands.ActionRegister,
-		},
-		commands.CommandRegistration{
-			Name: "im-only",
-			Cmd: shell.New(meeseeks.CommandOpts{
-				Cmd:             "none",
-				AuthStrategy:    auth.AuthStrategyAny,
-				ChannelStrategy: "im_only",
-			}),
-			Kind:   commands.KindLocalCommand,
-			Action: commands.ActionRegister,
-		})
+			Commands: []commands.CommandRegistration{
+				commands.CommandRegistration{
+					Name: "any",
+					Cmd: shell.New(meeseeks.CommandOpts{
+						Cmd:          "any",
+						AuthStrategy: auth.AuthStrategyAny,
+					}),
+				},
+				commands.CommandRegistration{
+					Name: "none",
+					Cmd: shell.New(meeseeks.CommandOpts{
+						Cmd:          "none",
+						AuthStrategy: auth.AuthStrategyNone,
+					}),
+				},
+				commands.CommandRegistration{
+					Name: "admins",
+					Cmd: shell.New(meeseeks.CommandOpts{
+						Cmd:           "none",
+						AuthStrategy:  auth.AuthStrategyAllowedGroup,
+						AllowedGroups: []string{auth.AdminGroup},
+					}),
+				},
+				commands.CommandRegistration{
+					Name: "general-channel-only",
+					Cmd: shell.New(meeseeks.CommandOpts{
+						Cmd:             "none",
+						AuthStrategy:    auth.AuthStrategyAny,
+						AllowedChannels: []string{"general"},
+						ChannelStrategy: "channel",
+					}),
+				},
+				commands.CommandRegistration{
+					Name: "im-only",
+					Cmd: shell.New(meeseeks.CommandOpts{
+						Cmd:             "none",
+						AuthStrategy:    auth.AuthStrategyAny,
+						ChannelStrategy: "im_only",
+					}),
+				},
+			}})
 
 	tt := []struct {
 		name     string
