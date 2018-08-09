@@ -21,7 +21,8 @@ func Test_Auth(t *testing.T) {
 				Cmd:          "any",
 				AuthStrategy: auth.AuthStrategyAny,
 			}),
-			Kind: commands.KindLocalCommand,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		},
 		commands.CommandRegistration{
 			Name: "none",
@@ -29,7 +30,8 @@ func Test_Auth(t *testing.T) {
 				Cmd:          "none",
 				AuthStrategy: auth.AuthStrategyNone,
 			}),
-			Kind: commands.KindLocalCommand,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		},
 		commands.CommandRegistration{
 			Name: "admins",
@@ -38,7 +40,8 @@ func Test_Auth(t *testing.T) {
 				AuthStrategy:  auth.AuthStrategyAllowedGroup,
 				AllowedGroups: []string{auth.AdminGroup},
 			}),
-			Kind: commands.KindLocalCommand,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		},
 		commands.CommandRegistration{
 			Name: "general-channel-only",
@@ -48,7 +51,8 @@ func Test_Auth(t *testing.T) {
 				AllowedChannels: []string{"general"},
 				ChannelStrategy: "channel",
 			}),
-			Kind: commands.KindLocalCommand,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		},
 		commands.CommandRegistration{
 			Name: "im-only",
@@ -57,7 +61,8 @@ func Test_Auth(t *testing.T) {
 				AuthStrategy:    auth.AuthStrategyAny,
 				ChannelStrategy: "im_only",
 			}),
-			Kind: commands.KindLocalCommand,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		})
 
 	tt := []struct {

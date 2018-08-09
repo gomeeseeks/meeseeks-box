@@ -33,6 +33,12 @@ const (
 	KindBuiltinCommand = "builtin"
 )
 
+// Action to perform when dealing with commands
+const (
+	ActionRegister   = "register"
+	ActionUnregister = "unregister"
+)
+
 type commandHub struct {
 	kind string
 	cmd  meeseeks.Command
@@ -49,9 +55,38 @@ func All() map[string]meeseeks.Command {
 
 // CommandRegistration is used to register a new command in the commands map
 type CommandRegistration struct {
-	Name string
-	Cmd  meeseeks.Command
-	Kind string
+	Name   string
+	Cmd    meeseeks.Command
+	Kind   string
+	Action string
+}
+
+func (c CommandRegistration) validate() error {
+	if strings.TrimSpace(c.Name) == "" {
+		return fmt.Errorf("Invalid command, it has no name")
+	}
+	if c.Cmd == nil {
+		return fmt.Errorf("Invalid command %s, it has no cmd", c.Name)
+	}
+	if strings.TrimSpace(c.Kind) == "" {
+		return fmt.Errorf("Invalid command %s, it has no kind", c.Name)
+	}
+
+	switch c.Kind {
+	case KindBuiltinCommand, KindLocalCommand, KindRemoteCommand:
+		break
+	default:
+		return fmt.Errorf("Invalid kind of command: %s", c.Kind)
+	}
+
+	switch c.Action {
+	case ActionRegister, ActionUnregister:
+		break
+	default:
+		return fmt.Errorf("Invalid action %s", c.Action)
+	}
+
+	return nil
 }
 
 // Register registers all the commands passed if they are valid
@@ -60,14 +95,8 @@ func Register(cmds ...CommandRegistration) error {
 	defer mutex.Unlock()
 
 	for _, cmd := range cmds {
-		if strings.TrimSpace(cmd.Name) == "" {
-			return fmt.Errorf("Invalid command, it has no name")
-		}
-		if cmd.Cmd == nil {
-			return fmt.Errorf("Invalid command %s, it has no cmd", cmd.Name)
-		}
-		if strings.TrimSpace(cmd.Kind) == "" {
-			return fmt.Errorf("Invalid command %s, it has no kind", cmd.Name)
+		if err := cmd.validate(); err != nil {
+			return err
 		}
 
 		if knownCommand, ok := commands[cmd.Name]; ok {
@@ -75,8 +104,7 @@ func Register(cmds ...CommandRegistration) error {
 				return fmt.Errorf("command %s would change the kind from %s to %s, this is not allowed",
 					cmd.Name, knownCommand.kind, cmd.Kind)
 			}
-			switch cmd.Kind {
-			case KindRemoteCommand:
+			if cmd.Kind == KindRemoteCommand {
 				return fmt.Errorf("command %s is invalid, replacing remote commands is not allowed yet",
 					cmd.Name)
 			}

@@ -115,7 +115,8 @@ func (c *Configuration) registerLocalCommands() error {
 					cmd.Help.Args...),
 				Timeout: cmd.Timeout * time.Second,
 			}),
-			Kind: commands.KindLocalCommand,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		})
 	}
 	logrus.Debugf("registering commands: %#v", cmds)

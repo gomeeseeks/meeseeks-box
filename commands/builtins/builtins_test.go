@@ -351,7 +351,8 @@ func Test_BuiltinCommands(t *testing.T) {
 							AuthStrategy: "any",
 							Cmd:          "true",
 						}),
-						Kind: commands.KindLocalCommand,
+						Kind:   commands.KindLocalCommand,
+						Action: commands.ActionRegister,
 					})
 
 				_, err = persistence.Jobs().Create(

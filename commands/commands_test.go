@@ -18,9 +18,10 @@ var echoCmd = shell.New(meeseeks.CommandOpts{
 func TestAddAndFindCommands(t *testing.T) {
 	mocks.Must(t, "could not add test command", commands.Register(
 		commands.CommandRegistration{
-			Name: "test",
-			Cmd:  echoCmd,
-			Kind: commands.KindLocalCommand,
+			Name:   "test",
+			Cmd:    echoCmd,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		}))
 	defer commands.Unregister("test")
 
@@ -50,51 +51,58 @@ func TestAddAndFindCommands(t *testing.T) {
 func TestAddingAnInvalidCommandFails(t *testing.T) {
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
-			Name: "test",
-			Cmd:  echoCmd,
+			Name:   "test",
+			Cmd:    echoCmd,
+			Action: commands.ActionRegister,
 		})), "Invalid command test, it has no kind")
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
-			Cmd:  echoCmd,
-			Kind: commands.KindLocalCommand,
+			Cmd:    echoCmd,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		})), "Invalid command, it has no name")
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
-			Name: "test",
-			Kind: commands.KindLocalCommand,
+			Name:   "test",
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		})), "Invalid command test, it has no cmd")
 }
 
 func TestReRegisteringChangingKindFails(t *testing.T) {
 	mocks.Must(t, "could not register echo command", commands.Register(
 		commands.CommandRegistration{
-			Name: "echo",
-			Cmd:  echoCmd,
-			Kind: commands.KindLocalCommand,
+			Name:   "echo",
+			Cmd:    echoCmd,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		}))
 	defer commands.Unregister("echo")
 
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
-			Name: "echo",
-			Cmd:  echoCmd,
-			Kind: commands.KindRemoteCommand,
+			Name:   "echo",
+			Cmd:    echoCmd,
+			Kind:   commands.KindRemoteCommand,
+			Action: commands.ActionRegister,
 		})), "command echo would change the kind from local to remote, this is not allowed")
 }
 
 func TestReRegisteringRemoteCommandsFails(t *testing.T) {
 	mocks.Must(t, "could not register echo command", commands.Register(
 		commands.CommandRegistration{
-			Name: "echo",
-			Cmd:  echoCmd,
-			Kind: commands.KindRemoteCommand,
+			Name:   "echo",
+			Cmd:    echoCmd,
+			Kind:   commands.KindRemoteCommand,
+			Action: commands.ActionRegister,
 		}))
 	defer commands.Unregister("echo")
 
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.CommandRegistration{
-			Name: "echo",
-			Cmd:  echoCmd,
-			Kind: commands.KindRemoteCommand,
+			Name:   "echo",
+			Cmd:    echoCmd,
+			Kind:   commands.KindRemoteCommand,
+			Action: commands.ActionRegister,
 		})), "command echo is invalid, replacing remote commands is not allowed yet")
 }

@@ -55,7 +55,8 @@ func LoadConfiguration(cnf Config) error {
 					cmd.Help.Args...),
 				Timeout: cmd.Timeout * time.Second,
 			}),
-			Kind: commands.KindLocalCommand,
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionRegister,
 		})
 	}
 	if err := commands.Register(cmds...); err != nil {

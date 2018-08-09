@@ -139,7 +139,8 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 						cmd.GetHelp().GetArgs()...),
 				},
 			},
-			Kind: commands.KindRemoteCommand,
+			Kind:   commands.KindRemoteCommand,
+			Action: commands.ActionRegister,
 		})
 	}
 
