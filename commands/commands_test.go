@@ -67,6 +67,20 @@ func TestAddingAnInvalidCommandFails(t *testing.T) {
 			Kind:   commands.KindLocalCommand,
 			Action: commands.ActionRegister,
 		})), "Invalid command test, it has no cmd")
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
+		commands.CommandRegistration{
+			Name:   "test",
+			Cmd:    echoCmd,
+			Kind:   commands.KindLocalCommand,
+			Action: "whatever",
+		})), "Invalid action whatever")
+	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
+		commands.CommandRegistration{
+			Name:   "test",
+			Cmd:    echoCmd,
+			Kind:   "whatever",
+			Action: commands.ActionRegister,
+		})), "Invalid kind of command: whatever")
 }
 
 func TestReRegisteringChangingKindFails(t *testing.T) {
