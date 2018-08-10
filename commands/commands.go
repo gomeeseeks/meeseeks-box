@@ -78,7 +78,51 @@ func (r RegistrationArgs) validate() error {
 		return fmt.Errorf("Invalid action %s", r.Action)
 	}
 
+	for _, cmd := range r.Commands {
+		if err := cmd.validate(); err != nil {
+			return err
+		}
+
+		if knownCommand, ok := commands[cmd.Name]; ok {
+			if knownCommand.kind != r.Kind {
+				return fmt.Errorf("incompatible command kind for an already known command")
+			}
+			if knownCommand.kind == KindRemoteCommand {
+				return fmt.Errorf("command %s is invalid, re-registering remote commands is not allowed yet",
+					cmd.Name)
+			}
+		} else {
+			if r.Action == ActionUnregister {
+				return fmt.Errorf("can't unregister a non registered command")
+			}
+		}
+	}
+
 	return nil
+}
+
+func (r RegistrationArgs) process() {
+	switch r.Action {
+	case ActionRegister:
+		r.registerCommands()
+	default:
+		r.unregisterCommands()
+	}
+}
+
+func (r RegistrationArgs) unregisterCommands() {
+	for _, cmd := range r.Commands {
+		delete(commands, cmd.Name)
+	}
+}
+
+func (r RegistrationArgs) registerCommands() {
+	for _, cmd := range r.Commands {
+		commands[cmd.Name] = commandHub{
+			cmd:  cmd.Cmd,
+			kind: r.Kind,
+		}
+	}
 }
 
 // CommandRegistration is used to register a new command in the commands map
@@ -107,48 +151,9 @@ func Register(args RegistrationArgs) error {
 		return err
 	}
 
-	for _, cmd := range args.Commands {
-		if err := cmd.validate(); err != nil {
-			return err
-		}
+	args.process()
 
-		if knownCommand, ok := commands[cmd.Name]; ok {
-			if knownCommand.kind != args.Kind {
-				return fmt.Errorf("incompatible command kind for an already known command")
-			}
-			if knownCommand.kind == KindRemoteCommand {
-				return fmt.Errorf("command %s is invalid, re-registering remote commands is not allowed yet",
-					cmd.Name)
-			}
-		} else {
-			if args.Action == ActionUnregister {
-				return fmt.Errorf("can't unregister a non registered command")
-			}
-		}
-	}
-
-	logrus.Debugf("appending commands %#v", args.Commands)
-	for _, cmd := range args.Commands {
-		commands[cmd.Name] = commandHub{
-			cmd:  cmd.Cmd,
-			kind: args.Kind,
-		}
-	}
 	return nil
-}
-
-// Unregister unregisters commands from the registration list
-func Unregister(cmds ...string) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	for _, name := range cmds {
-		if _, ok := commands[name]; ok {
-			delete(commands, name)
-		} else {
-			logrus.Warnf("could not delete command %s because it's not to be found", name)
-		}
-	}
 }
 
 // Find looks up the given command by name and returns.

@@ -25,7 +25,6 @@ func TestAddAndFindCommands(t *testing.T) {
 					Name: "test",
 					Cmd:  echoCmd,
 				}}}))
-	defer commands.Unregister("test")
 
 	c, ok := commands.Find(&meeseeks.Request{
 		Command: "test",
@@ -40,14 +39,30 @@ func TestAddAndFindCommands(t *testing.T) {
 	mocks.AssertEquals(t, echoCmd, c)
 	mocks.AssertEquals(t, 1, len(cmds))
 
-	commands.Unregister("test")
+	mocks.Must(t, "could not unregister test command", commands.Register(
+		commands.RegistrationArgs{
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionUnregister,
+			Commands: []commands.CommandRegistration{
+				commands.CommandRegistration{
+					Name: "test",
+					Cmd:  echoCmd,
+				}}}))
 
 	_, ok = commands.Find(&meeseeks.Request{
 		Command: "test",
 	})
 	mocks.AssertEquals(t, false, ok)
 
-	commands.Unregister("test")
+	mocks.AssertEquals(t, "can't unregister a non registered command", fmt.Sprintf("%s", commands.Register(
+		commands.RegistrationArgs{
+			Kind:   commands.KindLocalCommand,
+			Action: commands.ActionUnregister,
+			Commands: []commands.CommandRegistration{
+				commands.CommandRegistration{
+					Name: "test",
+					Cmd:  echoCmd,
+				}}})))
 }
 
 func TestAddingAnInvalidCommandFails(t *testing.T) {
@@ -105,7 +120,17 @@ func TestReRegisteringChangingKindFails(t *testing.T) {
 					Name: "echo",
 					Cmd:  echoCmd,
 				}}}))
-	defer commands.Unregister("echo")
+	defer func() {
+		mocks.Must(t, "could not unregister test command", commands.Register(
+			commands.RegistrationArgs{
+				Kind:   commands.KindLocalCommand,
+				Action: commands.ActionUnregister,
+				Commands: []commands.CommandRegistration{
+					commands.CommandRegistration{
+						Name: "echo",
+						Cmd:  echoCmd,
+					}}}))
+	}()
 
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.RegistrationArgs{
@@ -128,7 +153,6 @@ func TestReRegisteringRemoteCommandsFails(t *testing.T) {
 					Name: "echo",
 					Cmd:  echoCmd,
 				}}}))
-	defer commands.Unregister("echo")
 
 	mocks.AssertEquals(t, fmt.Sprintf("%s", commands.Register(
 		commands.RegistrationArgs{

@@ -160,15 +160,37 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 
 func (p *commandPipelineServer) deRegisterAgentCommands(in *api.AgentConfiguration) {
 
-	cmds := make([]string, 0)
-	for name := range in.Commands {
-		cmds = append(cmds, name)
+	cmds := make([]commands.CommandRegistration, 0)
+	for name, cmd := range in.Commands {
+		cmds = append(cmds, commands.CommandRegistration{
+			Name: name,
+			Cmd: remoteCommand{
+				CommandOpts: meeseeks.CommandOpts{
+					Cmd:             name,
+					AllowedChannels: cmd.GetAllowedChannels(),
+					AllowedGroups:   cmd.GetAllowedGroups(),
+					AuthStrategy:    cmd.GetAuthStrategy(),
+					ChannelStrategy: cmd.GetChannelStrategy(),
+					Handshake:       cmd.GetHasHandshake(),
+					Timeout:         time.Duration(cmd.GetTimeout()) * time.Second,
+					Help: meeseeks.NewHelp(
+						cmd.GetHelp().GetSummary(),
+						cmd.GetHelp().GetArgs()...),
+				},
+			},
+		})
 	}
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	commands.Unregister(cmds...)
+	if err := commands.Register(commands.RegistrationArgs{
+		Action:   commands.ActionUnregister,
+		Kind:     commands.KindRemoteCommand,
+		Commands: cmds,
+	}); err != nil {
+		logrus.Errorf("failed to unregister agent %s: %s", in.AgentID, err)
+	}
 }
 
 func (p *commandPipelineServer) finishJob(f finishedJob) error {
