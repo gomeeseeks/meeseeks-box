@@ -13,3 +13,9 @@ commands:
     timeout: 5
     help: 
       summary: "command that prints back the arguments passed"
+  echo-2:
+    command: "echo"
+    auth_strategy: any
+    timeout: 10
+    help: 
+      summary: "command that prints back the arguments passed"

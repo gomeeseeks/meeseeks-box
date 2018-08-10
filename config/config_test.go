@@ -173,7 +173,7 @@ func Test_ConfigurationBasicLoading(t *testing.T) {
 	c, err := config.ReadFile("./test-fixtures/basic-config.yml")
 	mocks.Must(t, "could not read configuration file", err)
 	mocks.AssertEquals(t, "./meeseeks-workspace.db", c.Database.Path)
-	mocks.AssertEquals(t, 1, len(c.Commands))
+	mocks.AssertEquals(t, 2, len(c.Commands))
 
 	mocks.Must(t, "failed to load configuration", config.LoadConfiguration(c))
 }
@@ -190,6 +190,11 @@ func TestReloadingConfigurationReplacesThings(t *testing.T) {
 	})
 	mocks.AssertEquals(t, true, ok)
 
+	_, ok = commands.Find(&meeseeks.Request{
+		Command: "echo-2",
+	})
+	mocks.AssertEquals(t, true, ok)
+
 	c, err = config.ReadFile("./test-fixtures/basic-config.1.yml")
 	mocks.Must(t, "could not read the second configuration file", err)
 	mocks.Must(t, "failed to load the second configuration", config.LoadConfiguration(c))
@@ -200,6 +205,11 @@ func TestReloadingConfigurationReplacesThings(t *testing.T) {
 		Command: "echo",
 	})
 	mocks.AssertEquals(t, true, ok)
+
+	_, ok = commands.Find(&meeseeks.Request{
+		Command: "echo-2",
+	})
+	mocks.AssertEquals(t, false, ok)
 
 	mocks.AssertEquals(t, first.GetCmd(), second.GetCmd())
 	mocks.AssertEquals(t, first.GetAllowedChannels(), second.GetAllowedChannels())
