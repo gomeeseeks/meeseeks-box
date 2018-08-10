@@ -163,4 +163,14 @@ func TestReRegisteringRemoteCommandsFails(t *testing.T) {
 					Name: "echo",
 					Cmd:  echoCmd,
 				}}})), "command echo is invalid, re-registering remote commands is not allowed yet")
+
+	mocks.Must(t, "could not unregister echo command", commands.Register(
+		commands.RegistrationArgs{
+			Kind:   commands.KindRemoteCommand,
+			Action: commands.ActionUnregister,
+			Commands: []commands.CommandRegistration{
+				commands.CommandRegistration{
+					Name: "echo",
+					Cmd:  echoCmd,
+				}}}))
 }

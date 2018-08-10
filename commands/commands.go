@@ -18,7 +18,7 @@ func init() {
 var commands map[string]commandHub
 var mutex sync.Mutex
 
-// Reset flushes all the commands
+// Reset flushes all the commands, this should only be used in testing
 func Reset() {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -87,7 +87,7 @@ func (r RegistrationArgs) validate() error {
 			if knownCommand.kind != r.Kind {
 				return fmt.Errorf("incompatible command kind for an already known command")
 			}
-			if knownCommand.kind == KindRemoteCommand {
+			if knownCommand.kind == KindRemoteCommand && r.Action == ActionRegister {
 				return fmt.Errorf("command %s is invalid, re-registering remote commands is not allowed yet",
 					cmd.Name)
 			}
@@ -104,15 +104,30 @@ func (r RegistrationArgs) validate() error {
 func (r RegistrationArgs) process() {
 	switch r.Action {
 	case ActionRegister:
+		if r.Kind == KindLocalCommand {
+			r.unregisterCommands()
+		}
 		r.registerCommands()
+
 	default:
 		r.unregisterCommands()
 	}
 }
 
 func (r RegistrationArgs) unregisterCommands() {
-	for _, cmd := range r.Commands {
-		delete(commands, cmd.Name)
+	switch r.Kind {
+	case KindLocalCommand:
+		for name, cmd := range commands {
+			if cmd.kind == KindLocalCommand {
+				delete(commands, name)
+			}
+		}
+	case KindRemoteCommand:
+		for _, cmd := range r.Commands {
+			delete(commands, cmd.Name)
+		}
+	default:
+		// Nothing to do with builtins
 	}
 }
 
