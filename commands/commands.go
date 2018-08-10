@@ -85,7 +85,7 @@ func (r RegistrationArgs) validate() error {
 
 		if knownCommand, ok := commands[cmd.Name]; ok {
 			if knownCommand.kind != r.Kind {
-				return fmt.Errorf("incompatible command kind for an already known command")
+				return fmt.Errorf("incompatible command kind for an already known command: %s", cmd.Name)
 			}
 			if knownCommand.kind == KindRemoteCommand && r.Action == ActionRegister {
 				return fmt.Errorf("command %s is invalid, re-registering remote commands is not allowed yet",
@@ -93,7 +93,7 @@ func (r RegistrationArgs) validate() error {
 			}
 		} else {
 			if r.Action == ActionUnregister {
-				return fmt.Errorf("can't unregister a non registered command")
+				return fmt.Errorf("can't unregister an unknown command: %s", cmd.Name)
 			}
 		}
 	}

@@ -54,7 +54,7 @@ func TestAddAndFindCommands(t *testing.T) {
 	})
 	mocks.AssertEquals(t, false, ok)
 
-	mocks.AssertEquals(t, "can't unregister a non registered command", fmt.Sprintf("%s", commands.Register(
+	mocks.AssertEquals(t, "can't unregister an unknown command: test", fmt.Sprintf("%s", commands.Register(
 		commands.RegistrationArgs{
 			Kind:   commands.KindLocalCommand,
 			Action: commands.ActionUnregister,
@@ -140,7 +140,7 @@ func TestReRegisteringChangingKindFails(t *testing.T) {
 				commands.CommandRegistration{
 					Name: "echo",
 					Cmd:  echoCmd,
-				}}})), "incompatible command kind for an already known command")
+				}}})), "incompatible command kind for an already known command: echo")
 }
 
 func TestReRegisteringRemoteCommandsFails(t *testing.T) {

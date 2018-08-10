@@ -1,12 +1,17 @@
 package server_test
 
 import (
-	"fmt"
+	"context"
 	"testing"
 	"time"
 
+	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
+	"github.com/gomeeseeks/meeseeks-box/remote/api"
 	"github.com/gomeeseeks/meeseeks-box/remote/server"
+	"github.com/sirupsen/logrus"
+
 	"google.golang.org/grpc"
 )
 
@@ -15,15 +20,63 @@ func TestAgentCanConnect(t *testing.T) {
 	mocks.Must(t, "failed to create grpc server", err)
 	defer s.Shutdown()
 
+	c := make(chan interface{})
 	go func() {
+		c <- true
 		mocks.Must(t, "Failed to start server", s.Listen(":9699"))
 	}()
 
-	time.Sleep(1 * time.Millisecond) // Allow the server to start
+	<-c
+	time.Sleep(1 * time.Millisecond)
 
 	client, err := grpc.Dial("localhost:9699", grpc.WithInsecure())
-	mocks.Must(t, "failed to execute HEAD command: %s", err)
-	defer client.Close()
+	mocks.Must(t, "could not create grpc client", err)
 
-	fmt.Println(client.GetState())
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmdClient := api.NewCommandPipelineClient(client)
+	pipeline, err := cmdClient.RegisterAgent(ctx, &api.AgentConfiguration{
+		AgentID: "agentID1",
+		Token:   "mytoken",
+		Labels:  map[string]string{},
+		Commands: map[string]*api.RemoteCommand{
+			"echo": &api.RemoteCommand{
+				AllowedChannels: []string{},
+				AllowedGroups:   []string{},
+				AuthStrategy:    "any",
+				ChannelStrategy: "any",
+				Timeout:         10,
+			},
+		},
+	})
+	mocks.Must(t, "could not register client", err)
+	logrus.Infof("done registering agent, apparently")
+
+	time.Sleep(10 * time.Millisecond)
+
+	go func() {
+		logrus.Infof("commands: %#v", commands.All())
+		cmd, ok := commands.Find(&meeseeks.Request{
+			Command: "echo",
+		})
+		logrus.Infof("fetching command echo: %b", ok)
+		mocks.AssertEquals(t, true, ok)
+
+		cmd.Execute(ctx, meeseeks.Job{
+			ID: 27,
+			Request: meeseeks.Request{
+				Command: "echo",
+			},
+			Status: meeseeks.JobRunningStatus,
+		})
+	}()
+
+	cmdReq, err := pipeline.Recv()
+	mocks.Must(t, "failed receiving command requests", err)
+
+	mocks.AssertEquals(t, uint64(27), cmdReq.JobID)
+	mocks.AssertEquals(t, "echo", cmdReq.Command)
+
+	// logClient := api.NewLogWriterClient(client)
 }

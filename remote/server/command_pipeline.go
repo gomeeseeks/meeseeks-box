@@ -111,6 +111,8 @@ func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFini
 
 func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan api.CommandRequest, error) {
 
+	logrus.Infof("registering agent %s", in.GetAgentID())
+
 	agentPipe := make(chan api.CommandRequest)
 
 	agent := remoteAgent{
@@ -145,7 +147,7 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	logrus.Debugf("remote agent is registering commands %#v", cmds)
+	logrus.Infof("remote agent is registering commands %#v", cmds)
 	if err := commands.Register(
 		commands.RegistrationArgs{
 			Kind:     commands.KindRemoteCommand,
@@ -154,6 +156,8 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 		}); err != nil {
 		return nil, fmt.Errorf("failed to register remote commands: %s", err)
 	}
+
+	logrus.Infof("Done registering commands, returning pipeline")
 
 	return agentPipe, nil
 }

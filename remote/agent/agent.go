@@ -135,7 +135,7 @@ Service:
 				return
 
 			default:
-				logrus.Errorf("grpc error %d, shutting down", s)
+				logrus.Errorf("grpc error code %d (%s), shutting down", s, err)
 				r.triggerShutdown()
 				return
 
