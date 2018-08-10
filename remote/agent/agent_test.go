@@ -5,14 +5,30 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/commands/shell"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/remote/agent"
 	"github.com/gomeeseeks/meeseeks-box/remote/server"
 )
 
+var echoCmd = shell.New(meeseeks.CommandOpts{
+	Cmd:  "echo",
+	Help: meeseeks.NewHelp("echo"),
+})
+
 func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
+	commands.Register(commands.RegistrationArgs{
+		Action: commands.ActionRegister,
+		Kind:   commands.KindLocalCommand,
+		Commands: []commands.CommandRegistration{
+			commands.CommandRegistration{
+				Name: "remote-echo",
+				Cmd:  echoCmd,
+			},
+		},
+	})
+
 	s, err := server.New(server.Config{})
 	mocks.Must(t, "failed to create grpc server", err)
 	defer s.Shutdown()
@@ -25,12 +41,6 @@ func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
 		GRPCTimeout: 1 * time.Second,
 		ServerURL:   "localhost:9698",
 		Labels:      map[string]string{"tier": "testing"},
-		Commands: map[string]config.Command{
-			"remote-echo": {
-				Cmd:     "/bin/echo",
-				Timeout: 1 * time.Second,
-			},
-		},
 	})
 	mocks.Must(t, "failed to connect agent", client.Connect())
 
@@ -58,6 +68,17 @@ func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
 }
 
 func TestAgentTLSCanConnectAndRegisterACommand(t *testing.T) {
+	commands.Register(commands.RegistrationArgs{
+		Action: commands.ActionRegister,
+		Kind:   commands.KindLocalCommand,
+		Commands: []commands.CommandRegistration{
+			commands.CommandRegistration{
+				Name: "remote-echo",
+				Cmd:  echoCmd,
+			},
+		},
+	})
+
 	s, err := server.New(server.Config{
 		SecurityMode: "tls",
 		CertPath:     "../../config/test-fixtures/cert.pem",
@@ -77,12 +98,6 @@ func TestAgentTLSCanConnectAndRegisterACommand(t *testing.T) {
 		SecurityMode: "tls",
 		CertPath:     "../../config/test-fixtures/cert.pem",
 		Labels:       map[string]string{"tier": "testing"},
-		Commands: map[string]config.Command{
-			"remote-echo": {
-				Cmd:     "/bin/echo",
-				Timeout: 1 * time.Second,
-			},
-		},
 	})
 	mocks.Must(t, "failed to connect agent", client.Connect())
 
