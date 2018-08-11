@@ -115,7 +115,7 @@ func Test_ConfigurationReading(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.Name, func(t *testing.T) {
-			c, err := config.New(strings.NewReader(tc.Content), "meeseeks.db")
+			c, err := config.New(strings.NewReader(tc.Content))
 			if err != nil {
 				t.Fatalf("failed to parse configuration: %s", err)
 			}
@@ -146,7 +146,7 @@ func Test_Errors(t *testing.T) {
 	}
 	for _, tc := range tc {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := config.New(tc.reader, "meeseeks.db")
+			_, err := config.New(tc.reader)
 			mocks.AssertEquals(t, err.Error(), tc.expected)
 		})
 	}
@@ -160,17 +160,17 @@ func (badReader) Read(b []byte) (n int, err error) {
 }
 
 func Test_ConfigurationLoading(t *testing.T) {
-	_, err := config.ReadFile("./test-fixtures/empty-config.yml", "meeseeks.db")
+	_, err := config.ReadFile("./test-fixtures/empty-config.yml")
 	mocks.AssertEquals(t, nil, err)
 }
 
 func Test_ConfigurationLoadNonExistingFile(t *testing.T) {
-	_, err := config.ReadFile("./test-fixtures/non-existing-config.yml", "meeseeks.db")
+	_, err := config.ReadFile("./test-fixtures/non-existing-config.yml")
 	mocks.AssertEquals(t, "could not open configuration file ./test-fixtures/non-existing-config.yml: open ./test-fixtures/non-existing-config.yml: no such file or directory", err.Error())
 }
 
 func Test_ConfigurationBasicLoading(t *testing.T) {
-	c, err := config.ReadFile("./test-fixtures/basic-config.yml", "meeseeks.db")
+	c, err := config.ReadFile("./test-fixtures/basic-config.yml")
 	mocks.Must(t, "could not read configuration file", err)
 	mocks.AssertEquals(t, "./meeseeks-workspace.db", c.Database.Path)
 	mocks.AssertEquals(t, 2, len(c.Commands))
@@ -179,7 +179,7 @@ func Test_ConfigurationBasicLoading(t *testing.T) {
 }
 
 func TestReloadingConfigurationReplacesThings(t *testing.T) {
-	c, err := config.ReadFile("./test-fixtures/basic-config.yml", "meeseeks.db")
+	c, err := config.ReadFile("./test-fixtures/basic-config.yml")
 	mocks.Must(t, "could not read configuration file", err)
 	mocks.Must(t, "failed to load configuration", config.LoadConfiguration(c))
 
@@ -195,7 +195,7 @@ func TestReloadingConfigurationReplacesThings(t *testing.T) {
 	})
 	mocks.AssertEquals(t, true, ok)
 
-	c, err = config.ReadFile("./test-fixtures/basic-config.1.yml", "meeseeks.db")
+	c, err = config.ReadFile("./test-fixtures/basic-config.1.yml")
 	mocks.Must(t, "could not read the second configuration file", err)
 	mocks.Must(t, "failed to load the second configuration", config.LoadConfiguration(c))
 
