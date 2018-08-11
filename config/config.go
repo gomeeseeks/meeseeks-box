@@ -19,13 +19,13 @@ import (
 )
 
 // ReadFile reads the given filename and returns a configuration object
-func ReadFile(filename string, databasePath string) (Config, error) {
+func ReadFile(filename string) (Config, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return Config{}, fmt.Errorf("could not open configuration file %s: %s", filename, err)
 	}
 
-	cnf, err := New(f, databasePath)
+	cnf, err := New(f)
 	if err != nil {
 		return cnf, fmt.Errorf("configuration is invalid: %s", err)
 	}
@@ -72,10 +72,10 @@ func LoadConfiguration(cnf Config) error {
 }
 
 // New parses the configuration from a reader into an object and returns it
-func New(r io.Reader, databasePath string) (Config, error) {
+func New(r io.Reader) (Config, error) {
 	c := Config{
 		Database: db.DatabaseConfig{
-			Path:    databasePath,
+			Path:    "meeseeks.db",
 			Mode:    0600,
 			Timeout: 2 * time.Second,
 		},

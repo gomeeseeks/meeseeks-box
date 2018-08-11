@@ -40,7 +40,6 @@ func main() {
 
 type args struct {
 	ConfigFile        string
-	DatabasePath      string
 	DebugMode         bool
 	StealthMode       bool
 	DebugSlack        bool
@@ -59,7 +58,6 @@ type args struct {
 
 func parseArgs() args {
 	configFile := flag.String("config", os.ExpandEnv("${HOME}/.meeseeks.yaml"), "meeseeks configuration file")
-	databasePath := flag.String("db-path", "meeseeks.db", "path to the Meeseeks database")
 	debugMode := flag.Bool("debug", false, "enabled debug mode")
 	debugSlack := flag.Bool("debug-slack", false, "enabled debug mode for slack")
 	showVersion := flag.Bool("version", false, "print the version and exit")
@@ -90,7 +88,6 @@ func parseArgs() args {
 
 	return args{
 		ConfigFile:        *configFile,
-		DatabasePath:      *databasePath,
 		DebugMode:         *debugMode,
 		StealthMode:       *slackStealth,
 		DebugSlack:        *debugSlack,
@@ -111,12 +108,12 @@ func parseArgs() args {
 }
 
 func launch(args args) (shutdownFunc func(), reloadFunc func(), err error) {
-	cnf, err := config.ReadFile(args.ConfigFile, args.DatabasePath)
+	cnf, err := config.ReadFile(args.ConfigFile)
 	must("failed to load configuration file: %s", err)
 	must("could not load configuration: %s", config.LoadConfiguration(cnf))
 
 	reloadFunc = func() {
-		cnf, err := config.ReadFile(args.ConfigFile, args.DatabasePath)
+		cnf, err := config.ReadFile(args.ConfigFile)
 		if err != nil {
 			logrus.Warnf("failed to read configuration file %s: %s", args.ConfigFile, err)
 			return
