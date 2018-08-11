@@ -74,7 +74,7 @@ func (h Harness) WithDBPath(dbpath string) Harness {
 
 // Load creates a clientStub and a configuration based on the provided one
 func (h Harness) Load() ClientStub {
-	c, err := config.New(strings.NewReader(h.cnf))
+	c, err := config.New(strings.NewReader(h.cnf), "meeseeks.db")
 	if err != nil {
 		logrus.Fatalf("Could not build test harness: %s", err)
 	}
