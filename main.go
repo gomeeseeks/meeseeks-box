@@ -123,6 +123,8 @@ func launch(args args) (shutdownFunc func(), reloadFunc func(), err error) {
 		}
 		if err = config.LoadConfiguration(cnf); err != nil {
 			logrus.Warnf("failed to reload configuration %s: %s", args.ConfigFile, err)
+		} else {
+			logrus.Info("configuration successfully reloaded")
 		}
 	}
 
