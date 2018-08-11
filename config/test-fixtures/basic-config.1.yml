@@ -1,6 +1,8 @@
 ---
 groups:
-  admin: ["pablo"]
+  admin: 
+  - "pablo"
+  - "daniele"
 format:
   reply_styles:
     success: text
@@ -9,13 +11,9 @@ database:
 commands:
   echo:
     command: "echo"
-    auth_strategy: any
-    timeout: 5
-    help: 
-      summary: "command that prints back the arguments passed"
-  echo-2:
-    command: "echo"
-    auth_strategy: any
+    auth_strategy: group
+    allowed_groups:
+    - "admin"
     timeout: 10
     help: 
       summary: "command that prints back the arguments passed"

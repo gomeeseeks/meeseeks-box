@@ -4,9 +4,6 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/config"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/remote/api"
 
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
@@ -27,9 +24,8 @@ type Configuration struct {
 	SecurityMode string
 	CertPath     string
 
-	Token    string
-	Labels   map[string]string
-	Commands map[string]config.Command
+	Token  string
+	Labels map[string]string
 }
 
 // GetGRPCTimeout returns the configured timeout or a default of 10 seconds
@@ -80,42 +76,19 @@ func (c *Configuration) createAgentConfiguration(agentID string) *api.AgentConfi
 }
 
 func (c *Configuration) createRemoteCommands() map[string]*api.RemoteCommand {
-	remoteCommands := make(map[string]*api.RemoteCommand, len(c.Commands))
-	for name, cmd := range c.Commands {
+	remoteCommands := make(map[string]*api.RemoteCommand, 0)
+	for name, cmd := range commands.All() {
 		remoteCommands[name] = &api.RemoteCommand{
-			Timeout:         int64(cmd.Timeout),
-			AuthStrategy:    cmd.AuthStrategy,
-			AllowedGroups:   cmd.AllowedGroups,
-			ChannelStrategy: cmd.ChannelStrategy,
-			AllowedChannels: cmd.AllowedChannels,
+			Timeout:         cmd.GetTimeout().Nanoseconds(),
+			AuthStrategy:    cmd.GetAuthStrategy(),
+			AllowedGroups:   cmd.GetAllowedGroups(),
+			ChannelStrategy: cmd.GetChannelStrategy(),
+			AllowedChannels: cmd.GetAllowedChannels(),
 			Help: &api.Help{
-				Summary: cmd.Help.Summary,
-				Args:    cmd.Help.Args,
+				Summary: cmd.GetHelp().GetSummary(),
+				Args:    cmd.GetHelp().GetArgs(),
 			},
 		}
 	}
 	return remoteCommands
-}
-
-func (c *Configuration) registerLocalCommands() error {
-	cmds := make([]commands.CommandRegistration, 0)
-	for name, cmd := range c.Commands {
-		cmds = append(cmds, commands.CommandRegistration{
-			Name: name,
-			Cmd: shell.New(meeseeks.CommandOpts{
-				AuthStrategy:    cmd.AuthStrategy,
-				AllowedGroups:   cmd.AllowedGroups,
-				ChannelStrategy: cmd.ChannelStrategy,
-				AllowedChannels: cmd.AllowedChannels,
-				Args:            cmd.Args,
-				Handshake:       !cmd.NoHandshake,
-				Cmd:             cmd.Cmd,
-				Help: meeseeks.NewHelp(
-					cmd.Help.Summary,
-					cmd.Help.Args...),
-				Timeout: cmd.Timeout * time.Second,
-			})})
-	}
-	logrus.Debugf("registering commands: %#v", cmds)
-	return commands.Add(cmds...)
 }

@@ -74,7 +74,14 @@ func (r *RemoteClient) Connect() error {
 		},
 	)
 
-	return r.config.registerLocalCommands()
+	return nil
+}
+
+// Reconnect closes the connection pipeline
+func (r *RemoteClient) Reconnect() {
+	// This is not really handling the whole reconnection thing and can end up in
+	// the whole thing dying, I need to test this properly
+	r.cancelFunc()
 }
 
 // Run registers this agent in the remote server and launches a command stream to listen for commands to run
@@ -128,7 +135,7 @@ Service:
 				return
 
 			default:
-				logrus.Errorf("grpc error %d, shutting down", s)
+				logrus.Errorf("grpc error code %d (%s), shutting down", s, err)
 				r.triggerShutdown()
 				return
 

@@ -60,9 +60,10 @@ type Args struct {
 func New(args Args) *Executor {
 	ac := newActiveCommands()
 	if args.WithBuiltinCommands {
-		commands.LoadBuiltins()
-		commands.Replace(commands.CommandRegistration{Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(ac.Cancel)})
-		commands.Replace(commands.CommandRegistration{Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(ac.Cancel)})
+		builtins.LoadBuiltins(
+			builtins.NewCancelJobCommand(ac.Cancel),
+			builtins.NewKillJobCommand(ac.Cancel),
+		)
 	}
 
 	e := Executor{

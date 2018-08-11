@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/commands"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
 	"github.com/gomeeseeks/meeseeks-box/text/template"
@@ -170,26 +171,42 @@ var Commands = map[string]meeseeks.Command{
 		),
 		cmd: cmd{BuiltinGetAliasesCommand},
 	},
+	BuiltinHelpCommand: helpCommand{
+		help: newHelp(
+			"shows the help for all the commands, or a single one",
+			"-all: includes the builtin commands in the list",
+			"command, optional, shows the extended help for a single command",
+		),
+		cmd: cmd{BuiltinHelpCommand},
+	},
 
 	// Added as a placeholder so they are recognized as a builtin command
-	BuiltinHelpCommand:      nil,
 	BuiltinCancelJobCommand: nil,
 	BuiltinKillJobCommand:   nil,
 }
 
 var errNoJobIDAsArgument = fmt.Errorf("no job id passed")
 
-// AddHelpCommand creates a new help command and adds it to the map
-func AddHelpCommand(c map[string]meeseeks.Command) {
-	c[BuiltinHelpCommand] = helpCommand{
-		commands: c,
-		cmd:      cmd{BuiltinHelpCommand},
-		help: newHelp(
-			"shows the help for all the commands, or a single one",
-			"-all: includes the builtin commands in the list",
-			"command, optional, shows the extended help for a single command",
-		),
+// LoadBuiltins loads the builtin commands
+func LoadBuiltins(cancelCommand, killCommand meeseeks.Command) error {
+	Commands[BuiltinCancelJobCommand] = cancelCommand
+	Commands[BuiltinKillJobCommand] = killCommand
+
+	reg := make([]commands.CommandRegistration, 0)
+
+	for name, cmd := range Commands {
+		reg = append(reg, commands.CommandRegistration{
+			Name: name,
+			Cmd:  cmd,
+		})
 	}
+
+	return commands.Register(
+		commands.RegistrationArgs{
+			Commands: reg,
+			Kind:     commands.KindBuiltinCommand,
+			Action:   commands.ActionRegister,
+		})
 }
 
 type defaultTimeout struct{}
@@ -304,7 +321,6 @@ type helpCommand struct {
 	anyChannel
 	emptyArgs
 	defaultTimeout
-	commands map[string]meeseeks.Command
 }
 
 var helpListTemplate = `{{ range $name, $c := .commands }}- {{ $name }}: {{ $c.GetHelp.GetSummary }}
@@ -329,20 +345,20 @@ func (h helpCommand) Execute(_ context.Context, job meeseeks.Job) (string, error
 			return "", err
 		}
 
-		commands := make(map[string]meeseeks.Command)
-		for k, c := range h.commands {
+		cmds := make(map[string]meeseeks.Command)
+		for k, c := range commands.All() {
 			if _, isBuiltin := Commands[k]; isBuiltin && !*all {
 				continue
 			}
-			commands[k] = c
+			cmds[k] = c
 		}
 
 		return tmpl.Render(map[string]interface{}{
-			"commands": commands,
+			"commands": cmds,
 		})
 
 	case 1:
-		if cmd, ok := h.commands[flags.Arg(0)]; ok {
+		if cmd, ok := commands.All()[flags.Arg(0)]; ok {
 			tmpl, err := template.New("help", helpCommandTemplate)
 			if err != nil {
 				return "", err

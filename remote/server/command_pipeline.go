@@ -111,6 +111,8 @@ func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFini
 
 func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan api.CommandRequest, error) {
 
+	logrus.Infof("registering agent %s", in.GetAgentID())
+
 	agentPipe := make(chan api.CommandRequest)
 
 	agent := remoteAgent{
@@ -145,25 +147,54 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	logrus.Debugf("remote agent is registering commands %#v", cmds)
-	if err := commands.Add(cmds...); err != nil {
+	logrus.Infof("remote agent is registering commands %#v", cmds)
+	if err := commands.Register(
+		commands.RegistrationArgs{
+			Kind:     commands.KindRemoteCommand,
+			Action:   commands.ActionRegister,
+			Commands: cmds,
+		}); err != nil {
 		return nil, fmt.Errorf("failed to register remote commands: %s", err)
 	}
+
+	logrus.Infof("Done registering commands, returning pipeline")
 
 	return agentPipe, nil
 }
 
 func (p *commandPipelineServer) deRegisterAgentCommands(in *api.AgentConfiguration) {
 
-	cmds := make([]string, 0)
-	for name := range in.Commands {
-		cmds = append(cmds, name)
+	cmds := make([]commands.CommandRegistration, 0)
+	for name, cmd := range in.Commands {
+		cmds = append(cmds, commands.CommandRegistration{
+			Name: name,
+			Cmd: remoteCommand{
+				CommandOpts: meeseeks.CommandOpts{
+					Cmd:             name,
+					AllowedChannels: cmd.GetAllowedChannels(),
+					AllowedGroups:   cmd.GetAllowedGroups(),
+					AuthStrategy:    cmd.GetAuthStrategy(),
+					ChannelStrategy: cmd.GetChannelStrategy(),
+					Handshake:       cmd.GetHasHandshake(),
+					Timeout:         time.Duration(cmd.GetTimeout()) * time.Second,
+					Help: meeseeks.NewHelp(
+						cmd.GetHelp().GetSummary(),
+						cmd.GetHelp().GetArgs()...),
+				},
+			},
+		})
 	}
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	commands.Remove(cmds...)
+	if err := commands.Register(commands.RegistrationArgs{
+		Action:   commands.ActionUnregister,
+		Kind:     commands.KindRemoteCommand,
+		Commands: cmds,
+	}); err != nil {
+		logrus.Errorf("failed to unregister agent %s: %s", in.AgentID, err)
+	}
 }
 
 func (p *commandPipelineServer) finishJob(f finishedJob) error {

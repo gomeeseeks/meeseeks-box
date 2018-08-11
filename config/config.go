@@ -18,9 +18,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// LoadFile reads the given filename, builds a configuration object and initializes
-// all the required subsystems
-func LoadFile(filename string) (Config, error) {
+// ReadFile reads the given filename and returns a configuration object
+func ReadFile(filename string) (Config, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return Config{}, fmt.Errorf("could not open configuration file %s: %s", filename, err)
@@ -33,16 +32,13 @@ func LoadFile(filename string) (Config, error) {
 	return cnf, nil
 }
 
-// LoadConfig loads the configuration in all the dependent subsystems
-func LoadConfig(cnf Config) error {
+// LoadConfiguration loads the configuration in all the dependent subsystems
+func LoadConfiguration(cnf Config) error {
 	if err := db.Configure(cnf.Database); err != nil {
-		return err
+		return fmt.Errorf("could not configure database: %s", err)
 	}
-	auth.Configure(cnf.Groups)
-	formatter.Configure(cnf.Format)
 
 	cmds := make([]commands.CommandRegistration, 0)
-
 	for name, cmd := range cnf.Commands {
 		cmds = append(cmds, commands.CommandRegistration{
 			Name: name,
@@ -58,9 +54,21 @@ func LoadConfig(cnf Config) error {
 					cmd.Help.Summary,
 					cmd.Help.Args...),
 				Timeout: cmd.Timeout * time.Second,
-			})})
+			}),
+		})
 	}
-	return commands.Add(cmds...)
+	if err := commands.Register(commands.RegistrationArgs{
+		Kind:     commands.KindLocalCommand,
+		Action:   commands.ActionRegister,
+		Commands: cmds,
+	}); err != nil {
+		return fmt.Errorf("could not load commands: %s", err)
+	}
+
+	auth.Configure(cnf.Groups)
+	formatter.Configure(cnf.Format)
+
+	return nil
 }
 
 // New parses the configuration from a reader into an object and returns it

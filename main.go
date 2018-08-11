@@ -28,12 +28,12 @@ func main() {
 
 	configureLogger(args)
 
-	shutdownFunc, err := launch(args)
+	shutdownFunc, reloadFunc, err := launch(args)
 	must("could not launch meeseeks-box: %s", err)
 
-	waitForSignals(func() { // this locks for good, but receives a shutdown function
-		shutdownFunc()
-	})
+	waitForSignals( // this locks for good, but receives a shutdown function
+		shutdownFunc,
+		reloadFunc)
 
 	logrus.Info("Everything has been shut down, bye bye!")
 }
@@ -107,15 +107,28 @@ func parseArgs() args {
 	}
 }
 
-func launch(args args) (func(), error) {
-	cnf, err := config.LoadFile(args.ConfigFile)
+func launch(args args) (shutdownFunc func(), reloadFunc func(), err error) {
+	cnf, err := config.ReadFile(args.ConfigFile)
 	must("failed to load configuration file: %s", err)
+	must("could not load configuration: %s", config.LoadConfiguration(cnf))
+
+	reloadFunc = func() {
+		cnf, err := config.ReadFile(args.ConfigFile)
+		if err != nil {
+			logrus.Warnf("failed to read configuration file %s: %s", args.ConfigFile, err)
+			return
+		}
+		if err = config.LoadConfiguration(cnf); err != nil {
+			logrus.Warnf("failed to reload configuration %s: %s", args.ConfigFile, err)
+		} else {
+			logrus.Info("configuration successfully reloaded")
+		}
+	}
 
 	httpServer := listenHTTP(args)
 
 	switch args.ExecutionMode {
 	case "server":
-		must("could not load configuration: %s", config.LoadConfig(cnf))
 		must("Could not flush running jobs after: %s", persistence.Jobs().FailRunningJobs())
 
 		metrics.RegisterServerMetrics()
@@ -140,7 +153,7 @@ func launch(args args) (func(), error) {
 			exc.Shutdown()
 			httpServer.Shutdown()
 			remoteServer.Shutdown()
-		}, nil
+		}, reloadFunc, nil
 
 	case "agent":
 		// metrics.RegisterAgentMetrics()
@@ -149,11 +162,9 @@ func launch(args args) (func(), error) {
 			ServerURL:    args.AgentOf,
 			Token:        "null-token",
 			GRPCTimeout:  10 * time.Second,
-			Commands:     cnf.Commands,
 			Labels:       map[string]string{},
 			SecurityMode: args.GRPCSecurityMode,
 			CertPath:     args.GRPCCertPath,
-			// Options: add some options so we have at least some security, or at least make insecure optional
 		})
 
 		must("could not connect to remote server: %s", remoteClient.Connect())
@@ -163,11 +174,14 @@ func launch(args args) (func(), error) {
 		logrus.Debugf("agent running connected to remote server: %s", args.AgentOf)
 
 		return func() {
-			remoteClient.Shutdown()
-		}, nil
+				remoteClient.Shutdown()
+			}, func() {
+				reloadFunc()
+				remoteClient.Reconnect()
+			}, nil
 
 	default:
-		return nil, fmt.Errorf("Invalid execution mode %s, Valid execution modes are server (default), and agent",
+		return nil, nil, fmt.Errorf("Invalid execution mode %s, Valid execution modes are server (default), and agent",
 			args.ExecutionMode)
 	}
 }
@@ -235,9 +249,9 @@ func startRemoteServer(args args) (*server.RemoteServer, error) {
 	return s, nil
 }
 
-func waitForSignals(shutdownGracefully func()) {
+func waitForSignals(shutdownGracefully func(), reloadFunc func()) {
 	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
+	signal.Notify(signalCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 
 Loop:
 	for sig := range signalCh { // Listen for a signal forever
@@ -247,6 +261,10 @@ Loop:
 			break Loop
 
 		case syscall.SIGHUP:
+			logrus.Infof("Got signal %s, reloading the configuration", sig)
+			reloadFunc()
+
+		case syscall.SIGUSR1:
 			toggleDebugLogging()
 		}
 	}

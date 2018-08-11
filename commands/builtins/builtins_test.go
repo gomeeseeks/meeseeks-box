@@ -32,14 +32,11 @@ var req = meeseeks.Request{
 
 func Test_BuiltinCommands(t *testing.T) {
 	auth.Configure(basicGroups)
-	commands.LoadBuiltins()
 
-	commands.Replace(commands.CommandRegistration{
-		Name: builtins.BuiltinCancelJobCommand, Cmd: builtins.NewCancelJobCommand(
-			func(_ uint64) {})})
-	commands.Replace(commands.CommandRegistration{
-		Name: builtins.BuiltinKillJobCommand, Cmd: builtins.NewKillJobCommand(
-			func(_ uint64) {})})
+	cancelCmd := builtins.NewCancelJobCommand(func(_ uint64) {})
+	killCmd := builtins.NewKillJobCommand(func(_ uint64) {})
+
+	builtins.LoadBuiltins(cancelCmd, killCmd)
 
 	tt := []struct {
 		name                    string
@@ -347,12 +344,18 @@ func Test_BuiltinCommands(t *testing.T) {
 				err := persistence.Aliases().Create("userid", "testalias", "audit", []string{"-limit", "1"}...)
 				mocks.Must(t, "create an alias", err)
 
-				commands.Add(
-					commands.CommandRegistration{
-						Name: "noop", Cmd: shell.New(meeseeks.CommandOpts{
-							AuthStrategy: "any",
-							Cmd:          "true",
-						})})
+				commands.Register(
+					commands.RegistrationArgs{
+						Kind:   commands.KindLocalCommand,
+						Action: commands.ActionRegister,
+						Commands: []commands.CommandRegistration{
+							commands.CommandRegistration{
+								Name: "noop",
+								Cmd: shell.New(meeseeks.CommandOpts{
+									AuthStrategy: "any",
+									Cmd:          "true",
+								}),
+							}}})
 
 				_, err = persistence.Jobs().Create(
 					meeseeks.Request{
