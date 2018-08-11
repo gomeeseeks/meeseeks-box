@@ -262,6 +262,7 @@ Loop:
 			break Loop
 
 		case syscall.SIGHUP:
+			logrus.Infof("Got signal %s, reloading the configuration", sig)
 			reloadFunc()
 
 		case syscall.SIGUSR1:
