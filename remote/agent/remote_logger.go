@@ -37,17 +37,8 @@ func (g grpcLogWriter) Append(jobID uint64, content string) error {
 	return err
 }
 
-// SetError implements LogWritter.SetError
-func (g grpcLogWriter) SetError(jobID uint64, jobErr error) error {
-	ctx, cancel := context.WithTimeout(context.Background(), g.timeoutSeconds)
-	defer cancel()
-
-	logrus.Debugf("setting error for job %d - '%s'", jobID, jobErr)
-	_, err := g.client.SetError(ctx, &api.ErrorLogEntry{
-		JobID: jobID,
-		Error: jobErr.Error(),
-	})
-	return err
+func (g grpcLogWriter) SetError(jobID uint64, err error) error {
+	return nil
 }
 
 type nullReader struct {

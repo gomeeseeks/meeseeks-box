@@ -40,6 +40,7 @@ type MockServer struct{}
 
 func (m MockServer) RegisterAgent(in *api.AgentConfiguration, agent api.CommandPipeline_RegisterAgentServer) error {
 	logrus.Infof("mock server: sending command to agent")
+
 	err := agent.Send(&api.CommandRequest{
 		JobID:    1,
 		Command:  "echo",
@@ -53,9 +54,25 @@ func (m MockServer) RegisterAgent(in *api.AgentConfiguration, agent api.CommandP
 	}
 
 	wg.Add(1)
+
+	err = agent.Send(&api.CommandRequest{
+		JobID:    2,
+		Command:  "invalid",
+		Args:     []string{},
+		Channel:  "channel",
+		Username: "someone",
+	})
+	logrus.Infof("mock server: command sent to agent")
+	if err != nil {
+		return fmt.Errorf("failed to send command request: %s", err)
+	}
+	wg.Add(1)
+
 	wg.Wait()
+	close(ch)
 
 	logrus.Infof("mock server: done, exiting")
+
 	return nil
 }
 
@@ -64,6 +81,7 @@ func (m MockServer) Finish(ctx context.Context, fin *api.CommandFinish) (*api.Em
 
 	ch <- *fin
 	wg.Done()
+
 	return &api.Empty{}, nil
 }
 
@@ -138,11 +156,23 @@ func TestAgentTalksToServer(t *testing.T) {
 		logrus.Infof("agent test: client stopped")
 	}()
 
-	finished := <-ch
+	cmds := make(map[uint64]api.CommandFinish)
+	for finished := range ch {
+		cmds[finished.GetJobID()] = finished
+	}
+
+	logrus.Infof("finished: %#v", cmds)
 
 	logrus.Infof("agent test: shutting down client")
 	client.Shutdown()
 
+	finished := cmds[1]
 	mocks.AssertEquals(t, "something something\n", finished.GetContent())
+	mocks.AssertEquals(t, "", finished.GetError())
 	mocks.AssertEquals(t, uint64(1), finished.GetJobID())
+
+	finished = cmds[2]
+	mocks.AssertEquals(t, "", finished.GetContent())
+	mocks.AssertEquals(t, "could not find command invalid in remote agent", finished.GetError())
+	mocks.AssertEquals(t, uint64(2), finished.GetJobID())
 }
