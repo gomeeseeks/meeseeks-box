@@ -1,6 +1,8 @@
 package agent_test
 
 import (
+	"context"
+	"net"
 	"testing"
 	"time"
 
@@ -9,116 +11,72 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/remote/agent"
-	"github.com/gomeeseeks/meeseeks-box/remote/server"
+	"github.com/gomeeseeks/meeseeks-box/remote/api"
+	"google.golang.org/grpc"
 )
 
-var echoCmd = shell.New(meeseeks.CommandOpts{
-	Cmd:  "echo",
-	Help: meeseeks.NewHelp("echo"),
-})
+type MockServer struct{}
 
-func TestAgentCanConnectAndRegisterACommand(t *testing.T) {
-	commands.Register(commands.RegistrationArgs{
-		Action: commands.ActionRegister,
-		Kind:   commands.KindLocalCommand,
-		Commands: []commands.CommandRegistration{
-			commands.CommandRegistration{
-				Name: "remote-echo",
-				Cmd:  echoCmd,
-			},
-		},
-	})
-
-	s, err := server.New(server.Config{})
-	mocks.Must(t, "failed to create grpc server", err)
-	defer s.Shutdown()
-
-	go func() {
-		mocks.Must(t, "Failed to start server", s.Listen(":9698"))
-	}()
-
-	client := agent.New(agent.Configuration{
-		GRPCTimeout: 1 * time.Second,
-		ServerURL:   "localhost:9698",
-		Labels:      map[string]string{"tier": "testing"},
-	})
-	mocks.Must(t, "failed to connect agent", client.Connect())
-
-	w := make(chan interface{})
-	go func() {
-		w <- true
-		client.Run()
-	}()
-	<-w
-	defer client.Shutdown()
-	defer commands.Reset()
-
-	_, ok := commands.Find(&meeseeks.Request{
-		Command:     "remote-echo",
-		Args:        []string{"hola"},
-		IsIM:        false,
-		Channel:     "test",
-		ChannelID:   "test-id",
-		ChannelLink: "test-link",
-		UserID:      "user-id",
-		Username:    "username",
-		UserLink:    "user-link",
-	})
-	mocks.AssertEquals(t, true, ok)
+func (m MockServer) RegisterAgent(in *api.AgentConfiguration, agent api.CommandPipeline_RegisterAgentServer) error {
+	return nil
 }
 
-func TestAgentTLSCanConnectAndRegisterACommand(t *testing.T) {
-	commands.Register(commands.RegistrationArgs{
-		Action: commands.ActionRegister,
-		Kind:   commands.KindLocalCommand,
-		Commands: []commands.CommandRegistration{
-			commands.CommandRegistration{
-				Name: "remote-echo",
-				Cmd:  echoCmd,
-			},
-		},
-	})
+func (m MockServer) Finish(ctx context.Context, fin *api.CommandFinish) (*api.Empty, error) {
+	return &api.Empty{}, nil
+}
 
-	s, err := server.New(server.Config{
-		SecurityMode: "tls",
-		CertPath:     "../../config/test-fixtures/cert.pem",
-		KeyPath:      "../../config/test-fixtures/key.pem",
-	})
-	mocks.Must(t, "failed to create grpc server", err)
-	defer s.Shutdown()
+type MockLogger struct{}
+
+func (MockLogger) Append(writer api.LogWriter_AppendServer) error {
+	return nil
+}
+
+func (MockLogger) SetError(ctx context.Context, entry *api.ErrorLogEntry) (*api.Empty, error) {
+	return &api.Empty{}, nil
+}
+
+func TestAgentTalksToServer(t *testing.T) {
+	mocks.Must(t, "failed to register commands",
+		commands.Register(commands.RegistrationArgs{
+			Action: commands.ActionRegister,
+			Kind:   commands.KindLocalCommand,
+			Commands: []commands.CommandRegistration{
+				{
+					Name: "remote-echo",
+					Cmd: shell.New(meeseeks.CommandOpts{
+						Cmd:  "echo",
+						Help: meeseeks.NewHelp("echo"),
+					}),
+				},
+			},
+		}))
 	defer commands.Reset()
 
-	go func() {
-		mocks.Must(t, "Failed to start server", s.Listen(":9698"))
-	}()
+	m := MockServer{}
+	l := MockLogger{}
 
+	s := grpc.NewServer()
+	api.RegisterCommandPipelineServer(s, m)
+	api.RegisterLogWriterServer(s, l)
+
+	// Start server
+	go func() {
+		address, err := net.Listen("tcp", "localhost:9700")
+		mocks.Must(t, "wut?", err)
+		if err := s.Serve(address); err != nil {
+			t.Errorf("failed to start server at %s: %s", address, err)
+		}
+	}()
+	defer s.GracefulStop()
+
+	// Connect agent
 	client := agent.New(agent.Configuration{
-		GRPCTimeout:  1 * time.Second,
-		ServerURL:    "localhost:9698",
-		SecurityMode: "tls",
-		CertPath:     "../../config/test-fixtures/cert.pem",
-		Labels:       map[string]string{"tier": "testing"},
+		GRPCTimeout: 1 * time.Second,
+		ServerURL:   "localhost:9700",
+		Labels:      map[string]string{"tier": "testing"},
 	})
-	mocks.Must(t, "failed to connect agent", client.Connect())
+	err := client.Connect()
+	mocks.Must(t, "failed to connect to remote server", err)
+	client.Shutdown()
 
-	w := make(chan interface{})
-	go func() {
-		w <- true
-		client.Run()
-	}()
-	<-w
-	defer client.Shutdown()
-
-	_, ok := commands.Find(&meeseeks.Request{
-		Command:     "remote-echo",
-		Args:        []string{"hola"},
-		IsIM:        false,
-		Channel:     "test",
-		ChannelID:   "test-id",
-		ChannelLink: "test-link",
-		UserID:      "user-id",
-		Username:    "username",
-		UserLink:    "user-link",
-	})
-	mocks.AssertEquals(t, true, ok)
 }

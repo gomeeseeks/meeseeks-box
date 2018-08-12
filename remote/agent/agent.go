@@ -209,18 +209,21 @@ func (r *RemoteClient) runCommand(cmd api.CommandRequest) {
 }
 
 func (r *RemoteClient) triggerShutdown() {
-	if r.pipeline != nil {
-		if err := r.pipeline.CloseSend(); err != nil {
-			logrus.Errorf("failed to send closing signal to server: %s", err)
-		}
-	}
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 }
 
 // Shutdown will close the stream and wait for all the commands to finish execution
 func (r *RemoteClient) Shutdown() {
-	logrus.Debugf("invoking cancel function")
-	r.cancelFunc()
+	if r.pipeline != nil {
+		if err := r.pipeline.CloseSend(); err != nil {
+			logrus.Errorf("failed to send closing signal to server: %s", err)
+		}
+	}
+
+	if r.cancelFunc != nil {
+		logrus.Debugf("invoking cancel function")
+		r.cancelFunc()
+	}
 
 	logrus.Debugf("waiting on sync wait group")
 	r.wg.Wait()
