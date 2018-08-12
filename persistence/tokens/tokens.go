@@ -1,14 +1,15 @@
 package tokens
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/coreos/bbolt"
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/persistence/db"
+
+	"github.com/coreos/bbolt"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,12 +42,9 @@ func (Tokens) Find(filter meeseeks.APITokenFilter) ([]meeseeks.APIToken, error) 
 }
 
 func create(userLink, channelLink, text string) (string, error) {
-	token, err := createUUID()
-	if err != nil {
-		return "", fmt.Errorf("could not create UUID for token: %s", err)
-	}
+	token := uuid.New().String()
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(tokensBucketKey)
 		if err != nil {
 			return err
@@ -131,18 +129,4 @@ func find(filter meeseeks.APITokenFilter) ([]meeseeks.APIToken, error) {
 	})
 	logrus.Debugf("Looking up tokens, found %#v", tokens)
 	return tokens, err
-}
-
-// createUUID has been _honored_ from hashicorp UUID
-func createUUID() (string, error) {
-	buf := make([]byte, 16) // Maybe make this configurable
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%12x",
-		buf[0:4],
-		buf[4:6],
-		buf[6:8],
-		buf[8:10],
-		buf[10:16]), nil
 }

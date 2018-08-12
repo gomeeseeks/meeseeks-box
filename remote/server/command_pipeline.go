@@ -110,7 +110,6 @@ func (p *commandPipelineServer) Finish(ctx context.Context, fin *api.CommandFini
 }
 
 func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan api.CommandRequest, error) {
-
 	logrus.Infof("registering agent %s", in.GetAgentID())
 
 	agentPipe := make(chan api.CommandRequest)
@@ -163,7 +162,6 @@ func (p *commandPipelineServer) registerAgent(in *api.AgentConfiguration) (chan 
 }
 
 func (p *commandPipelineServer) deRegisterAgentCommands(in *api.AgentConfiguration) {
-
 	cmds := make([]commands.CommandRegistration, 0)
 	for name, cmd := range in.Commands {
 		cmds = append(cmds, commands.CommandRegistration{

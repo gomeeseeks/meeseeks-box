@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/gomeeseeks/meeseeks-box/commands"
@@ -101,21 +100,20 @@ Service:
 		commandStream, err := r.cmdClient.RegisterAgent(r.ctx, r.config.createAgentConfiguration(r.agentID))
 		if err != nil {
 			if b.Attempt() > 10 {
-				logrus.Errorf("failed to register agent in remote server: %s", err)
-				r.triggerShutdown()
+				logrus.Errorf("failed to register agent in remote server %s, Quitting", err)
 				return
 			}
-			logrus.Warnf("failed to register agent in remote server: %s... retrying", err)
+			logrus.Warnf("failed to register agent in remote server: %s. Retrying", err)
 			time.Sleep(b.Duration())
 			continue Service
 		}
 		b.Reset()
 
+		logrus.Infof("Agent %s registered on server, listening for commands", r.agentID)
 		for {
 			cmd, err := commandStream.Recv()
 			if err == io.EOF {
-				logrus.Infof("received EOF, shutting down")
-				r.triggerShutdown()
+				logrus.Infof("received EOF, quitting")
 				return
 			}
 
@@ -131,12 +129,10 @@ Service:
 
 			case codes.Canceled:
 				logrus.Infof("cancelled, quitting")
-				r.triggerShutdown()
 				return
 
 			default:
-				logrus.Errorf("grpc error code %d (%s), shutting down", s, err)
-				r.triggerShutdown()
+				logrus.Errorf("grpc error code %d (%s), quitting", s, err)
 				return
 
 			}
@@ -208,19 +204,18 @@ func (r *RemoteClient) runCommand(cmd api.CommandRequest) {
 	logrus.Debugf("command %#v finished execution", cmd)
 }
 
-func (r *RemoteClient) triggerShutdown() {
+// Shutdown will close the stream and wait for all the commands to finish execution
+func (r *RemoteClient) Shutdown() {
 	if r.pipeline != nil {
 		if err := r.pipeline.CloseSend(); err != nil {
 			logrus.Errorf("failed to send closing signal to server: %s", err)
 		}
 	}
-	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-}
 
-// Shutdown will close the stream and wait for all the commands to finish execution
-func (r *RemoteClient) Shutdown() {
-	logrus.Debugf("invoking cancel function")
-	r.cancelFunc()
+	if r.cancelFunc != nil {
+		logrus.Debugf("invoking cancel function")
+		r.cancelFunc()
+	}
 
 	logrus.Debugf("waiting on sync wait group")
 	r.wg.Wait()

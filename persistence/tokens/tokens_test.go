@@ -6,8 +6,22 @@ import (
 	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 	"github.com/gomeeseeks/meeseeks-box/mocks"
 	"github.com/gomeeseeks/meeseeks-box/persistence"
+	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
 )
 
+func TestGetNonExistingToken(t *testing.T) {
+	mocks.WithTmpDB(func(_ string) {
+		_, err := persistence.APITokens().Get("invalid")
+		mocks.AssertEquals(t, tokens.ErrTokenNotFound, err)
+	})
+}
+
+func TestRevokeNonExistingToken(t *testing.T) {
+	mocks.WithTmpDB(func(_ string) {
+		err := persistence.APITokens().Revoke("invalid")
+		mocks.AssertEquals(t, tokens.ErrTokenNotFound, err)
+	})
+}
 func Test_TokenLifecycle(t *testing.T) {
 	mocks.WithTmpDB(func(_ string) {
 		id, err := persistence.APITokens().Create(
@@ -27,6 +41,8 @@ func Test_TokenLifecycle(t *testing.T) {
 		mocks.AssertEquals(t, "myuser", tk.UserLink)
 		mocks.AssertEquals(t, "mychannel", tk.ChannelLink)
 		mocks.AssertEquals(t, "echo hello", tk.Text)
+
+		mocks.Must(t, "could not revoke token", persistence.APITokens().Revoke(id))
 	})
 }
 

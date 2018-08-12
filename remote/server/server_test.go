@@ -85,13 +85,24 @@ func TestAgentCanConnect(t *testing.T) {
 		appender, err := logClient.Append(ctx)
 		mocks.Must(t, "could not create log appender", err)
 
+		_, err = logClient.SetError(ctx, &api.ErrorLogEntry{JobID: cmdReq.JobID, Error: "something happened"})
+		mocks.Must(t, "could not set error", err)
+
 		mocks.Must(t, "could not send log line", appender.Send(&api.LogEntry{JobID: cmdReq.JobID, Line: "log line 1"}))
+
+		mocks.Must(t, "could not close log appender", appender.CloseSend())
+
+		time.Sleep(1 * time.Millisecond)
 
 		cmdClient.Finish(ctx, &api.CommandFinish{
 			AgentID: "agentID1",
 			Content: "done",
 			JobID:   cmdReq.JobID,
 		})
+
+		mocks.Must(t, "can't close grpc client", client.Close())
+
+		time.Sleep(1 * time.Millisecond)
 	})
 }
 
