@@ -1,10 +1,6 @@
 # Meeseeks Box
 
-[![Build Status](https://travis-ci.org/gomeeseeks/meeseeks-box.svg?branch=master)](https://travis-ci.org/gomeeseeks/meeseeks-box)
-
-[![Go Report Card](http://goreportcard.com/badge/github.com/gomeeseeks/meeseeks-box)](https://goreportcard.com/report/github.com/gomeeseeks/meeseeks-box)
-
-[![Coverage Status](https://coveralls.io/repos/github/gomeeseeks/meeseeks-box/badge.svg?branch=master&service=github)](https://coveralls.io/github/gomeeseeks/meeseeks-box?branch=master&service=github)
+[![Build Status](https://travis-ci.org/gomeeseeks/meeseeks-box.svg?branch=master)](https://travis-ci.org/gomeeseeks/meeseeks-box) [![Go Report Card](http://goreportcard.com/badge/github.com/gomeeseeks/meeseeks-box)](https://goreportcard.com/report/github.com/gomeeseeks/meeseeks-box) [![Coverage Status](https://coveralls.io/repos/github/gomeeseeks/meeseeks-box/badge.svg?branch=master&service=github)](https://coveralls.io/github/gomeeseeks/meeseeks-box?branch=master&service=github)
 
 > You make a request
 >
