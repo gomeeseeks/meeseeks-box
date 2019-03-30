@@ -7,26 +7,19 @@ import (
 	"os"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/commands"
-	"github.com/pcarranza/meeseeks-box/commands/shell"
+	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/commands/shell"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
 
-	"github.com/pcarranza/meeseeks-box/auth"
-	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/persistence/db"
+	"github.com/gomeeseeks/meeseeks-box/text/formatter"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
-// Default colors
-const (
-	DefaultInfoColorMessage    = ""
-	DefaultSuccessColorMessage = "good"
-	DefaultWarningColorMessage = "warning"
-	DefaultErrColorMessage     = "danger"
-)
-
-// LoadFile reads the given filename, builds a configuration object and initializes
-// all the required subsystems
-func LoadFile(filename string) (Config, error) {
+// ReadFile reads the given filename and returns a configuration object
+func ReadFile(filename string) (Config, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return Config{}, fmt.Errorf("could not open configuration file %s: %s", filename, err)
@@ -39,24 +32,42 @@ func LoadFile(filename string) (Config, error) {
 	return cnf, nil
 }
 
-// LoadConfig loads the configuration in all the dependent subsystems
-func LoadConfig(cnf Config) error {
+// LoadConfiguration loads the configuration in all the dependent subsystems
+func LoadConfiguration(cnf Config) error {
 	if err := db.Configure(cnf.Database); err != nil {
-		return err
+		return fmt.Errorf("could not configure database: %s", err)
 	}
-	auth.Configure(cnf.Groups)
 
+	cmds := make([]commands.CommandRegistration, 0)
 	for name, cmd := range cnf.Commands {
-		commands.Add(name, shell.New(shell.CommandOpts{
-			AllowedGroups: cmd.AllowedGroups,
-			Args:          cmd.Args,
-			AuthStrategy:  cmd.AuthStrategy,
-			Cmd:           cmd.Cmd,
-			Help:          cmd.Help,
-			Templates:     cmd.Templates,
-			Timeout:       cmd.Timeout * time.Second,
-		}))
+		cmds = append(cmds, commands.CommandRegistration{
+			Name: name,
+			Cmd: shell.New(meeseeks.CommandOpts{
+				AuthStrategy:    cmd.AuthStrategy,
+				AllowedGroups:   cmd.AllowedGroups,
+				ChannelStrategy: cmd.ChannelStrategy,
+				AllowedChannels: cmd.AllowedChannels,
+				Args:            cmd.Args,
+				Handshake:       !cmd.NoHandshake,
+				Cmd:             cmd.Cmd,
+				Help: meeseeks.NewHelp(
+					cmd.Help.Summary,
+					cmd.Help.Args...),
+				Timeout: cmd.Timeout * time.Second,
+			}),
+		})
 	}
+	if err := commands.Register(commands.RegistrationArgs{
+		Kind:     commands.KindLocalCommand,
+		Action:   commands.ActionRegister,
+		Commands: cmds,
+	}); err != nil {
+		return fmt.Errorf("could not load commands: %s", err)
+	}
+
+	auth.Configure(cnf.Groups)
+	formatter.Configure(cnf.Format)
+
 	return nil
 }
 
@@ -68,10 +79,13 @@ func New(r io.Reader) (Config, error) {
 			Mode:    0600,
 			Timeout: 2 * time.Second,
 		},
-		Colors: MessageColors{
-			Info:    DefaultInfoColorMessage,
-			Success: DefaultSuccessColorMessage,
-			Error:   DefaultErrColorMessage,
+		Format: formatter.FormatConfig{
+			Colors: formatter.MessageColors{
+				Info:    formatter.DefaultInfoColorMessage,
+				Success: formatter.DefaultSuccessColorMessage,
+				Error:   formatter.DefaultErrColorMessage,
+			},
+			ReplyStyle: map[string]string{},
 		},
 		Pool: 20,
 	}
@@ -91,29 +105,28 @@ func New(r io.Reader) (Config, error) {
 
 // Config is the struct used to load MrMeeseeks configuration yaml
 type Config struct {
-	Database db.DatabaseConfig   `yaml:"database"`
-	Messages map[string][]string `yaml:"messages"`
-	Commands map[string]Command  `yaml:"commands"`
-	Colors   MessageColors       `yaml:"colors"`
-	Groups   map[string][]string `yaml:"groups"`
-	Pool     int                 `yaml:"pool"`
+	Database db.DatabaseConfig      `yaml:"database"`
+	Commands map[string]Command     `yaml:"commands"`
+	Groups   map[string][]string    `yaml:"groups"`
+	Pool     int                    `yaml:"pool"`
+	Format   formatter.FormatConfig `yaml:"format"`
 }
 
-// CommandConfig is the struct that handles a command configuration
+// Command is the struct that handles a command configuration
 type Command struct {
-	Cmd           string            `yaml:"command"`
-	Args          []string          `yaml:"args"`
-	AllowedGroups []string          `yaml:"allowed_groups"`
-	AuthStrategy  string            `yaml:"auth_strategy"`
-	Timeout       time.Duration     `yaml:"timeout"`
-	Templates     map[string]string `yaml:"templates"`
-	Help          string            `yaml:"help"`
-	Type          int
+	Cmd             string        `yaml:"command"`
+	Args            []string      `yaml:"args"`
+	AllowedGroups   []string      `yaml:"allowed_groups"`
+	AuthStrategy    string        `yaml:"auth_strategy"`
+	ChannelStrategy string        `yaml:"channel_strategy"`
+	AllowedChannels []string      `yaml:"allowed_channels"`
+	NoHandshake     bool          `yaml:"no_handshake"`
+	Timeout         time.Duration `yaml:"timeout"`
+	Help            CommandHelp   `yaml:"help"`
 }
 
-// MessageColors contains the configured reply message colora
-type MessageColors struct {
-	Info    string `yaml:"info"`
-	Success string `yaml:"success"`
-	Error   string `yaml:"error"`
+// CommandHelp is the struct that handles the help of a command
+type CommandHelp struct {
+	Summary string   `yaml:"summary"`
+	Args    []string `yaml:"args"`
 }

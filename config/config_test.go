@@ -8,16 +8,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pcarranza/meeseeks-box/config"
-	"github.com/pcarranza/meeseeks-box/db"
+	"github.com/gomeeseeks/meeseeks-box/auth"
+	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+
+	"github.com/gomeeseeks/meeseeks-box/commands"
+	"github.com/gomeeseeks/meeseeks-box/config"
+	"github.com/gomeeseeks/meeseeks-box/mocks"
+	"github.com/gomeeseeks/meeseeks-box/persistence/db"
+	"github.com/gomeeseeks/meeseeks-box/text/formatter"
 	"github.com/renstrom/dedent"
 )
 
 func Test_ConfigurationReading(t *testing.T) {
-	defaultColors := config.MessageColors{
-		Info:    config.DefaultInfoColorMessage,
-		Error:   config.DefaultErrColorMessage,
-		Success: config.DefaultSuccessColorMessage,
+	defaultColors := formatter.MessageColors{
+		Info:    formatter.DefaultInfoColorMessage,
+		Error:   formatter.DefaultErrColorMessage,
+		Success: formatter.DefaultSuccessColorMessage,
 	}
 	defaultDatabase := db.DatabaseConfig{
 		Path:    "meeseeks.db",
@@ -33,7 +39,10 @@ func Test_ConfigurationReading(t *testing.T) {
 			"Default configuration",
 			"",
 			config.Config{
-				Colors:   defaultColors,
+				Format: formatter.FormatConfig{
+					Colors:     defaultColors,
+					ReplyStyle: map[string]string{},
+				},
 				Database: defaultDatabase,
 				Pool:     20,
 			},
@@ -41,14 +50,18 @@ func Test_ConfigurationReading(t *testing.T) {
 		{
 			"With messages",
 			dedent.Dedent(`
-				messages:
-				  handshake: ["hallo"]
+				format:
+				  messages:
+				    handshake: ["hallo"]
 				`),
 			config.Config{
-				Messages: map[string][]string{
-					"handshake": []string{"hallo"},
+				Format: formatter.FormatConfig{
+					Colors:     defaultColors,
+					ReplyStyle: map[string]string{},
+					Messages: map[string][]string{
+						"handshake": {"hallo"},
+					},
 				},
-				Colors:   defaultColors,
 				Database: defaultDatabase,
 				Pool:     20,
 			},
@@ -56,16 +69,20 @@ func Test_ConfigurationReading(t *testing.T) {
 		{
 			"With colors",
 			dedent.Dedent(`
-				colors:
-				  info: "#FFFFFF"
-				  success: "#CCCCCC"
-				  error: "#000000"
+				format:
+				  colors:
+				    info: "#FFFFFF"
+				    success: "#CCCCCC"
+				    error: "#000000"
 				`),
 			config.Config{
-				Colors: config.MessageColors{
-					Info:    "#FFFFFF",
-					Success: "#CCCCCC",
-					Error:   "#000000",
+				Format: formatter.FormatConfig{
+					Colors: formatter.MessageColors{
+						Info:    "#FFFFFF",
+						Success: "#CCCCCC",
+						Error:   "#000000",
+					},
+					ReplyStyle: map[string]string{},
 				},
 				Database: defaultDatabase,
 				Pool:     20,
@@ -82,12 +99,15 @@ func Test_ConfigurationReading(t *testing.T) {
 				`),
 			config.Config{
 				Commands: map[string]config.Command{
-					"something": config.Command{
+					"something": {
 						Cmd:  "ssh",
 						Args: []string{"none"},
 					},
 				},
-				Colors:   defaultColors,
+				Format: formatter.FormatConfig{
+					Colors:     defaultColors,
+					ReplyStyle: map[string]string{},
+				},
 				Database: defaultDatabase,
 				Pool:     20,
 			},
@@ -127,9 +147,7 @@ func Test_Errors(t *testing.T) {
 	for _, tc := range tc {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := config.New(tc.reader)
-			if err.Error() != tc.expected {
-				t.Fatalf("wrong error, expected %s; got %s", tc.expected, err)
-			}
+			mocks.AssertEquals(t, err.Error(), tc.expected)
 		})
 	}
 }
@@ -139,4 +157,68 @@ type badReader struct {
 
 func (badReader) Read(b []byte) (n int, err error) {
 	return 0, fmt.Errorf("bad reader")
+}
+
+func Test_ConfigurationLoading(t *testing.T) {
+	_, err := config.ReadFile("./test-fixtures/empty-config.yml")
+	mocks.AssertEquals(t, nil, err)
+}
+
+func Test_ConfigurationLoadNonExistingFile(t *testing.T) {
+	_, err := config.ReadFile("./test-fixtures/non-existing-config.yml")
+	mocks.AssertEquals(t, "could not open configuration file ./test-fixtures/non-existing-config.yml: open ./test-fixtures/non-existing-config.yml: no such file or directory", err.Error())
+}
+
+func Test_ConfigurationBasicLoading(t *testing.T) {
+	c, err := config.ReadFile("./test-fixtures/basic-config.yml")
+	mocks.Must(t, "could not read configuration file", err)
+	mocks.AssertEquals(t, "./meeseeks-workspace.db", c.Database.Path)
+	mocks.AssertEquals(t, 2, len(c.Commands))
+
+	mocks.Must(t, "failed to load configuration", config.LoadConfiguration(c))
+}
+
+func TestReloadingConfigurationReplacesThings(t *testing.T) {
+	c, err := config.ReadFile("./test-fixtures/basic-config.yml")
+	mocks.Must(t, "could not read configuration file", err)
+	mocks.Must(t, "failed to load configuration", config.LoadConfiguration(c))
+
+	mocks.AssertEquals(t, []string{"pablo"}, auth.GetGroups()["admin"])
+
+	first, ok := commands.Find(&meeseeks.Request{
+		Command: "echo",
+	})
+	mocks.AssertEquals(t, true, ok)
+
+	_, ok = commands.Find(&meeseeks.Request{
+		Command: "echo-2",
+	})
+	mocks.AssertEquals(t, true, ok)
+
+	c, err = config.ReadFile("./test-fixtures/basic-config.1.yml")
+	mocks.Must(t, "could not read the second configuration file", err)
+	mocks.Must(t, "failed to load the second configuration", config.LoadConfiguration(c))
+
+	mocks.AssertEquals(t, []string{"daniele", "pablo"}, auth.GetGroups()["admin"])
+
+	second, ok := commands.Find(&meeseeks.Request{
+		Command: "echo",
+	})
+	mocks.AssertEquals(t, true, ok)
+
+	_, ok = commands.Find(&meeseeks.Request{
+		Command: "echo-2",
+	})
+	mocks.AssertEquals(t, false, ok)
+
+	mocks.AssertEquals(t, first.GetCmd(), second.GetCmd())
+	mocks.AssertEquals(t, first.GetAllowedChannels(), second.GetAllowedChannels())
+	mocks.AssertEquals(t, first.HasHandshake(), second.HasHandshake())
+	mocks.AssertEquals(t, first.MustRecord(), second.MustRecord())
+
+	mocks.AssertEquals(t, first.GetTimeout(), 5*time.Second)
+	mocks.AssertEquals(t, second.GetTimeout(), 10*time.Second)
+
+	mocks.AssertEquals(t, first.GetAuthStrategy(), "any")
+	mocks.AssertEquals(t, second.GetAuthStrategy(), "group")
 }

@@ -1,0 +1,11 @@
+---
+format:
+  reply_styles:
+    success: text
+commands:
+  echo:
+    command: "echo"
+    auth_strategy: any
+    timeout: 5
+    help: 
+      summary: command that prints back the arguments passed

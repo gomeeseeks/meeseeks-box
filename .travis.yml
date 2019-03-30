@@ -1,0 +1,33 @@
+language: go
+go:
+- 1.10.x
+
+matrix:
+  fast_finish: true
+
+before_install:
+- go get github.com/mattn/goveralls
+- go get github.com/modocache/gover
+- go get github.com/golang/lint/golint
+- go get honnef.co/go/tools/cmd/megacheck
+- go get github.com/fzipp/gocyclo
+- go get -u github.com/golang/dep/...
+
+install:
+- dep ensure
+
+script:
+- make fmt || travis_terminate 1
+- make cyclo || travis_terminate 1
+- make megacheck || travis_terminate 1
+- make lint || travis_terminate 1
+- make coverage || travis_terminate 1
+- goveralls -v -coverprofile=gover.coverprofile -service=travis-ci
+- go build
+
+after_success:
+- test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
+
+notifications:
+  slack:
+    secure: Pg3oxMvTqwwKola/f6w1X5J1iRilBebn0+ajUgzhSIIpS+u+qUNC11nastZkckEQ2VST51gfzOFeIB9DcU2/tPGHoqBTNREvnWwCzu+ED2Ej5wVDih33vDwlBivMagIxEMHJfdLdAHImsQzZwlpMQZepZwz6ndqlCvsI4BovWgqTbPVShbS0qUIFvnZoTIgZFlfrL6x2lAvKAZVeC4Un0UBCXeL7deDcf+nYiQzMbCy86fKieAbwN4BIEFRc9J2s4YfOWWqeXipgifplL9eRht+vFYOTOAnPDn8Rg/iey4kdoID2cNMzvRwjfxxAKy8Tb/AmS4oAQQ53xP4eybn7b7w+9ZWGnOwY7yMNojKFMVt3ka9fW7+rfb6+Dhi4CgtVOeUI8S9oQ1tJdfkHIzbvuy26pXi3N5IYz9eI25c72DlcGXNnAozx/+NQ9hE07+jOhxVU82tQHXIeRA1anxUk+3uB8afXQ2mI5Zw/IfiuiWznCsaTTiN66KUFFbe197f9ciZ2K3rU2h3qUHzmlVtmfywmRq2aTvuyYblPKGmWq/IV7+Ty/Sx/askVtmxDTG3UqAObPddNG8kmpjYYIUb1wq/pC8NkI+yMY2ehNwF3I/YnnLWM0D/JJqFqXunhCWAm1lEoX3xBQRKu+q/xYRe8XTy0ooJu08DeyelgbSM2k9s=

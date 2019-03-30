@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html id="html" lang="en-us">
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width"/>
+    <title>Meeseeks Box</title>
+    <meta name="description" content="You make a request. The Meeseek fulfills the request. And then it stops existing">
+    <meta name="author" content="Pablo Carranza">
+    <meta name="generator" content="Hugo 0.34" />
+    <style type="text/css">
+    body, div, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h6, pre, form, fieldset, input, textarea, p, blockquote, th, td {
+        margin: 0;
+        padding: 0;
+    }
+    * {-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;}
+    :before, :after {-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;}
+    img, object, embed {max-width: 100%; height: auto;}
+    object, embed {height: 100%;}
+    img { margin: 1.25% 0; -ms-interpolation-mode: bicubic; }
+    html {
+        background-color: #F0F1F3;
+        padding: 2%;
+    }
+    body {
+        font-size: 16px;
+        line-height: 1.6;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        color: #242424;
+        max-width: 800px;
+        margin: 5% auto;
+       
+    }
+    body::after {
+        clear: both;
+        content: "";
+        display: table;
+    }
+    header {
+        margin-bottom: 8%;
+    }
+    footer {
+        text-align: center;
+    }
+    h1, h2, h3, h4, h5, h1 a {
+        color: #263A48;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    h1, h2 {
+        font-size: 36px;
+        padding-bottom: 0.3em;
+        margin-bottom: 0.4em;
+        border-bottom: 1px solid #eee
+    }
+    h2 {
+        font-size: 22px;
+        padding-bottom: 0.6em;
+        margin-bottom: 0.6em;
+        margin-top: 2.5em;
+    }
+    h3 {
+        font-size: 18px;
+        margin-bottom: 0.3em;
+    }
+    h1 small a {
+        color: #98999C;
+        font-size: 15px;
+        font-weight: normal;
+        float: right;
+        position: absolute;
+        top: 15px;
+        right: 20px;
+    }
+    section {
+        background: #fff;
+        margin-bottom: 1%;
+        position: relative;
+        padding: 6% 8%;
+    }
+    blockquote {
+        border-left: 3px solid #d54e21;
+        font-size: 16px;
+        padding: 0 0 0 20px;
+        color: #d54e21;
+    }
+    blockquote a {
+        color: #d54e21;
+        font-weight: 500;
+    }
+    blockquote code {
+        color: #d54e21;
+    }
+    code, cite {
+        background-color: #F0F2F4;
+        border-radius: 3px;
+        color: #000;
+        font: monospace;
+        padding: 2px 7px;
+    }
+    a {
+        color: #1e8cbe;
+        text-decoration: underline;
+    }
+    a:hover {
+        color: #d54e21;
+    }
+    ul {
+        list-style: none;
+    }
+    ol {
+        list-style: number;
+    }
+    ol li {
+        color: #98999C;
+        margin-bottom: 5px;
+    }
+    ol li:last-child {
+        margin-bottom: 0;
+    }
+    p, ul, ol, blockquote  {
+        margin-bottom: 4%;
+    }
+    ul ul {
+        padding-top: 0;
+        margin-bottom: 0;
+        margin-left: 4%;
+    }
+    ul ul li:before {
+        content: '-';
+        display: inline-block;
+        padding-right: 2%;
+    }
+
+    ul.col-2 {
+        color: #98999C;
+        -webkit-column-count: 2;
+        -moz-column-count: 2;
+        column-count: 2;
+        -webkit-column-gap: 20px;
+        -moz-column-gap: 20px;
+        column-gap: 20px;
+    }
+
+    @media screen and (min-width: 500px) {
+        ul.col-2 {
+            -webkit-column-count: 3;
+            -moz-column-count: 3;
+            column-count: 3;
+            -webkit-column-gap: 20px;
+            -moz-column-gap: 20px;
+            column-gap: 20px;
+        }
+    }
+    nav {
+        background: #F0F1F3;
+        min-width: 215px;
+        margin-bottom: 5px;
+        margin-top: 15px;
+    }
+    nav:first-of-type a {
+        color: #d54e21;
+        border-radius: 0;
+    }
+    nav:first-of-type a:hover {
+        color: #d54e21;
+    }
+    nav:first-of-type a:before {
+        background-color: #d54e21;
+    }
+    nav.affix {
+        position: fixed;
+        top: 20px;
+    }
+    nav.affix-bottom {
+        position: absolute;
+    }
+    nav a {
+        border-radius: 3px;
+        font-size: 15px;
+        display: block;
+        cursor: pointer;
+        font-weight: 500;
+        position: relative;
+        text-decoration: none; 
+        padding: 10px 12px;
+        width: 100%;
+        padding-right: 3px;
+        border-bottom: 2px solid #fff;
+    }
+    nav a:before {
+        content: '';
+        width: 4px;
+        display: block;
+        left: 0;
+        position: absolute;
+        height: 100%;
+        display: none;
+        background: #1e8cbe;
+        top: 0;
+    }
+    nav a:hover {
+        background-color: #E6E8EA;
+        color: #1e8cbe;
+        text-decoration: underline;
+    }   
+    nav a:hover:before {
+        display: block;
+    }
+    nav a:last-of-type {
+        border-bottom: none;
+    }
+    .gist {
+        margin-top: 5.1%;
+        margin-bottom: 5%;
+    }
+    @media screen and (max-width: 1050px) {
+        body {
+            margin: 0 auto;
+        }
+    }
+    @media screen and (max-width: 767px) {
+        header span {
+            display: none;
+        }
+        h1 {
+            font-size: 26px;
+        }
+        h2 {
+            font-size: 20px;
+        }
+    }   
+    @media screen and (max-width: 514px) {
+        p, ul, ol, blockquote  {
+            margin-bottom: 8%;
+        }
+    }
+</style>
+
+</head>
+
+<body>
+    <section id="Menu">
+        <header>
+            <h1>Meeseeks Box</h1>
+            <p>You make a request. The Meeseek fulfills the request. And then it stops existing</p>
+        </header>
+        <nav>
+        
+        </nav>
+        <nav>
+        
+            <a href="#introduction">Introduction</a>
+        
+            <a href="#getting-started">Getting Started</a>
+        
+            <a href="#configuring-shell-commands">Configuring Shell Commands</a>
+        
+            <a href="#alias-commands-family">Alias Commands Family</a>
+        
+            <a href="#auditory-commands-family">Auditory Commands Family</a>
+        
+            <a href="#cancelling-jobs">Cancelling job</a>
+        
+            <a href="#commands-api">Commands Api</a>
+        
+            <a href="#formatting">Formatting</a>
+        
+        </nav>
+    </section>
+    
+    
+    
+    <section id="introduction">
+
+        <h1><a href="#introduction">Introduction</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p><a href="https://github.com/gomeeseeks/meeseeks-box">Meeseeks-box</a> is a ChatOps<br />
+Construction Kit that allows anyone to build your own automations following the<br />
+UNIX principle of using small tools that know how to do 1 thing right.</p>
+
+<p>In the case of the Meeseeks-Box itself, it knows how to talk to Slack, listen<br />
+for messages and dispatch jobs to be executed as if it was being executed by a<br />
+user in bash.</p>
+
+<p>The idea started when using <a href="https://github.com/operable/cog">COG</a> to automate<br />
+tasks and finding it complex or hard to build automations that could be simply<br />
+scripted in bash.</p>
+
+<h2 id="simplicity">Simplicity</h2>
+
+<p>Simplicity is key to allow anyone to start automating tasks right away. Most<br />
+systems engineers are quite comfortable creating bash scripts as tools, these<br />
+bash scripts can be used from the chat, lowering the bar to automation and<br />
+enabling other people to operate systems remotely.</p>
+
+<p>The drive for simplicity made me write this in Go, so installation is simply<br />
+downloading a binary (darwin, linux amd64 and armv6 are provided), exporting<br />
+a <code>SLACK_TOKEN</code> environment variable and start running it.</p>
+
+<p>The drive for simplicity made command registration be setting a configuration<br />
+file that points at the executable, the permissions model and the arguments<br />
+that will be included. This allows using any available command in the running<br />
+box (echo, curl, or even docker) turning the Meeseeks-Box into a glue kind of<br />
+command, like bash.</p>
+
+<p>The drive for simplicity made me use<br />
+<a href="https://github.com/coreos/bbolt">BoltDB</a> as an embedded database to not have<br />
+any dependency whatsoever to persist data right away from the start.</p>
+
+<h2 id="security-and-safety">Security and safety</h2>
+
+<p>Some commands are more dangerous than others, so every time a command is<br />
+registered it will start with a AllowNone strategy, forcing the administrator<br />
+to pick what level of security to use, other options are AllowGroup and<br />
+AllowAny.</p>
+
+<p>Some builtin commands (like the audit branch) uses AllowAdmin which requires<br />
+this group to be defined with the right users to enable using them.</p>
+
+<p>Regarding execution of commands, these are being launched with the go<br />
+<a href="https://golang.org/pkg/os/exec/#CommandContext">os/exec</a> package, setting a<br />
+60 seconds timeout by default to prevent commands from blocking forever,<br />
+eventually starving the box.</p>
+
+<p>This package internally uses <code>os.StartProcess</code>, which evetually derives in<br />
+the system calls <code>fork</code> and <code>exec</code>. This is safer than the classic <code>system</code><br />
+approach as it prevents a final user from injecting commands with colons into<br />
+the argument list.</p>
+
+<p>Executed jobs are always recorded, the command, arguments, start and finish<br />
+dates are recorded, along with the outputed logs, both on stdout and stderr,<br />
+and the final error returned by the execution. These logs are available<br />
+throught the <code>jobs</code> and <code>logs</code> commands to list the executed jobs and show<br />
+the output, or <code>last</code> and <code>tail</code> if you just want to see the last recorded<br />
+job.</p>
+
+<h2 id="flexibility">Flexibility</h2>
+
+<p>Because any command can be used to build automations users are allowed to<br />
+build their ChatOps experience with the tools that are better suited for them.</p>
+
+<p>So, you could:</p>
+
+<ul>
+<li>Invoke a remote API using <code>curl</code><br /></li>
+<li>Use a client tool such like <code>consul</code> or <code>kubectl</code> that will allow you to manage much more complex services.<br /></li>
+<li>Create one docker container per command by using the <code>docker</code> command.<br /></li>
+<li>Invoke bash scripts that perform complex operations.<br /></li>
+<li>In the future, create specific clients using the GRPC API.<br />
+<br /></li>
+</ul>
+
+<p>This is thought as glue, so you can build your own experience, according to your needs.</p>
+
+<h2 id="execution-locallity">Execution Locallity</h2>
+
+<p>Sometimes you need your script, or tool, to be executed in a specific<br />
+location. Imagine that you have a fleet composed by many hosts, and that you<br />
+need to run a command on every of the hosts that are in a specific tier.<br />
+Now imagine that you have one Meeseeks-Box talking to Slack, and that you<br />
+have one Meeseeks-Box running on each of the hosts of the fleet, each one<br />
+with labels that identify where are they, or what their role is.</p>
+
+<p>Now imagine that you can invoke a command to be executed in every host that<br />
+matches a label search from slack by issuing <code>@meeseeks command -labels
+tier=frontend,type=web args</code> and that this will issue the command execution<br />
+local to the host that you need to be running the command.</p>
+
+<p>No more complex and insecure ssh setups.</p>
+
+<h2 id="api">API</h2>
+
+<p>By adding a secure API other tools (like prometheus alert manager) can also<br />
+integrate with the meeseeks box, turning this tool in the genesis of<br />
+auto-remediation.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="getting-started">
+
+        <h1><a href="#getting-started">Getting Started</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<h2 id="installation">Installation</h2>
+
+<p>Following the simplicity tenet, installation is as simple as picking the right binary from the releases page, unpack with tar.gz and just launch.</p>
+
+<p>The only requirement is to have a valid slack token which can be obtained creating a bot user in <a href="https://my.slack.com/services/new/bot">Slack</a> and then passing it in a SLACK_TOKEN environment variable.</p>
+
+<h2 id="running-with-docker">Running with Docker</h2>
+
+<p>Docker images for both amd64 and armv6 are provided. To launch a meeseeks box just create the environment variables file, copy the configuration file and run with</p>
+
+<pre><code class="language-sh">docker run -it --rm \
+  --env-file %(pwd)/environment \
+  -v $(pwd)/meeseeks-box.yaml:/meeseeks.yaml \
+  gomeeseeks/meeseeks-box \
+  -config /meeseeks.yaml
+</code></pre>
+
+<h2 id="running-within-kubernetes">Running within kubernetes</h2>
+
+<p>Because docker images are provided, it&rsquo;s trivial to run a meeseeks-box inside a kubernetes cluster. The steps are as follow:</p>
+
+<ol>
+<li>Create the a token secret file with <code>echo -n &lt;SLACK_TOKEN&gt; &gt; slack-token</code><br /></li>
+<li>Load the token in kubernetes <code>kubectl create secret generic slack-token --from-file=./slack-token</code><br /></li>
+<li>Create the config map using the provided sample <code>kubectl create -f kubernetes/config-map.yml</code><br /></li>
+<li>Create the meeseeks deployment using the provided file <code>kubectl create -f kubernetes/deployment.yml</code><br />
+<br /></li>
+</ol>
+
+<h3 id="running-on-raspberrypi">Running on raspberrypi</h3>
+
+<p>To run on a raspberripy cluster you only need to change the container image to <code>gomeeseeks/meeseeks-box-armv6</code></p>
+
+<h2 id="starting-to-use-the-meeseeks-box">Starting to use the meeseeks-box</h2>
+
+<p>Once the process is running and you got <code>INFO[0000] Listening messages</code> printed out, you could simply invite your bot to any channel, or just open a direct DM conversation with it.</p>
+
+<p>If you are talking in a public channel you will need to start any message with the bot handle for it to pay attention to you, if you are talking in DM you don&rsquo;t need to say the name.</p>
+
+<p>Go ahead and try issuing <code>help -all</code> to get a list of commands supported, or <code>version</code> to see what version have you installed.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="configuring-shell-commands">
+
+        <h1><a href="#configuring-shell-commands">Configuring Shell Commands</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Simply add those commands to the yaml configuration file, like this:</p>
+
+<pre><code class="language-yaml">---
+commands:
+  echo:
+    command: &quot;echo&quot;
+      auth_strategy: any
+      timeout: 5
+      help:
+        summary: &quot;command that prints back the arguments passed&quot;
+        args:
+        - &quot;any argument that is passed will be echoed back&quot;
+</code></pre>
+
+<p>Add as many commands as you need, with the only caveat tha they each command needs to have a different name.</p>
+
+<p>To invoke this command you will need to restart the process (still no hot configuration reloaded supported) and then write <code>@bot-name echo argument1 argument2</code> in a channel where the bot has already been invited.</p>
+
+<p>When invoking this command, the execution will be translated into calling the <code>echo</code> binary, passing through the arguments the user wrote in slack.</p>
+
+<p>As stated before, the <code>command</code> has to be an executable, it has to be inside the path and can only be a single word.</p>
+
+<h2 id="options">Options</h2>
+
+<p>A command can be configured the following way:</p>
+
+<ul>
+<li><code>command</code>: the command to execute<br /></li>
+<li><code>args</code>: list of arguments to always prepend to the command<br /></li>
+<li><code>timeout</code>: how long we allow the command to run until we cancel it, in<br />
+seconds, 60 by default<br /></li>
+<li><code>auth_strategy</code>: defines the authorization strategy<br />
+
+<ul>
+<li><code>any</code>: everyone will be allowed to run this command<br /></li>
+<li><code>none</code>: no user will be allowed to run this command (default value,<br />
+permissions have to be explicit and conscious)<br /></li>
+<li><code>group</code>: use <code>allowed_groups</code> to control who has access to this command<br /></li>
+</ul></li>
+<li><code>allowed_groups</code>: list of groups allowed to run this command<br /></li>
+<li><code>channel_strategy</code>: defines the channel authorization strategy<br />
+
+<ul>
+<li><code>any</code>: the command can be invoked from any channel<br /></li>
+<li><code>im_only</code>: the command can only be invoked in an direct message conversation<br /></li>
+<li><code>channel</code>: use <code>allowed_channels</code> to define which channels are allowed to invoke the command<br /></li>
+</ul></li>
+<li><code>allowed_channels</code>: list of channels allowed to run this command, any if the list is empty.<br /></li>
+<li><code>no_handshake</code>: when true, the bot will not issue a handshake message when the command is accepted.<br /></li>
+<li><code>help</code>: help structure to be printed when using the builtin <code>help</code> command<br /></li>
+<li><code>templates</code>: adds the capacity to change how the replies from this command<br />
+are represented, check the Templating help for more details.<br />
+<br /></li>
+</ul>
+
+<h3 id="a-slightly-more-complex-example">A slightly more complex example</h3>
+
+<p>Running a command with docker, for example, would look like this</p>
+
+<pre><code class="language-yaml">groups:
+  docker: [&quot;pablo&quot;]
+commands:
+  run-command:
+    command: docker
+    args:
+      - &quot;run&quot;
+      - &quot;--rm&quot;
+      - &quot;container-image:latest&quot;
+    auth_strategy: group
+    allowed_groups: [&quot;docker&quot;]
+    channel_strategy: &quot;channel&quot;
+    allowed_channels:
+      - &quot;general&quot;
+    no_handshake: true
+    help:
+      summary: &quot;Run the container-image docker image passing arguments in&quot;
+      args:
+      - &quot;docker image to run&quot;
+      - &quot;arguments to pass to docker...&quot;
+</code></pre>
+
+<p>This will launch a container image every time the command in invoked.</p>
+
+<h3 id="environment-variables">Environment variables</h3>
+
+<p>Environment variables defined when launching the process will percolate to<br />
+the executed shell processes. This is so because of the fork/exec model and<br />
+because it is how Unix works.</p>
+
+<p>This can be particularly useful to define secrets and other process<br />
+configurations following the 12 factor app model.</p>
+
+<p>A caveat is that no environment variable will be expanded when calling a<br />
+command, so if a command is defined such that an argument is an environment<br />
+variable it will simply not work. If you need to use environment variables to<br />
+call a specific executable somehow consider wrapping it with a bash command<br />
+where the expansion will happen.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="alias-commands-family">
+
+        <h1><a href="#alias-commands-family">Alias Commands Family</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Aliases are a convenient way to create shortcuts for complex commands. Instead of typing all the flags, which can be prone to typos, one can simply add an alias for the whole command and that can be as short as a single letter.</p>
+
+<p>Aliases are set per-user. This means you can&rsquo;t see other users&rsquo; aliases nor there are global shared aliases. Two users can set the same alias without collisions.</p>
+
+<h2 id="user-commands">User Commands</h2>
+
+<p>The set of commands that control aliases are:</p>
+
+<h3 id="alias-alias-full-command"><code>alias &lt;alias&gt; &lt;full command&gt;</code></h3>
+
+<p>Sets an alias for a command, including flags.</p>
+
+<p>Sample:</p>
+
+<blockquote>
+<p>omame [11:27]<br />
+@marvin alias ps audit -status running</p>
+
+<p>marvin APP [11:27]<br />
+@omame Mr Meeseeks<br />
+alias created successfully</p>
+
+<p>omame [11:27]<br />
+@marvin ps</p>
+
+<p>marvin APP [11:27]<br />
+@omame All done!<br />
+<em>44</em> - 3 days ago - <em>wait</em> by <em>omame</em> in <em>DM</em> - &gt;<em>Running</em></p>
+</blockquote>
+
+<h3 id="unalias-alias"><code>unalias &lt;alias&gt;</code></h3>
+
+<p>Remove an alias.</p>
+
+<p>Sample:</p>
+
+<blockquote>
+<p>omame [11:28]<br />
+@marvin unalias ps</p>
+
+<p>marvin APP [11:28]<br />
+@omame All done!<br />
+- <em>pablo-failed</em> - <code>audit -status failed -user pablo</code><br />
+- <em>ps</em> - <code>audit -status running</code></p>
+</blockquote>
+
+<h2 id="admin-commands">Admin commands</h2>
+
+<p>There are no admin commands for aliases.</p>
+
+<h2 id="not-recorded-commands">Not recorded commands</h2>
+
+<ul>
+<li>Builtin commands are not recorded, on purpose (they would simply be noise)<br /></li>
+<li>Rejected commands are not recorded.<br /></li>
+</ul>
+
+
+    </section>
+    
+    
+    
+    <section id="auditory-commands-family">
+
+        <h1><a href="#auditory-commands-family">Auditory Commands Family</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Following the security tenet, the Meeseeks box provides a set of builtin<br />
+commands that allow any user to control the commands that were executed in<br />
+the past.</p>
+
+<p>These auditory commands can be split into 2 main groups, one that allows the<br />
+invoking user to check jobs launched by himself, and another that allows an<br />
+administrator to check commands that were called by all users, or one in<br />
+particular.</p>
+
+<h2 id="user-commands">User Commands</h2>
+
+<p>The set of commands that control a job are:</p>
+
+<h3 id="jobs"><code>jobs</code></h3>
+
+<p>This command will print the last 5 jobs that were invoked by the calling user.</p>
+
+<p>It supports the <code>-limit</code> argument to extend or shorten how many jobs are shown.</p>
+
+<p>Sample:</p>
+
+<blockquote>
+<p>pablo [2:13 PM]<br />
+@marvin jobs<br />
+marvin APP [2:13 PM]<br />
+@pablo Spend a few thousand million years in a job and eventually you get<br />
+promoted, I have my own bucket now. Finally, I am somebody.<br />
+<em>58</em> - 18 hours ago - <em>docker-ps</em> by <em>pablo</em> in <em>DM</em> - <em>Successful</em><br />
+<em>57</em> - 18 hours ago - <em>docker-images</em> by <em>pablo</em> in <em>DM</em> - <em>Successful</em><br />
+<em>56</em> - 18 hours ago - <em>docker-pull</em> by <em>pablo</em> in <em>DM</em> - <em>Failed</em><br />
+<em>55</em> - 18 hours ago - <em>df</em> by <em>pablo</em> in <em>DM</em> - <em>Failed</em></p>
+</blockquote>
+
+<h3 id="job"><code>job</code></h3>
+
+<p>This command will print the details of a job. It requires the user to send a job id.</p>
+
+<p>Sample:</p>
+
+<blockquote>
+<p>pablo [2:16 PM]<br />
+@marvin job 58<br />
+marvin APP [2:16 PM]<br />
+@pablo I know. Wretched, isn’t it?<br />
+* <em>ID</em> 58<br />
+* <em>Status</em> Successful<br />
+* <em>Command</em> docker-ps<br />
+* <em>Where</em> IM<br />
+* <em>When</em> 18 hours ago</p>
+</blockquote>
+
+<p>This command will also print other information like the arguments that were<br />
+passed in, in the case they are available.</p>
+
+<h3 id="logs"><code>logs</code></h3>
+
+<p>Given a job id, this command will print the recorded output of the job.</p>
+
+<p>It important to realize that any command executed will be recorded, for good,<br />
+and this output can always be extracted. This is particularly useful because<br />
+it can turn the Meeseeks into a production log.</p>
+
+<p>The way this command looks like is exactly the same as when a command<br />
+finishes execution.</p>
+
+<h3 id="last"><code>last</code></h3>
+
+<p>Last is equivalent to run <code>job</code> with the last job id available for the user.</p>
+
+<p>This command can be useful to see the status of the last invoked job.</p>
+
+<h3 id="tail"><code>tail</code></h3>
+
+<p>Tail is equivalent to run <code>logs</code> with the last job id available for the user.</p>
+
+<p>Because jobs stream the logs to the meeseeks storage this can be particularly<br />
+useful to monitor the current state of a job, even before it finishes.</p>
+
+<p>In future releases <code>tail</code> will be improved to only return N lines of the logs<br />
+instead of it all, and there will also be a <code>head</code> command to do the exact<br />
+opposite.</p>
+
+<h2 id="admin-commands">Admin Commands</h2>
+
+<p>Admin commands are equivalent to the user commands, with the caveat that they<br />
+don&rsquo;t filter by the calling user but return jobs or logs from any user.</p>
+
+<p>Becase he amount of data extracted this way can be a bit daunting, by default<br />
+all the listing commands will only return 5 lines unless <code>-limit X</code> is passed.<br />
+ This command also allows to filter by a particular user with <code>-user X</code>.</p>
+
+<h3 id="audit"><code>audit</code></h3>
+
+<p>Admin command that behaves like <code>jobs</code> but returns the unfiltered list of users.</p>
+
+<p>Use <code>-limit</code> and <code>-user</code> to filter away.</p>
+
+<h3 id="auditjob"><code>auditjob</code></h3>
+
+<p>Requires a job ID, behaves the same way as <code>jobs</code> but without the limitation<br />
+of filtering the job by the calling user.</p>
+
+<h3 id="auditlogs"><code>auditlogs</code></h3>
+
+<p>Requires a job ID, behaves the same way as <code>logs</code> but without the limitation<br />
+of filtering the job by the calling user.</p>
+
+<h2 id="not-recorded-commands">Not recorded commands</h2>
+
+<ul>
+<li>Builtin commands are not recorded, on purpose (they would simply be noise)<br /></li>
+<li>Rejected commands are not recorded.<br />
+<br /></li>
+</ul>
+
+<h2 id="a-note-about-privacy">A note about privacy</h2>
+
+<p>A side effect of how Slack behaves when searching for channels led to avoiding<br />
+leaking private conversations.</p>
+
+<p>This happens when a direct conversation in between more than one person and<br />
+the meeseeks takes place, the meeseeks will record the job, and it will<br />
+record the channel id.</p>
+
+<p>But when an admin requests the job list through the <code>audit</code> command, the job<br />
+will try to extract the channel description to show it to the admin. In some<br />
+cases this will not be possible. Particularly when the admin user does not<br />
+have access to the channel because it&rsquo;s not invited to it. When this happens<br />
+the query will return an error and this error will be handled by presenting<br />
+the channel as <strong>unknown-channel</strong>.</p>
+
+<p>If the user has access, then the channel will be presented in the form of<br />
+<strong>#@invitee1,invetee2,etc</strong>, this channel will be a link that can be clicked<br />
+*and can take him to the conversation.</p>
+
+<p>This started as a way of handling the error, but for the sake of privacy it<br />
+is left this way because it makes sense.</p>
+
+<p>This means that an admin is able to see the command details, or the logs, but<br />
+it will not be able to see who was in the private channel.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="cancelling-jobs">
+
+        <h1><a href="#cancelling-jobs">Cancelling job</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Once jobs are running the user has total control over them. This means that at<br />
+any time a job can be queried for status, get the logs as they are being<br />
+streamed, and of course, they can be cancelled.</p>
+
+<p>Job cancellation internally works the same way a timeout is handled. This means<br />
+that the job will get a kill signal, and as a result it will error out, leaving<br />
+the final state of the job as failed.</p>
+
+<p>Still, any log that was streamed up to that point will be recorded, meaning<br />
+that the user can evaluate how far the command reached.</p>
+
+<h2 id="cancelling-a-job">Cancelling a job</h2>
+
+<ul>
+<li><p><code>cancel &lt;job id&gt;</code> cancels a job owned by the calling user that is currently running</p></li>
+
+<li><p><code>kill &lt;job id&gt;</code> cancels a job owned by any user. This commands requires the calling user to be in the admin group.</p></li>
+</ul>
+
+<p>Both commands behave the same way, with the only caveat of permissions and<br />
+scope.</p>
+
+<h2 id="sample">Sample</h2>
+
+<blockquote>
+<p>pablo [12:13 PM]<br />
+cancel 4</p>
+
+<p>marvin APP [12:13 PM]<br />
+@pablo Ok<br />
+Issued command cancellation to job 4</p>
+</blockquote>
+
+<p>This will issue a command cancellation to job 4, independently, job 4 should have failed.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="commands-api">
+
+        <h1><a href="#commands-api">Commands Api</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>Meeseeks support commands to be invoked using a http API endpoint.</p>
+
+<p>This can be particularly useful when wired to an alerting system as this can be<br />
+the seed to auto-remediation.</p>
+
+<p>Tokens can only be managed in a direct message conversation, because otherwise<br />
+they would be leaking to any user who has access the used channel. Any attempt<br />
+to invoke any token command in an open channel will be rejected by the<br />
+meesseeks.</p>
+
+<h2 id="creating-an-api-token">Creating an api token</h2>
+
+<ul>
+<li><code>token-new @user #channel command [args...]</code><br />
+<br /></li>
+</ul>
+
+<p>This invokation will then return a UUID which is the API token. This UUID will<br />
+be linked to the command with the proposed arguments. The command will be<br />
+executed as the <code>@user</code> in the <code>#channel</code>. The command can be also an<br />
+<a href="#alias-commands-family">alias</a>.</p>
+
+<p>Permissions-wise, the command access level will be evaluated when it is being<br />
+invoked. This means that an admin can create a token for a user who does not<br />
+have access to the requested command, or the user can lose access to the command<br />
+afterwards. In both cases, the token can be used but the command will simply be<br />
+rejected at execution time, resulting in an error in the registered <code>#channel</code>.</p>
+
+<h2 id="using-an-api-token">Using an API token</h2>
+
+<p>To use a token, you should invoke the HTTP API endpoint with a HTTP<br />
+POST method. For example, using curl:</p>
+
+<p><code>curl -X POST -H &quot;TOKEN: &lt;UUID&gt;&quot; localhost:9696/message</code></p>
+
+<p>By default meeseeks-box HTTP API listens on <code>0.0.0.0:9696</code>.</p>
+
+<p>Additionally, it is possible to add more arguments to the invocation by adding<br />
+them as an HTTP form, like this:</p>
+
+<p><code>curl -F 'message=arg1+arg2' -X POST -H &quot;TOKEN: &lt;UUID&gt;&quot; localhost:9696/message</code></p>
+
+<p>This will result in the command being called appending the <em>message</em> value to<br />
+the tail of the command execution text.</p>
+
+<h2 id="listing-api-tokens">Listing api tokens</h2>
+
+<ul>
+<li><code>tokens</code><br />
+<br /></li>
+</ul>
+
+<p>This will return a list of the existing tokens with the following format:</p>
+
+<blockquote>
+<ul>
+<li><em>UUID</em> @user at #channel <em>command args&hellip;</em><br /></li>
+</ul>
+</blockquote>
+
+<h2 id="revoking-api-tokens">Revoking api tokens</h2>
+
+<ul>
+<li><code>token-revoke &lt;UUID&gt;</code><br />
+<br /></li>
+</ul>
+
+<p>This will destroy the token and it will not be available anymore.</p>
+
+
+    </section>
+    
+    
+    
+    <section id="formatting">
+
+        <h1><a href="#formatting">Formatting</a><small><a href="#html">back to top</a></small></h1>
+
+        
+
+<p>There are multiple formatting options to customize your meeseeks experience.<br />
+They all start in the format section.</p>
+
+<h2 id="command-templates">Command Templates</h2>
+
+<p>Templates are used to render replies from the meeseeks, templating is done<br />
+using go <a href="https://golang.org/pkg/text/template/">text/template</a> language.</p>
+
+<p>The default templates can be a bit noisy depending on how the meeseeks are<br />
+used.</p>
+
+<h3 id="default-templates">Default Templates</h3>
+
+<pre><code class="language-yaml">messages:
+  handshake: &quot;{{ AnyValue handshake . }}&quot;
+  failure: |
+    &quot;{{ .user }} {{ AnyValue failure . }} :disappointed: {{ .error }}
+    {{ with $out := .output }}\n```\n{{ $out }}```{{ end }}&quot;
+  success: |
+    &quot;{{ .user }} {{ AnyValue success . }}
+    {{ with $out := .output }}\n```\n{{ $out }}```{{ end }}&quot;
+  unknowncommand: |
+    &quot;{{ .user }} {{ AnyValue unknowncommand . }} {{ .command }}&quot;
+  unauthorized: |
+    &quot;{{ .user }} {{ AnyValue unauthorized . }} {{ .command }}&quot;
+</code></pre>
+
+<h3 id="a-simpler-templates-configuration">A simpler templates configuration</h3>
+
+<p>To lowed the amount of noise generated by the default mode it&rsquo;s possible to<br />
+set a simpler set of templates, like this:</p>
+
+<pre><code class="language-yaml">format:
+  templates:
+    handshake: &quot;{{ .command }} accepted&quot;
+    success: &quot;{{ .command }} succeeded {{ with $out := .output }}\n```\n{{ $out }}```{{ end }}&quot;
+    failure: &quot;{{ .command }} failed: {{ .error }} {{ with $out := .output }}\n```\n{{ $out }}```{{ end }}&quot;
+    unknowncommand: &quot;{{ .command }} is not a valid command&quot;
+    unauthorized: &quot;{{ .command }} is not allowed to the requester&quot;
+</code></pre>
+
+<h2 id="messages">Messages</h2>
+
+<p>The messages used to reply in a conversation used in the default templates<br />
+can be changed. To do so add a messages section in the configuration file.</p>
+
+<pre><code class="language-yaml">format:
+  messages:
+    handshake:
+    - &quot;Message that will be shown when the bot accepts a job&quot;
+    failure:
+    - &quot;Message that will be shown when the job fails&quot;
+    success:
+    - &quot;Message that will be shown when the job succeeds&quot;
+    unknowncommand:
+    - &quot;Message that will be shown when the requested
+      command is not registered&quot;
+    unauthorized:
+    - &quot;Message that will be shown when the user
+      requesting a command is not authorized to run it&quot;
+</code></pre>
+
+<p>There can be more than 1 message on each section, they will be picked randomly<br />
+when replying.</p>
+
+<h2 id="reply-style">Reply Style</h2>
+
+<p>The slack client supports sending messages with 2 styles:</p>
+
+<ul>
+<li><strong><code>attachment</code></strong> (default) - The message is sent as an<br />
+attachment, using a color decoration depending on what kind of message it is (read <a href="#colors">below</a>).<br /></li>
+<li><strong><code>text</code></strong> - The message is sent in plain text, without any decorations. URLs and<br />
+media are unfurled.<br />
+<br /></li>
+</ul>
+
+<p>This can be changed for each message type by adding a formatting section to the<br />
+configuration file. Note that <code>handshake</code> can also be disabled entirely.</p>
+
+<pre><code class="language-yaml">format:
+  reply_styles:
+    handshake: disabled
+    failure: attachment
+    success: text
+    unknowncommand: attachment
+    unauthorized: attachment
+</code></pre>
+
+<h2 id="colors">Colors</h2>
+
+<p>By default messages in attachment mode will show colors for errors, success and<br />
+info. These can be changed by adding a format section to the configuration file.</p>
+
+<pre><code class="language-yaml">format:
+  colors:
+    info: &quot;#FFFFFF&quot;
+    success: &quot;#CCCCCC&quot;
+    error: &quot;#000000&quot;
+</code></pre>
+
+<h3 id="helper-functions">Helper functions</h3>
+
+<p>There are a couple of functions that are added when rendering templates, these are useful to handle arrays, texts and some values.</p>
+
+<ul>
+<li><strong><code>AnyValue</code></strong> will pick a random value from a string slice.<br /></li>
+<li><strong><code>HumanizeTime</code></strong> will print a time in human readable format, ex. <em>&laquo;6 hours ago&raquo;</em><br /></li>
+<li><strong><code>HumanizeSize</code></strong> will print a size in human readable format, ex. <em>&laquo;100Mb&raquo;</em><br /></li>
+<li><strong><code>HumanizeNumber</code></strong> will print a float in a human readable format, removing long trails of decimals.<br /></li>
+<li><strong><code>Join</code></strong> joins a string slice into a single string using a joining char.<br />
+<br /></li>
+</ul>
+
+<h2 id="configuration-samples">Configuration samples</h2>
+
+<p><a href="https://github.com/gomeeseeks/meeseeks-box/tree/master/docs/examples/personas">Here</a><br />
+you can see a couple of configuration examples for different templates and<br />
+messages.</p>
+
+
+    </section>
+    
+    
+
+</body>
+</html>

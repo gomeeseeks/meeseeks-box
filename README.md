@@ -1,103 +1,65 @@
 # Meeseeks Box
 
+[![Build Status](https://travis-ci.org/gomeeseeks/meeseeks-box.svg?branch=master)](https://travis-ci.org/gomeeseeks/meeseeks-box) [![Go Report Card](http://goreportcard.com/badge/github.com/gomeeseeks/meeseeks-box)](https://goreportcard.com/report/github.com/gomeeseeks/meeseeks-box) [![Coverage Status](https://coveralls.io/repos/github/gomeeseeks/meeseeks-box/badge.svg?branch=master&service=github)](https://coveralls.io/github/gomeeseeks/meeseeks-box?branch=master&service=github)
+
 > You make a request
 >
 > The Meeseek fulfills the request
 >
 > And then it stops existing
 
-Meeseeks box is an automation engine built for simplicity, extensibility and
-composability.
+[Meeseeks](https://github.com/gomeeseeks/) is a ChatOps Construction Kit that allows anyone to build their own automations following the UNIX principle of using small tools that know how to do one thing right.
 
-It follows the Unix philosophy of doing only one thing well, only caring about
-gluing commands allowing everyone to build their own ChatOps experience by
-going to the basics of using simple bash scripts as the execution unit.
+Meeseeks-Box is the component that knows how to talk to Slack, listen for messages and dispatch jobs to be executed as if it was being executed by a user in a shell.
 
-## How to use
+The core tenets of the tool are simplicity, security and flexibility.
 
-It is composed by a single go binary that requires a `SLACK_TOKEN` environment
-variable set to start up.
 
-To start adding commands add a configuration file and load it adding the
-`-config=config-file.yml` argument and then restarting the binary (still no hot
-reload supported)
+## FAQ
 
-### Example file
+### So... what is this?
 
-```yaml
-groups:
-  admin:
-  - my_user
-commands:
-  echo:
-    command: "echo"
-    auth_strategy: any
-    timeout: 5
-    help: command that prints back the arguments passed
-  curl:
-    command: "curl"
-    args:
-    - "-L"
-    - "-v"
-    auth_strategy: groups
-    allowed_groups:
-    - admin
-    help: downloads the provided url
-```
+Meeseeks is a way of running any executable on a host through Slack while keeping things simple and secure.
 
-## Configuration
+The project is based on the fact that server infrastructures aren't pretty. As much as we would like to have great elegant, resilient systems, oftentimes all we really need is to simply run some shell scripts (or curl, or a db query, or whatever) somewhere in the fleet to perform a job.
 
-Besides configuring commands, other things can be configured
+So, instead of building ambitious projects that will never reach stability (let alone be deployed) you can start automating your toil away right now.
 
-### Permissions
+### What do I need to start using the Meeseeks and automate my toil away?
 
-- `groups`: map group name and user list. By using the `allowed_groups` we will
-  be forced to define which users are in which groups, this can only be set in
-  configuration for now, for which
+Download a single binary file and create a Slack API token. That's pretty much it.
 
-### Commands
+### What languages can I use to automate my toil?
 
-A command can be configured the following way:
+Any language.
 
-- `command`: the command to execute
-- `args`: list of arguments to always prepend to the command
-- `timeout`: how long we allow the command to run until we cancel it, in
-  seconds, 60 by default
-- `auth_strategy`: defined the authorization strategy
-  - `any`: everyone will be allowed to run this command
-  - `none`: no user will be allowed to run this command (default value,
-    permissions have to be explicit and conscious)
-  - `group`: use `allowed_groups` to control who has access to this command
-- `allowed_groups`: list of groups allowed to run this command
-- `help`: help to be printed when using the builtin `help` command
-- `templates`: adds the capacity to change how the replies from this command
-  are represented, check the Templating section.
+The Meeseeks run commands using `fork+exec` so you can use anything that can be executed from a shell.
 
-## Builtin Commands
+### What is the command API that I have to implement in my scripts?
 
-Meeseeks include a set of builtin commands that can be used to introspect the
-system, these are:
+None. Or better said, POSIX.
 
-- `help`: prints the list of configured commands
-- `groups`: prints the configured groups and which users are included there
-- `version`: prints the current executable version
+Write what you want to read to stdout: that's the text that will be transported back to the chat. Returning an exit code different than 0 will be interpreted as a command failure but the output will still be transported back.
 
-## Interface
+### Can I have long running commands? What sort of timeout do commands have?
 
-It's strange that you want to change this, but anyway, here it is.
+The Meeseeks are built for an imperfect world in which things can take a long time. The default timeout is 60 seconds but it can be configured on a per command basis. You can even spawn commands without a time limit.
 
-- `messages`: map that contains a list of strings, is used to build the
-  meeseeks experience, default values can be checked in the
-  `meeseeks/template/template.go` file.
-- `colors`: colors to use for info, error and success messages in the slack
-  interface.
+### Can I kill a command while it's running?
 
-## Templating
+Yes. You can cancel your own jobs with `cancel job_id`. Admins can cancel any job with `kill job_id`: this will send a kill signal to the running command.
 
-Commands support to change templates. All the templating is done with the go
-package `text/template`, and all the rendering data is submitted with a Payload
-that is nothing but a `map[string]interface{}`, handle with care, but if you
-insist, check the following files to understand how it works:
+### Can I see the output of a command while it's running?
 
-- [Templates](./meeseeks/template/template.go)
-- [Sample tests](./meeseeks/template/template_tet.go)
+Yes. Use `tail` to show the last output lines from the last command that you launched.
+
+### How do I release a new version?
+
+* Make sure you have a valid GitHub token and export it in your shell environment as `GITHUB_TOKEN`.
+* Check out the latest version with `git tag --list`.
+* Tag a new version with `git tag <new version>`.
+* Release with `make release`.
+
+## Documentation
+
+For more in depth details, check the [docs](https://gomeeseeks.github.io/meeseeks-box/).
