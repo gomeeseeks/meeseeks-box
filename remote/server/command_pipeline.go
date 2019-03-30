@@ -259,7 +259,7 @@ type remoteCommand struct {
 }
 
 func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, error) {
-	logrus.Debug("start execution of job %#v", job)
+	logrus.Debugf("start execution of job %#v", job)
 
 	req := job.Request
 	c := r.agent.start(api.CommandRequest{
@@ -277,15 +277,15 @@ func (r remoteCommand) Execute(ctx context.Context, job meeseeks.Job) (string, e
 		JobID: job.ID,
 	})
 
-	logrus.Debug("waiting for remote request to finish %#v", req)
+	logrus.Debugf("waiting for remote request to finish %#v", req)
 
 	select {
 	case <-ctx.Done():
-		logrus.Debug("job %#v failed with error %s", job, ctx.Err())
+		logrus.Debugf("job %#v failed with error %s", job, ctx.Err())
 		return "", fmt.Errorf("command failed because of context done: %s", ctx.Err())
 
 	case f := <-c:
-		logrus.Debug("successful execution of job %#v with result %#v", job, f)
+		logrus.Debugf("successful execution of job %#v with result %#v", job, f)
 		// TODO: check that the agent that finished the command is the same that started it
 		return f.getContent(), f.getError()
 

@@ -63,7 +63,7 @@ func TestAgentCanConnect(t *testing.T) {
 			cmd, ok := commands.Find(&meeseeks.Request{
 				Command: "echo",
 			})
-			logrus.Infof("fetching command echo: %b", ok)
+			logrus.Infof("fetching command echo: %t", ok)
 			mocks.AssertEquals(t, true, ok)
 
 			cmd.Execute(ctx, meeseeks.Job{
