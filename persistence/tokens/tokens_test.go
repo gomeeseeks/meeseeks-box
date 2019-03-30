@@ -3,10 +3,10 @@ package tokens_test
 import (
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/persistence"
-	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence/tokens"
 )
 
 func TestGetNonExistingToken(t *testing.T) {

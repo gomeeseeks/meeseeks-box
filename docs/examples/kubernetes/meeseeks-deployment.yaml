@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: meeseeks
-        image: gomeeseeks/meeseeks-box
+        image: yakshaving.art/meeseeks-box
         env:
         - name: SLACK_TOKEN
           valueFrom:

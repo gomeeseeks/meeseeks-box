@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/text/template"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/template"
 )
 
 func Test_Templating(t *testing.T) {

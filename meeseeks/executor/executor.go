@@ -7,13 +7,13 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/gomeeseeks/meeseeks-box/auth"
-	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/commands/builtins"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/persistence"
-	"github.com/gomeeseeks/meeseeks-box/text/formatter"
+	"gitlab.com/yakshaving.art/meeseeks-box/auth"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands/builtins"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks/metrics"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/formatter"
 )
 
 // ChatClient interface that provides a way of replying to messages on a channel

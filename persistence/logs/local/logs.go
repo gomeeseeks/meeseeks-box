@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/persistence/db"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks/metrics"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence/db"
 
 	bolt "github.com/coreos/bbolt"
 )

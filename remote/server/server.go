@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/gomeeseeks/meeseeks-box/remote/api"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/api"
 
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/sirupsen/logrus"

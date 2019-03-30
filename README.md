@@ -1,6 +1,6 @@
 # Meeseeks Box
 
-[![Build Status](https://travis-ci.org/gomeeseeks/meeseeks-box.svg?branch=master)](https://travis-ci.org/gomeeseeks/meeseeks-box) [![Go Report Card](http://goreportcard.com/badge/github.com/gomeeseeks/meeseeks-box)](https://goreportcard.com/report/github.com/gomeeseeks/meeseeks-box) [![Coverage Status](https://coveralls.io/repos/github/gomeeseeks/meeseeks-box/badge.svg?branch=master&service=github)](https://coveralls.io/github/gomeeseeks/meeseeks-box?branch=master&service=github)
+[![Build Status](https://travis-ci.org/yakshaving.art/meeseeks-box.svg?branch=master)](https://travis-ci.org/yakshaving.art/meeseeks-box) [![Go Report Card](http://goreportcard.com/badge/gitlab.com/yakshaving.art/meeseeks-box)](https://goreportcard.com/report/gitlab.com/yakshaving.art/meeseeks-box) [![Coverage Status](https://coveralls.io/repos/github/yakshaving.art/meeseeks-box/badge.svg?branch=master&service=github)](https://coveralls.io/github/yakshaving.art/meeseeks-box?branch=master&service=github)
 
 > You make a request
 >
@@ -8,7 +8,7 @@
 >
 > And then it stops existing
 
-[Meeseeks](https://github.com/gomeeseeks/) is a ChatOps Construction Kit that allows anyone to build their own automations following the UNIX principle of using small tools that know how to do one thing right.
+[Meeseeks](https://gitlab.com/yakshaving.art/) is a ChatOps Construction Kit that allows anyone to build their own automations following the UNIX principle of using small tools that know how to do one thing right.
 
 Meeseeks-Box is the component that knows how to talk to Slack, listen for messages and dispatch jobs to be executed as if it was being executed by a user in a shell.
 
@@ -62,4 +62,4 @@ Yes. Use `tail` to show the last output lines from the last command that you lau
 
 ## Documentation
 
-For more in depth details, check the [docs](https://gomeeseeks.github.io/meeseeks-box/).
+For more in depth details, check the [docs](https://yakshaving.art.github.io/meeseeks-box/).

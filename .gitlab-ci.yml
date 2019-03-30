@@ -1,21 +1,10 @@
-image: golang:1.9
+image: golang:1.11
 
-stages:
-  - test
-
-before_script:
-
-test:
-  stage: test
+build:
+  coverage: '/^total:\s+\(statements\)\s+(\d+.\d+)%$/'
+  cache:
+    paths:
+      - vendor
   script:
-    - GOPATH=$(mktemp -d)
-    - PATH=${GOPATH}/bin:${PATH}
-    - PROJECT=$(basename ${CI_PROJECT_DIR})
-    - GROUP=$(basename $(dirname ${CI_PROJECT_DIR}))
-    - WORKDIR=${GOPATH}/src/github.com/gomeeseeks/${PROJECT}
-    - mkdir -p ${WORKDIR}
-    - cp -a * ${WORKDIR}
-    - go get -u github.com/golang/dep/cmd/dep
-    - cd ${WORKDIR} 
-    - dep ensure -v
-    - make test
+    - go mod vendor
+    - make test build

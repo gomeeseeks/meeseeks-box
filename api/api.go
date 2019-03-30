@@ -4,9 +4,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence"
-	"github.com/gomeeseeks/meeseeks-box/text/parser"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/parser"
 )
 
 // Enricher is a helper client used to augment the metadata of the user

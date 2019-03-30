@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands/shell"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
 )
 
 var echoCmd = shell.New(meeseeks.CommandOpts{

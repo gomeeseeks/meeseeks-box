@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/auth"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/text/formatter"
-	"github.com/gomeeseeks/meeseeks-box/text/parser"
+	"gitlab.com/yakshaving.art/meeseeks-box/auth"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/formatter"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/parser"
 
 	"github.com/nlopes/slack"
 	"github.com/sirupsen/logrus"

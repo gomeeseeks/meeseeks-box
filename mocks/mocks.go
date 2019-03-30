@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/config"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/db"
-	"github.com/gomeeseeks/meeseeks-box/text/formatter"
+	"gitlab.com/yakshaving.art/meeseeks-box/config"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence/db"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/formatter"
 
 	"github.com/sirupsen/logrus"
 )

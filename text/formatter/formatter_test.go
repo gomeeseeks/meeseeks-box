@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/text/formatter"
-	"github.com/gomeeseeks/meeseeks-box/text/template"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/formatter"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/template"
 )
 
 func TestFormatterTemplates(t *testing.T) {

@@ -3,8 +3,8 @@ package formatter
 import (
 	"strings"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/text/template"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/template"
 
 	"github.com/sirupsen/logrus"
 )

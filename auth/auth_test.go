@@ -3,11 +3,11 @@ package auth_test
 import (
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/auth"
-	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/auth"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands/shell"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
 )
 
 func Test_Auth(t *testing.T) {

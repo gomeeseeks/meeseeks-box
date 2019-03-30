@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence"
-	"github.com/gomeeseeks/meeseeks-box/remote/api"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/api"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"

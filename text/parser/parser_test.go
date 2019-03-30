@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/text/parser"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/parser"
 )
 
 func Test_ParsingCommandsCorrectly(t *testing.T) {

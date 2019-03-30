@@ -8,8 +8,8 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence"
 	"github.com/sirupsen/logrus"
 )
 

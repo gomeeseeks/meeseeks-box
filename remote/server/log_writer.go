@@ -5,8 +5,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/gomeeseeks/meeseeks-box/persistence"
-	"github.com/gomeeseeks/meeseeks-box/remote/api"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/api"
 	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc/codes"
