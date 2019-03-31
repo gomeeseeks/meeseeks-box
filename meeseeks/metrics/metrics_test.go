@@ -3,8 +3,8 @@ package metrics_test
 import (
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/metrics"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks/metrics"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
 
 	"github.com/prometheus/client_golang/prometheus"
 )

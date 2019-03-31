@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/version"
+	"gitlab.com/yakshaving.art/meeseeks-box/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands/shell"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
 )
 
 var echoCommand = shell.New(meeseeks.CommandOpts{

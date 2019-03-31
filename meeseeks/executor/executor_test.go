@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks/executor"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/text/template"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks/executor"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/template"
 	"github.com/renstrom/dedent"
 	"github.com/sirupsen/logrus"
 )

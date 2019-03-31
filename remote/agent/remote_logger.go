@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/remote/api"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/api"
 
 	"github.com/sirupsen/logrus"
 )

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
 	log "github.com/sirupsen/logrus"
 )
 

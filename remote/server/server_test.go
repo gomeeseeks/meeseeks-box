@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/remote/api"
-	"github.com/gomeeseeks/meeseeks-box/remote/server"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/api"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/server"
 
 	"github.com/sirupsen/logrus"
 
@@ -63,7 +63,7 @@ func TestAgentCanConnect(t *testing.T) {
 			cmd, ok := commands.Find(&meeseeks.Request{
 				Command: "echo",
 			})
-			logrus.Infof("fetching command echo: %b", ok)
+			logrus.Infof("fetching command echo: %t", ok)
 			mocks.AssertEquals(t, true, ok)
 
 			cmd.Execute(ctx, meeseeks.Job{

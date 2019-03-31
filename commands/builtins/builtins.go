@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/auth"
-	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence"
-	"github.com/gomeeseeks/meeseeks-box/text/template"
-	"github.com/gomeeseeks/meeseeks-box/version"
+	"gitlab.com/yakshaving.art/meeseeks-box/auth"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence"
+	"gitlab.com/yakshaving.art/meeseeks-box/text/template"
+	"gitlab.com/yakshaving.art/meeseeks-box/version"
 	"github.com/renstrom/dedent"
 )
 

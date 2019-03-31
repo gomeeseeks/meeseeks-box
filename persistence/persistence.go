@@ -1,11 +1,11 @@
 package persistence
 
 import (
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/persistence/aliases"
-	"github.com/gomeeseeks/meeseeks-box/persistence/jobs"
-	logs "github.com/gomeeseeks/meeseeks-box/persistence/logs/local"
-	"github.com/gomeeseeks/meeseeks-box/persistence/tokens"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence/aliases"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence/jobs"
+	logs "gitlab.com/yakshaving.art/meeseeks-box/persistence/logs/local"
+	"gitlab.com/yakshaving.art/meeseeks-box/persistence/tokens"
 )
 
 var providers Providers

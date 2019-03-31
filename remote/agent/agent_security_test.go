@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/remote/agent"
-	"github.com/gomeeseeks/meeseeks-box/remote/server"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/agent"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/server"
 )
 
 func TestAgentCanConnectAndRegisterACommand(t *testing.T) {

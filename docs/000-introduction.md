@@ -4,7 +4,7 @@ title: Introduction
 
 # Introduction
 
-[Meeseeks-box](https://github.com/pcarranza/meeseeks-box) is a ChatOps
+[Meeseeks-box](https://gitlab.com/yakshaving.art/meeseeks-box) is a ChatOps
 Construction Kit that allows anyone to build your own automations following
 the UNIX principle of using small tools that know how to do 1 thing right.
 

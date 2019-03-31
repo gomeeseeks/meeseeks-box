@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gomeeseeks/meeseeks-box/commands"
-	"github.com/gomeeseeks/meeseeks-box/commands/shell"
-	"github.com/gomeeseeks/meeseeks-box/meeseeks"
-	"github.com/gomeeseeks/meeseeks-box/mocks"
-	"github.com/gomeeseeks/meeseeks-box/remote/agent"
-	"github.com/gomeeseeks/meeseeks-box/remote/api"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands"
+	"gitlab.com/yakshaving.art/meeseeks-box/commands/shell"
+	"gitlab.com/yakshaving.art/meeseeks-box/meeseeks"
+	"gitlab.com/yakshaving.art/meeseeks-box/mocks"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/agent"
+	"gitlab.com/yakshaving.art/meeseeks-box/remote/api"
 
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
