@@ -62,4 +62,4 @@ Yes. Use `tail` to show the last output lines from the last command that you lau
 
 ## Documentation
 
-For more in depth details, check the [docs](https://yakshaving.art.github.io/meeseeks-box/).
+For more in depth details, check the [docs](https://gomeeseeks.github.io/meeseeks-box/).
